@@ -1,0 +1,7 @@
+---
+output: 
+  html_document:
+    theme: yeti
+---
+<br>
+<center> Email me: seannoah at gmail

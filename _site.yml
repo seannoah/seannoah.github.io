@@ -1,0 +1,16 @@
+output_dir: "."
+navbar:
+  title: "Sean Noah"
+  left:
+    - text: "About Me"
+      href: about.html
+    - text: "Science"
+      href: science.html
+    - text: "Writing"
+      href: writing.html
+    - text: "Artwork"
+      href: artwork.html
+  right:
+    - text: "Contact"
+      href: contact.html
+      

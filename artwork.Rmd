@@ -1,0 +1,7 @@
+---
+output: 
+  html_document:
+    theme: yeti
+---
+<br>
+<center>I make illustrations for Knowing Neurons too.
