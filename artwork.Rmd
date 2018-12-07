@@ -4,4 +4,23 @@ output:
     theme: yeti
 ---
 <br>
-<center>I make illustrations for Knowing Neurons too.
+<center>### Here are some selected illustrations I've made:
+<br>
+<center>![](./Images/Artboard 1@4x.png)
+<br>
+<center>![](./Images/BFRB.png)
+<br>
+<center>![](./Images/Brainfacts_birdsong.png)
+<br>
+<center>![](./Images/BrainFood.png)
+<br>
+<center>![](./Images/Fats feature.png)
+<br>
+<center>![](./Images/TBI_treatment_feature.png)
+<br>
+<center>![](./Images/pccn_def_border.png)
+<br>
+<center>![](./Images/pccn5.png)
+<br>
+<center>![](./Images/pccn6.png)
+<br>

@@ -4,5 +4,7 @@ output:
     theme: yeti
 ---
 <br>
-<center>I study the systems in the brain that control visual attention.
-<center>My lab uses simultaneous EEG and fMRI for data collection, and MVPA for data analysis.
+<div class="col1">I study the systems in the brain that control visual attention.
+</div>
+<div class="col2">
+</div>

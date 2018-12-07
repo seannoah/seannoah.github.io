@@ -4,8 +4,7 @@ output:
     theme: yeti
 ---
 <br>
-<center>**Sean Noah**
+<center>##**Sean Noah**
 <center>![](./Images/seanmain.jpg)
 <br>
-<center>I am a Psychology PhD student in Ron Mangun's lab at UC Davis. 
-<center>Our lab studies the neural mechanisms of attention.
+<center>###I am a Psychology PhD student in Ron Mangun's lab at UC Davis. 
