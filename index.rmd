@@ -2,9 +2,13 @@
 output: 
   html_document:
     theme: yeti
+    includes:
+      in_header: "favicon.html" 
 ---
 <br>
 <center>##**Sean Noah**
+<br>
 <center>![](./Images/seanmain.jpg)
+<br>
 <br>
 <center>###I am a Psychology PhD student in Ron Mangun's lab at UC Davis. 

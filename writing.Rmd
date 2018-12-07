@@ -2,6 +2,8 @@
 output: 
   html_document:
     theme: yeti
+    includes:
+      in_header: "favicon.html" 
 ---
 <br>
 <center>I write and edit blog posts for Knowing Neurons, a creative neuroscience education website run by volunteer PhD students and post-docs.

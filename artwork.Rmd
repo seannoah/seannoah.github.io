@@ -2,25 +2,27 @@
 output: 
   html_document:
     theme: yeti
+    includes:
+      in_header: "favicon.html" 
 ---
 <br>
 <center>### Here are some selected illustrations I've made:
-<br>
+<br><br>
 <center>![](./Images/Artboard 1@4x.png)
-<br>
+<br><br>
 <center>![](./Images/BFRB.png)
-<br>
+<br><br>
 <center>![](./Images/Brainfacts_birdsong.png)
-<br>
+<br><br>
 <center>![](./Images/BrainFood.png)
-<br>
+<br><br>
 <center>![](./Images/Fats feature.png)
-<br>
+<br><br>
 <center>![](./Images/TBI_treatment_feature.png)
-<br>
+<br><br>
 <center>![](./Images/pccn_def_border.png)
-<br>
+<br><br>
 <center>![](./Images/pccn5.png)
-<br>
+<br><br>
 <center>![](./Images/pccn6.png)
-<br>
+<br><br>
