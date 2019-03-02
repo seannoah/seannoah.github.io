@@ -6,4 +6,18 @@ output:
       in_header: "favicon.html" 
 ---
 <br>
-<center>I write and edit blog posts for Knowing Neurons, a creative neuroscience education website run by volunteer PhD students and post-docs.
+I write and edit blog posts for Knowing Neurons, a creative neuroscience education website run by volunteer PhD students and post-docs.
+<br>
+![](./Images/WritingBanners/attention.png)
+[Neuro Primer: Attention](https://knowingneurons.com/2018/05/31/attention-primer/)
+<br>
+![](./Images/WritingBanners/machine-yearning.png)
+[Machine Yearning: The Rise of Thoughtful Machines](https://knowingneurons.com/2018/04/11/artificial-neural-network/)
+<br>
+![](./Images/WritingBanners/FFI_feature.png)
+[The Inescapable Nightmare of Fatal Familial Insomnia](https://knowingneurons.com/2017/10/31/fatal-familial-insomnia/)
+<br>
+![](./Images/WritingBanners/Neuromorphic_illustration_feature copy.png)
+[Neuromorphic Engineering: Biomimicry from the Brain](https://knowingneurons.com/2017/08/16/neuromorphic-engineering-biomimicry-brain/)
+<br>
+

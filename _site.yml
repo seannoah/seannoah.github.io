@@ -8,8 +8,6 @@ navbar:
         href: science.html
       - text: "Writing"
         href: writing.html
-      - text: "Artwork"
-        href: artwork.html
       - text: "CV"
         href: cv.html
     right:
