@@ -15,7 +15,7 @@ My projects include:
 <br>
 <br>
 <bold>
-[The neural mechanisms of object-based attention.](http://www.seannoah.github.io/objectattn.html)
+[The neural mechanisms of object-based attention.](objectattn.html)
 <br>
 <br>
 Distractability and the neural mechanisms of distractor suppression.
