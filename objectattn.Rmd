@@ -34,15 +34,24 @@ A quick aside on terminology: what I refer to as “object-based attention” is
 This is a subtle form of attention, less immediately relatable than something like covert spatial attention. So I’ll provide an ecological example from my own life. 
 <br>
 <br>
-Over the last few weeks of heavy rains, some little critter has taken up residence in my attic.  Every night I’ve been hearing it rustling around above my head, although thankfully separated from me by a thick layer of asbestos, until now, when I hear it crash down into my furnace closet. 
+Over the last few weeks of heavy rains, some little critter has taken up residence in my attic.  Every night I’ve been hearing it rustling around above my head, although thankfully separated from me by a thick layer of asbestos, until now, when I hear it crash its way into my furnace closet. 
 <br>
 <br>
 I know it’s some kind of small animal, but I want to know exactly what kind. Once I fling open the closet door, I need to be able to identify it as quickly and accurately as possible, so that I can execute the appropriate response. 
 <br>
 <br>
+<center>![](./Images/ObjectAttn/sq.gif)</center>
+<br>
+<br>
 It turns out it’s a squirrel, so I slam the door closed before it leaps out into my house, and not with a fraction of second to spare.
 <br>
 <br>
-This is the form of attention that we’re interested in capturing with an experimental paradigm. So we designed this simple task: 
+This is the form of attention that we’re interested in capturing with an experimental paradigm. So we designed this simple task for participants to do while we record their EEG: 
 <br>
 <br>
+<center>![](./Images/ObjectAttn/paradigm.png)</center>
+<center><i>Diagram of object-based attention paradigm</i></center>
+<br>
+<br>
+We gave all participants a controller with two buttons, and told them: Press button 1 if target image is male face, nature scene, or powered tool; press button 2 if target image is female face, urban scene, or hand tool; do it as fast and accurately as you can. The cue validity was 80%, meaning that 20% of the time, the cue shape would mislead particiapnts and a target image from an uncued object category would appear. All stimuli presented at center fixation. We recorded EEG data from 20 undergraduate participants performing this experiment, with about 400 trials for each participant.
+
