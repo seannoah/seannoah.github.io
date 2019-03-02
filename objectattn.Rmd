@@ -46,12 +46,14 @@ I know it’s some kind of small animal, but I want to know exactly what kind. O
 It turns out it’s a squirrel, so I slam the door closed before it leaps out into my house, and not with a fraction of second to spare.
 <br>
 <br>
-This is the form of attention that we’re interested in capturing with an experimental paradigm. So we designed this simple task for participants to do while we record their EEG: 
+This squirrel-based example illustrates the form of attention that we’re interested in capturing with an experimental paradigm. So we designed this simple task for participants to do while we record their EEG: 
 <br>
 <br>
 <center>![](./Images/ObjectAttn/paradigm.png)</center>
 <center><i>Diagram of object-based attention paradigm</i></center>
 <br>
 <br>
-We gave all participants a controller with two buttons, and told them: Press button 1 if target image is male face, nature scene, or powered tool; press button 2 if target image is female face, urban scene, or hand tool; do it as fast and accurately as you can. The cue validity was 80%, meaning that 20% of the time, the cue shape would mislead particiapnts and a target image from an uncued object category would appear. All stimuli presented at center fixation. We recorded EEG data from 20 undergraduate participants performing this experiment, with about 400 trials for each participant.
+We gave all participants a controller with two buttons, and told them: Press button 1 if target image is male face, natural place, or powered tool; press button 2 if target image is female face, urban place, or hand tool; do it as fast and accurately as you can. Crucially, participants were trained on the relationship between <b>cue</b> shape and <b>target</b> object category. A triangle indicated the upcoming appearance of a face. A square indicated the upcoming appearance of a place. A circle indicated the upcoming appearance of a tool. The cue validity was 80%, meaning that 20% of the time, the cue shape would mislead particiapnts and a target image from an uncued object category would appear. This cue validity-based design allowed us to contrast performance from trials where participants were anticipating the target object category against trials where participants were anticipating a <i>different</i> object category than the one presented. All stimuli were presented at center fixation, so eye movements and spatial attention would be kept minimal and consistent across all participants and conditions. We recorded EEG data from 20 undergraduate participants performing this experiment, with about 400 trials for each participant.
+
+We hoped that on any given validly-cued trial, after seeing the cue, participants would engage object-based attention for the cued category of object, which would enable them to perform the required identification (male vs. female, natural vs. urban, powered vs. non-powered) faster and more accurately than on invalidly-cued trials. It's typical in attention research to check for an attention effect by looking at behavioral data such as reaction time (RT) or accuracy. When we looked at RT across all our oject categories, we saw statistically significant differences between valid trials and invalid trials, confirming our expectation that participants were utilizing object-based attention.
 
