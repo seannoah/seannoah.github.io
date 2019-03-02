@@ -7,7 +7,3 @@ output:
 ---
 <br>
 <center>![](./Images/seanspiders.jpg)
-<br>
-<center>I am a Psychology PhD student in Ron Mangun's lab at UC Davis. 
-<center>Our lab studies the neural mechanisms of attention.
-<center>I also enjoy writing about cognitive neuroscience and psychology.

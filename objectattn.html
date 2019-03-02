@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+
+
+
+<title></title>
+
+<script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/yeti.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/default.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<link rel="shortcut icon" href="./Images/favicon.png">
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+<style type="text/css">
+h1 {
+  font-size: 34px;
+}
+h1.title {
+  font-size: 38px;
+}
+h2 {
+  font-size: 30px;
+}
+h3 {
+  font-size: 24px;
+}
+h4 {
+  font-size: 18px;
+}
+h5 {
+  font-size: 16px;
+}
+h6 {
+  font-size: 12px;
+}
+.table th:not([align]) {
+  text-align: left;
+}
+</style>
+
+
+</head>
+
+<body>
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+  height: auto;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+</style>
+
+
+<style type="text/css">
+/* padding for bootstrap navbar */
+body {
+  padding-top: 45px;
+  padding-bottom: 40px;
+}
+/* offset scroll position for anchor links (for fixed navbar)  */
+.section h1 {
+  padding-top: 50px;
+  margin-top: -50px;
+}
+
+.section h2 {
+  padding-top: 50px;
+  margin-top: -50px;
+}
+.section h3 {
+  padding-top: 50px;
+  margin-top: -50px;
+}
+.section h4 {
+  padding-top: 50px;
+  margin-top: -50px;
+}
+.section h5 {
+  padding-top: 50px;
+  margin-top: -50px;
+}
+.section h6 {
+  padding-top: 50px;
+  margin-top: -50px;
+}
+</style>
+
+<script>
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.parent().addClass('active');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+});
+</script>
+
+
+<div class="container-fluid main-container">
+
+<!-- tabsets -->
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+</script>
+
+<!-- code folding -->
+
+
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">Sean Noah</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="about.html">About Me</a>
+</li>
+<li>
+  <a href="science.html">Science</a>
+</li>
+<li>
+  <a href="writing.html">Writing</a>
+</li>
+<li>
+  <a href="cv.html">CV</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+  <a href="contact.html">Contact</a>
+</li>
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div class="fluid-row" id="header">
+
+
+
+
+</div>
+
+
+<h2>
+<br> The neural mechanisms of object-based attention
+</h2>
+<br> <br> In the Mangun lab, we’re studying the neural mechanisms of attention, which means in part that we’re trying to answer the question: <b>How does the brain <i>select</i> sensory information for privileged access to cognition and perception?</b> To address that question, we’re working on a model of attention called the specificity of control – or SpOC – model. <br> <br> <img src="Images/ObjectAttn/spocdiagram.png" /> <br>
+<center>
+<i>The SpOC (pronounced “spoke”) model of attention compared with alterantives. Mangun, unpublished</i>
+</center>
+<p><br> <br> According to this model, the dorsal attention network (DAN), which is a group of areas in frontal and parietal cortices that have previously been associated with voluntary selective attention, is made up of many smaller-scale networks that each are functionally connected to a specific sensory area. These specific connections could serve as channels through which executive control areas exert their influence, and selectively enhance or suppress sensory neural activity. In this way, the DAN would act as an interface between sensory areas and upstream executive signals. <br> <br> Recently I’ve been working on a possible extension of the SpOC model: Not only do the assembly-level networks in the DAN each connect to specific sensory areas, but they also operate on those sensory areas by the same mechanism. We think that mechanism involves modulation of alpha band, or 8-12 Hz, oscillatory neural activity. Much previous work on spatial attention and some work on feature-based attention has shown that the power of alpha band oscillations decreases in brain areas responsive to the attended region of space, or low-level visual feature. This body of findings, together with the SpOC model, leads us to the hypothesis that that if DAN subnetworks operate on sensory areas by the same mechanism, then we should see alpha modulation during attention to other classes of visual targets that have their own dedicated processing areas. <br> <br> Two such dedicated processing areas that have not previously been studied in the context of functional inhibition by alpha are the fusiform face area (FFA) and the parahippocampal place area (PPA). Both areas have been extensively characterized by Nancy Kanwisher and her colleagues. The FFA is a bilateral, but right-emphasized area of the inferior temporal lobe that is highly responsive to face images. The PPA is a bilateral, medial temporal area that is highly responsive to images of places or scenes, although there is still much to figure out about exactly what kind of place information the PPA is responsive to. Anyway, the point is that these are notable examples of high level visual areas that, under the SpOC model, would be targets of influence from specific assembly-level networks within the DAN. I’m going to classify these areas as object representation areas, because they respond to more complex and more holisitic visual information than what we typically think of as visual features such as motion, color, and orientation. <br> <br> A quick aside on terminology: what I refer to as “object-based attention” is quite distinct from the term as it appears in work similar to Egly’s studies of same-object advantage. In the Egly terminology, visual continuity properties seem to facilitate the automatic spreading of attention from cued to same-object locations, but not to different-object locations just as far from the cue. In my use of the term “object-based attention,” I’m referring to a voluntary, selective enhancement of a cued object category, such as cars, cats, faces, or houses. This form of selection can also be thought of as attention to high-level visual features. <br> <br> This is a subtle form of attention, less immediately relatable than something like covert spatial attention. So I’ll provide an ecological example from my own life. <br> <br> Over the last few weeks of heavy rains, some little critter has taken up residence in my attic. Every night I’ve been hearing it rustling around above my head, although thankfully separated from me by a thick layer of asbestos, until now, when I hear it crash down into my furnace closet. <br> <br> I know it’s some kind of small animal, but I want to know exactly what kind. Once I fling open the closet door, I need to be able to identify it as quickly and accurately as possible, so that I can execute the appropriate response. <br> <br> It turns out it’s a squirrel, so I slam the door closed before it leaps out into my house, and not with a fraction of second to spare. <br> <br> This is the form of attention that we’re interested in capturing with an experimental paradigm. So we designed this simple task: <br> <br></p>
+
+
+
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

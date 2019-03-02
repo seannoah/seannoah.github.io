@@ -6,4 +6,4 @@ output:
       in_header: "favicon.html" 
 ---
 <br>
-<center> Email me: seannoah at gmail
+<center> Email me: slnoah at ucdavis dot edu
