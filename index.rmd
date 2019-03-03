@@ -8,4 +8,4 @@ output:
 <br>
 <center>![](./Images/seanmain.jpg)
 <br>
-<center><h3>I am a Psychology PhD student in Ron Mangun's lab at UC Davis. </h3></center>
+<center><h3>I am a Psychology PhD student in [Ron Mangun's lab](https://mangunlab.faculty.ucdavis.edu/) at UC Davis. </h3></center>
