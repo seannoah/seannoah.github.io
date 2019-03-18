@@ -7,3 +7,9 @@ output:
 ---
 <br>
 <center>![](./Images/seanspiders.jpg)
+<br><br><h3>
+I'm interested in how the brain controls the focus of attention, why attention operates the way it does, and what the implications are for living in chronically distracting environments.
+<br><br>
+In my research I use EEG and fMRI to investigate the neural processes involved in attention control.
+<br><br>
+I'm on [Research Gate](https://www.researchgate.net/profile/Sean_Noah), [Twitter](https://twitter.com/seannoah), and [LinkedIn](https://www.linkedin.com/in/seannoah/).
