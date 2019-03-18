@@ -11,7 +11,7 @@ I study the mechanisms in the brain that control the focus of attention.
 <br>
 <br>
 <br>
-<b>My projects include:</b>
+<b>My current projects include:</b>
 <br>
 <br>
 <bold>
@@ -22,3 +22,4 @@ Distractability and the neural mechanisms of distractor suppression.
 <br>
 <br>
 The relationship between attention and conscious perception.
+
