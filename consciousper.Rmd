@@ -1,0 +1,15 @@
+---
+output: 
+  html_document:
+    theme: yeti
+    includes:
+      in_header: "favicon.html" 
+---
+<h2>
+<br>
+The relationship of attention to conscious perception
+</h2>
+<br>
+<br>
+<center>![](./Images/att_consc.gif)
+<br><br>
