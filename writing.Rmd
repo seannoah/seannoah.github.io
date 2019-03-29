@@ -3,7 +3,7 @@ output:
   html_document:
     theme: yeti
     includes:
-      in_header: "favicon.html" 
+      in_header: GA.html
 ---
 <br>
 <h3>Here are blog posts I've written for Knowing Neurons, a neuroscience education website run by volunteer PhD students and post-docs.

@@ -3,7 +3,7 @@ output:
   html_document:
     theme: yeti
     includes:
-      in_header: "favicon.html" 
+      in_header: GA.html
 ---
 <br>
 <center>![](./Images/seanspiders.jpg)
