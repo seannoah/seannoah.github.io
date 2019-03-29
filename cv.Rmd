@@ -8,4 +8,4 @@ output:
 <center>
 <br>
 
-![Sean Noah CV](/Images/SeanNoahCV2019.pdf)
+![](/Images/SeanNoahCV2019.pdf){width=100%}
