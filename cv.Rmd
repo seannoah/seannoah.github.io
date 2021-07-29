@@ -2,7 +2,8 @@
 output: 
   html_document:
     theme: flatly
-
+    includes:
+      in_header: GA.html
 ---
 <center>
 <br>
