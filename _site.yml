@@ -2,11 +2,6 @@ output_dir: "."
 navbar:
     title: "Sean Noah"
     left:
-      - text: "About Me"
-        href: about.html
       - text: "CV"
         href: cv.html
-    right:
-      - text: "Contact"
-        href: contact.html
         
