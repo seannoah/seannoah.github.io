@@ -6,8 +6,8 @@ output:
 ---
 <center>
 <br>
-<object data="/Images/SeanNoahCV2020.pdf" type="application/pdf" width="800px" height="800px">
-    <embed src="/Images/SeanNoahCV2020.pdf">
+<object data="/Images/SeanNoahCV2021.pdf" type="application/pdf" width="800px" height="800px">
+    <embed src="/Images/SeanNoahCV2021.pdf">
         <p>This browser does not support PDFs. Please download the PDF to view it: <a href="/Images/SeanNoahCV2020.pdf">Download PDF</a>.</p>
     </embed>
 </object>
