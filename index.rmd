@@ -8,4 +8,4 @@ output:
 <br>
 <center>![](./Images/seanmain.jpg)
 <br>
-<center><h3>I am a postdoctoral researcher in [Michael Silver's lab](https://argentum.ucsbso.berkeley.edu) at UC Berkeley. </h3></center>
+<center><h3>I am a postdoctoral researcher in [Michael Silver's lab](https://argentum.ucbso.berkeley.edu) at UC Berkeley. </h3></center>
