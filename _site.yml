@@ -4,10 +4,6 @@ navbar:
     left:
       - text: "About Me"
         href: about.html
-      - text: "Science"
-        href: science.html
-      - text: "Writing"
-        href: writing.html
       - text: "CV"
         href: cv.html
     right:
