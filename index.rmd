@@ -2,8 +2,7 @@
 output: 
   html_document:
     theme: yeti
-    includes:
-      in_header: GA.html
+
    
 ---
 <br>
