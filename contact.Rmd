@@ -1,8 +1,0 @@
----
-output: 
-  html_document:
-    theme: flatly
-
----
-<br>
-<center> Email me: slnoah at ucdavis dot edu

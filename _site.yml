@@ -1,7 +1,0 @@
-output_dir: "."
-navbar:
-    title: "Sean Noah"
-    left:
-      - text: "CV"
-        href: cv.html
-        
