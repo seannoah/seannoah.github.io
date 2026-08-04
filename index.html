@@ -1,177 +1,401 @@
-<!DOCTYPE HTML>
-<!--
-  Sean Noah — streamlined personal website (GitHub Pages)
-  Based on original HTML5UP template structure.
--->
-<html>
-  <head>
-    <title>Sean Noah</title>
-    <meta name="description" content="Sean Noah — Cognitive neuroscientist studying attention and perceptual consciousness. Assistant Professor (Cal Poly SLO)."/>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-    <link rel="stylesheet" href="assets/css/main.css" />
-    <noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
-  </head>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sean Noah</title>
+<meta name="description" content="Sean Noah — cognitive neuroscientist studying attention and perceptual consciousness. Assistant Professor, Cal Poly San Luis Obispo.">
+<meta name="author" content="Sean Noah">
+<link rel="canonical" href="https://seannoah.github.io/">
 
-  <body class="is-preload">
-    <div id="wrapper">
+<meta property="og:type" content="profile">
+<meta property="og:title" content="Sean Noah">
+<meta property="og:description" content="Cognitive neuroscientist studying attention and perceptual consciousness.">
+<meta property="og:url" content="https://seannoah.github.io/">
+<meta property="og:image" content="https://seannoah.github.io/Images/Photo_sq_web.jpg">
 
-      <!-- Header -->
-      <header id="header" class="main">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90' font-family='Georgia,serif'>N</text></svg>">
+
+<style>
+  :root {
+    --bg:        #fbfaf7;
+    --surface:   #f3f1eb;
+    --text:      #1f1d1a;
+    --muted:     #6b6660;
+    --rule:      #ddd8ce;
+    --accent:    #7a4b2a;
+    --measure:   40rem;
+    --serif:     "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, "Times New Roman", serif;
+    --sans:      system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:      #14130f;
+      --surface: #1d1b17;
+      --text:    #e8e4dc;
+      --muted:   #9c968c;
+      --rule:    #322f29;
+      --accent:  #d0a077;
+    }
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+  }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--serif);
+    font-size: 1.0625rem;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  .wrap {
+    max-width: var(--measure);
+    margin: 0 auto;
+    padding: 0 1.5rem;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+    border-bottom: 1px solid var(--rule);
+    transition: border-color .18s ease, color .18s ease;
+  }
+  a:hover, a:focus-visible {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+  a:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  /* ---------- Header ---------- */
+
+  header.site {
+    padding: 5rem 0 0;
+  }
+
+  .identity {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .identity img {
+    width: 76px;
+    height: 76px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex: none;
+    filter: saturate(.9);
+  }
+
+  h1 {
+    font-size: 1.75rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+    margin: 0 0 .3rem;
+  }
+
+  .role {
+    margin: 0;
+    font-family: var(--sans);
+    font-size: .85rem;
+    line-height: 1.5;
+    letter-spacing: .01em;
+    color: var(--muted);
+  }
+
+  /* ---------- Nav ---------- */
+
+  nav.site { margin-top: 2.5rem; }
+
+  nav.site > .wrap {
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  nav.site ul {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    margin: 0;
+    padding: 0;
+    font-family: var(--sans);
+    font-size: .8rem;
+    letter-spacing: .04em;
+    text-transform: lowercase;
+  }
+
+  nav.site a {
+    border-bottom: none;
+    color: var(--muted);
+  }
+  nav.site a:hover, nav.site a:focus-visible { color: var(--accent); }
+
+  /* ---------- Sections ---------- */
+
+  main { padding-bottom: 1rem; }
+
+  section {
+    padding: 3.25rem 0 0;
+    scroll-margin-top: 2rem;
+  }
+
+  h2 {
+    font-family: var(--sans);
+    font-size: .75rem;
+    font-weight: 600;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 1.1rem;
+  }
+
+  p { margin: 0 0 1.1rem; }
+  p:last-child { margin-bottom: 0; }
+
+  .lede { font-size: 1.125rem; }
+
+  /* ---------- Research list ---------- */
+
+  .threads {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .threads li {
+    padding: 1rem 0;
+    border-top: 1px solid var(--rule);
+  }
+  .threads li:last-child { padding-bottom: 0; }
+
+  .threads h3 {
+    margin: 0 0 .2rem;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  .threads p {
+    margin: 0;
+    color: var(--muted);
+    font-size: .95rem;
+  }
+
+  /* ---------- Publications ---------- */
+
+  ol.pubs {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    counter-reset: pub;
+  }
+
+  ol.pubs li {
+    position: relative;
+    padding: 0 0 1.35rem 2.25rem;
+    font-size: .97rem;
+  }
+  ol.pubs li:last-child { padding-bottom: 0; }
+
+  ol.pubs li::before {
+    counter-increment: pub;
+    content: counter(pub);
+    position: absolute;
+    left: 0;
+    top: .15rem;
+    font-family: var(--sans);
+    font-size: .7rem;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pubs .title { display: block; }
+  .pubs .meta {
+    display: block;
+    color: var(--muted);
+    font-size: .875rem;
+    font-style: italic;
+  }
+
+  .note {
+    margin-top: 1.75rem;
+    font-size: .9rem;
+    color: var(--muted);
+  }
+
+  /* ---------- Links row ---------- */
+
+  .links {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem 1.25rem;
+    margin: 0;
+    padding: 0;
+    font-family: var(--sans);
+    font-size: .875rem;
+  }
+
+  /* ---------- Footer ---------- */
+
+  footer.site {
+    margin-top: 4rem;
+    padding-bottom: 4rem;
+    font-family: var(--sans);
+    font-size: .78rem;
+    color: var(--muted);
+  }
+
+  footer.site > .wrap {
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--rule);
+  }
+
+  /* ---------- Small screens ---------- */
+
+  @media (max-width: 34rem) {
+    header.site { padding-top: 3rem; }
+    .identity { gap: 1.1rem; }
+    .identity img { width: 60px; height: 60px; }
+    h1 { font-size: 1.5rem; }
+    nav.site ul { gap: 1rem 1.15rem; }
+    section { padding-top: 2.75rem; }
+  }
+
+  @media print {
+    body { background: #fff; color: #000; font-size: 11pt; }
+    nav.site { display: none; }
+    a { border-bottom: none; }
+  }
+</style>
+</head>
+
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <div class="identity">
+      <img src="Images/Photo_sq_web.jpg" alt="Sean Noah">
+      <div>
         <h1>Sean Noah</h1>
-        <p>Assistant Professor of Cognitive Neuroscience · Cal Poly San Luis Obispo</p>
-      </header>
-
-      <!-- Nav -->
-      <nav id="nav">
-        <ul>
-          <li><a href="#about" class="active">About</a></li>
-          <li><a href="#research">Research</a></li>
-          <li><a href="#pubs">Selected publications</a></li>
-          <li><a href="#teaching">Teaching</a></li>
-          <li><a href="#cv">CV</a></li>
-        </ul>
-      </nav>
-
-      <!-- Main -->
-      <div id="main">
-
-        <!-- About -->
-        <section id="about" class="main">
-          <div class="spotlight">
-            <div class="content">
-              <header class="major">
-                <h2>About</h2>
-              </header>
-
-              <p>
-                I’m a cognitive neuroscientist studying how the brain structures perception and supports goal-directed behavior.
-                My work focuses on <b>perceptual consciousness</b>, including using
-                causal manipulations (e.g., psychoactive compounds) to probe mechanisms.
-              </p>
-
-              <ul class="actions">
-                <!-- Put your CV PDF in your GitHub Pages repo at: assets/files/Noah_CV.pdf -->
-                <li><a href="assets/files/Noah_CV.pdf" class="button icon solid fa-download">Download CV (PDF)</a></li>
-                <li><a href="https://scholar.google.com/citations?user=6rdsmegAAAAJ&hl=en&sortby=pubdate" class="button">Google Scholar</a></li>
-              </ul>
-            </div>
-
-            <span class="image"><img src="Images/Photo_sq_web.jpg" alt="Portrait of Sean Noah" /></span>
-          </div>
-        </section>
-
-        <!-- Research -->
-        <section id="research" class="main">
-          <header class="major">
-            <h2>Research</h2>
-          </header>
-
-          <p>
-            My research asks how perceptual experience emerges from dynamic interactions among sensory cortex, top-down control systems,
-            and internal models of the world. I’m especially interested in active processes that shape conscious perception, such as attention,
-            inference, and model updating.
-          </p>
-
-          <ul>
-            <li><b>Selective attention and neural dynamics:</b> EEG decoding and computational analyses of how attended and ignored object representations evolve.</li>
-            <li><b>Perceptual multistability:</b> mechanisms of perceptual selection and maintenance.</li>
-            <li><b>Psychedelic perception:</b> combining neuroimaging/behavior with large-scale text analysis (NLP/LLMs) of subjective reports to map perceptual effects.</li>
-          </ul>
-        </section>
-
-        <!-- Selected publications -->
-        <section id="pubs" class="main">
-          <header class="major">
-            <h2>Selected publications</h2>
-          </header>
-
-          <ul>
-            <li>
-              Noah, S., Shen, M., Erowid, E., Erowid, F., &amp; Silver, M. (2025).
-              <a href="https://doi.org/10.3389/fpsyg.2024.1397064">A novel method for quantitative analysis of subjective experience reports: application to psychedelic visual experiences.</a>
-              <i>Frontiers in Psychology</i>.
-            </li>
-            <li>
-              Noah, S., Meyyappan, S., Ding, M., &amp; Mangun, G. R. (2026).
-              <a href="https://doi.org/10.1093/cercor/bhag018">Rhythmic sampling and competition of target and distractor representations in visual sensory memory.</a>
-              <i>Cerebral Cortex</i>.
-            </li>
-            <li>
-              Bressler, D., Noah, S., Lu, A., &amp; Silver, M. (2026).
-              <a href="https://doi.org/10.1167/jov.26.3.12">Double dissociation of the effects of volitional control on perceptual selection and maintenance in multistable visual perception.</a>
-              <i>Journal of Vision</i>.
-            </li>
-            <li>
-              Noah, S., &amp; Mangun, G. R. (2020).
-              <a href="https://doi.org/10.1111/nyas.14030">Recent evidence that attention is necessary, but not sufficient, for conscious perception.</a>
-              <i>Annals of the New York Academy of Sciences</i>.
-            </li>
-          </ul>
-
-          <p style="margin-top: 1em;">
-            For a complete list, see <a href="https://scholar.google.com/citations?user=6rdsmegAAAAJ&hl=en&sortby=pubdate">Google Scholar</a>.
-          </p>
-        </section>
-
-        <!-- Teaching -->
-        <section id="teaching" class="main">
-          <header class="major">
-            <h2>Teaching</h2>
-          </header>
-
-          <p>
-            I am currently teaching Cognitive Neuroscience.
-          </p>
-        </section>
-
-        <!-- CV -->
-        <section id="cv" class="main">
-          <header class="major">
-            <h2>Curriculum vitae</h2>
-          </header>
-
-          <p>
-            Download my full CV here:
-          </p>
-
-          <ul class="actions">
-            <li><a href="assets/files/Noah_CV.pdf" class="button icon solid fa-download">Download CV (PDF)</a></li>
-          </ul>
-        </section>
-
+        <p class="role">Assistant Professor of Cognitive Neuroscience<br>California Polytechnic State University, San Luis Obispo</p>
       </div>
-
-      <!-- Footer -->
-      <footer id="footer">
-        <section>
-          <h2>Contact</h2>
-          <dl class="alt">
-            <dt>Email</dt>
-            <dd><a href="mailto:seannoah@berkeley.edu">seannoah@berkeley.edu</a></dd>
-          </dl>
-
-          <ul class="icons">
-            <li><a href="https://www.twitter.com/seannoah" class="icon brands fa-twitter alt"><span class="label">Twitter</span></a></li>
-            <li><a href="https://www.linkedin.com/in/seannoah/" class="icon brands fa-linkedin alt"><span class="label">LinkedIn</span></a></li>
-            <li><a href="https://www.researchgate.net/profile/Sean-Noah" class="icon brands fa-researchgate alt"><span class="label">ResearchGate</span></a></li>
-            <li><a href="https://scholar.google.com/citations?user=6rdsmegAAAAJ&hl=en&sortby=pubdate" class="icon brands fa-google alt"><span class="label">Google Scholar</span></a></li>
-          </ul>
-        </section>
-
-        <p class="copyright">&copy; Sean Noah. Design: <a href="https://html5up.net">HTML5 UP</a>.</p>
-      </footer>
-
     </div>
+  </div>
 
-    <!-- Scripts -->
-    <script src="assets/js/jquery.min.js"></script>
-    <script src="assets/js/jquery.scrollex.min.js"></script>
-    <script src="assets/js/jquery.scrolly.min.js"></script>
-    <script src="assets/js/browser.min.js"></script>
-    <script src="assets/js/breakpoints.min.js"></script>
-    <script src="assets/js/util.js"></script>
-    <script src="assets/js/main.js"></script>
+  <nav class="site" aria-label="Sections">
+    <div class="wrap">
+      <ul>
+        <li><a href="#about">about</a></li>
+        <li><a href="#research">research</a></li>
+        <li><a href="#publications">publications</a></li>
+        <li><a href="#teaching">teaching</a></li>
+        <li><a href="#contact">contact</a></li>
+      </ul>
+    </div>
+  </nav>
+</header>
 
-  </body>
+<main>
+
+  <section id="about" class="wrap">
+    <h2>About</h2>
+    <p class="lede">
+      I study how the brain builds perceptual experience. I'm particularly interested in
+      active processes such as attention and prediction, and the role they play in
+      generating conscious experience.
+    </p>
+    <p>
+      My work combines EEG, behavioral experiments, and computational analysis, along with
+      causal manipulations such as psychoactive compounds, to ask what perception is made of
+      and how it can be changed.
+    </p>
+  </section>
+
+  <section id="research" class="wrap">
+    <h2>Research</h2>
+    <ul class="threads">
+      <li>
+        <h3>Attention and neural dynamics</h3>
+        <p>EEG decoding of how attended and ignored object representations compete and evolve over time.</p>
+      </li>
+      <li>
+        <h3>Perceptual multistability</h3>
+        <p>How the visual system selects one interpretation of an ambiguous image, and what holds it in place.</p>
+      </li>
+      <li>
+        <h3>Psychedelic perception</h3>
+        <p>Mapping altered visual experience by combining neuroimaging and behavior with large-scale language analysis of first-person reports.</p>
+      </li>
+    </ul>
+  </section>
+
+  <section id="publications" class="wrap">
+    <h2>Selected publications</h2>
+    <ol class="pubs">
+      <li>
+        <span class="title">Noah, S., Meyyappan, S., Ding, M., &amp; Mangun, G. R. <a href="https://doi.org/10.1093/cercor/bhag018">Rhythmic sampling and competition of target and distractor representations in visual sensory memory.</a></span>
+        <span class="meta">Cerebral Cortex, 2026</span>
+      </li>
+      <li>
+        <span class="title">Bressler, D., Noah, S., Lu, A., &amp; Silver, M. <a href="https://doi.org/10.1167/jov.26.3.12">Double dissociation of the effects of volitional control on perceptual selection and maintenance in multistable visual perception.</a></span>
+        <span class="meta">Journal of Vision, 2026</span>
+      </li>
+      <li>
+        <span class="title">Noah, S., Shen, M., Erowid, E., Erowid, F., &amp; Silver, M. <a href="https://doi.org/10.3389/fpsyg.2024.1397064">A novel method for quantitative analysis of subjective experience reports: application to psychedelic visual experiences.</a></span>
+        <span class="meta">Frontiers in Psychology, 2024</span>
+      </li>
+      <li>
+        <span class="title">Noah, S., &amp; Mangun, G. R. <a href="https://doi.org/10.1111/nyas.14030">Recent evidence that attention is necessary, but not sufficient, for conscious perception.</a></span>
+        <span class="meta">Annals of the New York Academy of Sciences, 2020</span>
+      </li>
+    </ol>
+    <p class="note">Complete list on <a href="https://scholar.google.com/citations?user=6rdsmegAAAAJ&amp;hl=en&amp;sortby=pubdate">Google Scholar</a>.</p>
+  </section>
+
+  <section id="teaching" class="wrap">
+    <h2>Teaching</h2>
+    <p>Cognitive Neuroscience, Cal Poly San Luis Obispo.</p>
+  </section>
+
+  <section id="contact" class="wrap">
+    <h2>Contact</h2>
+    <p><a href="mailto:slnoah@calpoly.edu">slnoah@calpoly.edu</a></p>
+    <ul class="links">
+      <li><a href="assets/files/Noah_CV.pdf">CV (PDF)</a></li>
+      <li><a href="https://scholar.google.com/citations?user=6rdsmegAAAAJ&amp;hl=en&amp;sortby=pubdate">Google Scholar</a></li>
+      <li><a href="https://www.researchgate.net/profile/Sean-Noah">ResearchGate</a></li>
+      <li><a href="https://www.linkedin.com/in/seannoah/">LinkedIn</a></li>
+      <li><a href="https://www.twitter.com/seannoah">Twitter</a></li>
+    </ul>
+  </section>
+
+</main>
+
+<footer class="site">
+  <div class="wrap">© <span id="year">2026</span> Sean Noah</div>
+</footer>
+
+<script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+
+</body>
 </html>
