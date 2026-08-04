@@ -157,6 +157,13 @@
   }
   nav.site a:hover, nav.site a:focus-visible { color: var(--accent); }
 
+  nav.site a.is-active {
+    color: var(--text);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 5px;
+  }
+
   /* ---------- Sections ---------- */
 
   main { padding-bottom: 1rem; }
@@ -403,7 +410,56 @@
   <div class="wrap">© <span id="year">2026</span> Sean Noah</div>
 </footer>
 
-<script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+<script>
+document.getElementById('year').textContent = new Date().getFullYear();
+
+(function () {
+  var sections = Array.prototype.slice.call(document.querySelectorAll('main section[id]'));
+  var links = {};
+  Array.prototype.forEach.call(document.querySelectorAll('nav.site a[href^="#"]'), function (a) {
+    links[a.getAttribute('href').slice(1)] = a;
+  });
+  if (!sections.length) return;
+
+  var current = null;
+  var ticking = false;
+
+  function update() {
+    ticking = false;
+    var nav = document.querySelector('nav.site');
+    var cutoff = (nav ? nav.getBoundingClientRect().height : 0) + 24;
+    var vh = window.innerHeight;
+    var maxScroll = document.documentElement.scrollHeight - vh;
+    var progress = maxScroll > 0 ? Math.min(1, Math.max(0, window.pageYOffset / maxScroll)) : 0;
+
+    var band = cutoff + (vh - cutoff) * progress;
+    var id = sections[0].id;
+
+    for (var i = 0; i < sections.length; i++) {
+      if (sections[i].getBoundingClientRect().top <= band) id = sections[i].id;
+    }
+    if (id === current) return;
+
+    if (links[current]) {
+      links[current].classList.remove('is-active');
+      links[current].removeAttribute('aria-current');
+    }
+    if (links[id]) {
+      links[id].classList.add('is-active');
+      links[id].setAttribute('aria-current', 'true');
+    }
+    current = id;
+  }
+
+  function onScroll() {
+    if (!ticking) { ticking = true; requestAnimationFrame(update); }
+  }
+
+  addEventListener('scroll', onScroll, { passive: true });
+  addEventListener('resize', onScroll);
+  update();
+})();
+</script>
 
 </body>
 </html>
