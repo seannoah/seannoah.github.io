@@ -124,10 +124,17 @@
 
   /* ---------- Nav ---------- */
 
-  nav.site { margin-top: 2.5rem; }
+  nav.site {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    margin-top: 2.25rem;
+    background: var(--bg);
+  }
 
   nav.site > .wrap {
-    padding-bottom: 1rem;
+    padding-top: .8rem;
+    padding-bottom: .8rem;
     border-bottom: 1px solid var(--rule);
   }
 
@@ -156,7 +163,7 @@
 
   section {
     padding: 5.5rem 0 0;
-    scroll-margin-top: 2rem;
+    scroll-margin-top: 5rem;
   }
 
   h2 {
@@ -277,7 +284,8 @@
     .identity { gap: 1.1rem; }
     .identity img { width: 60px; height: 60px; }
     h1 { font-size: 1.5rem; }
-    nav.site ul { gap: 1rem 1.15rem; }
+    nav.site { margin-top: 1.75rem; }
+    nav.site ul { gap: .35rem 1.1rem; }
     section { padding-top: 4rem; }
   }
 
@@ -301,19 +309,19 @@
       </div>
     </div>
   </div>
-
-  <nav class="site" aria-label="Sections">
-    <div class="wrap">
-      <ul>
-        <li><a href="#about">about</a></li>
-        <li><a href="#research">research</a></li>
-        <li><a href="#publications">publications</a></li>
-        <li><a href="#teaching">teaching</a></li>
-        <li><a href="#contact">contact</a></li>
-      </ul>
-    </div>
-  </nav>
 </header>
+
+<nav class="site" aria-label="Sections">
+  <div class="wrap">
+    <ul>
+      <li><a href="#about">about</a></li>
+      <li><a href="#research">research</a></li>
+      <li><a href="#publications">publications</a></li>
+      <li><a href="#teaching">teaching</a></li>
+      <li><a href="#contact">contact</a></li>
+    </ul>
+  </div>
+</nav>
 
 <main>
 
