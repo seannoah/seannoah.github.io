@@ -73,6 +73,15 @@
     --measure:   40rem;
     --serif:     "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, "Times New Roman", serif;
     --sans:      system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+
+    /* Portrait tints, shared with the lab site. The script reads --p1..--pN
+       until one is missing, so the palette can grow here without touching JS. */
+    --p1: #f25c3b;
+    --p2: #e8b736;
+    --p3: #0a8e8e;
+    --p4: #6a2c70;
+    --p5: #d23478;
+    --p6: #5d8a4e;
   }
 
   @media (prefers-color-scheme: dark) {
@@ -142,13 +151,29 @@
     gap: 1.5rem;
   }
 
-  .identity img {
+  /* The photo blends against this element's background colour, which the
+     script re-picks from the palette whenever the portrait leaves the
+     viewport. isolation keeps the blend inside this box. */
+  .portrait {
     width: 76px;
     height: 76px;
-    border-radius: 50%;
-    object-fit: cover;
     flex: none;
-    filter: saturate(.9);
+    position: relative;
+    overflow: hidden;
+    border-radius: 50%;
+    isolation: isolate;
+    background: var(--tint, var(--p1));
+  }
+
+  .portrait img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    filter: grayscale(1) contrast(1.4) brightness(1.05);
+    mix-blend-mode: luminosity;
   }
 
   h1 {
@@ -338,7 +363,7 @@
   @media (max-width: 34rem) {
     header.site { padding-top: 3rem; }
     .identity { gap: 1.1rem; }
-    .identity img { width: 60px; height: 60px; }
+    .portrait { width: 60px; height: 60px; }
     h1 { font-size: 1.5rem; }
     nav.site { margin-top: 1.75rem; }
     nav.site ul { gap: .35rem 1.1rem; }
@@ -358,7 +383,7 @@
 <header class="site">
   <div class="wrap">
     <div class="identity">
-      <img src="Images/Photo_sq_web.jpg" alt="Sean Noah">
+      <div class="portrait"><img src="Images/Photo_sq_web.jpg" alt="Sean Noah"></div>
       <div>
         <h1>Sean Noah</h1>
         <p class="role">
@@ -466,6 +491,39 @@
 
 <script>
 document.getElementById('year').textContent = new Date().getFullYear();
+
+(function () {
+  var el = document.querySelector('.portrait');
+  if (!el) return;
+
+  var cs = getComputedStyle(document.documentElement);
+  var palette = [];
+  for (var i = 1; i <= 12; i++) {
+    var v = cs.getPropertyValue('--p' + i).trim();
+    if (!v) break;
+    palette.push(v);
+  }
+  if (!palette.length) return;
+
+  function reshuffle() {
+    var current = el.style.getPropertyValue('--tint').trim();
+    var pool = palette.filter(function (c) { return c !== current; });
+    if (!pool.length) pool = palette;
+    el.style.setProperty('--tint', pool[Math.floor(Math.random() * pool.length)]);
+  }
+
+  reshuffle();
+
+  if (!('IntersectionObserver' in window)) return;
+
+  var primed = false;
+  new IntersectionObserver(function (entries) {
+    for (var j = 0; j < entries.length; j++) {
+      if (!primed) { primed = true; continue; }
+      if (!entries[j].isIntersecting) reshuffle();
+    }
+  }, { threshold: 0 }).observe(el);
+})();
 
 (function () {
   var sections = Array.prototype.slice.call(document.querySelectorAll('main section[id]'));
