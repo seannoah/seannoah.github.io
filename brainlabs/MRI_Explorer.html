@@ -174,6 +174,12 @@
     .chip{min-height:38px; padding:7px 12px;}
     .slider-row input[type=range]{height:32px;}
   }
+  #lb-panel{position:fixed; inset:0; z-index:80; display:flex; align-items:center; justify-content:center; background:rgba(5,8,18,.55);}
+  #lb-panel[hidden]{display:none;}
+  #lb-card{width:min(360px,92vw); max-height:76vh; overflow:auto; background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px 16px;}
+  #lb-card select{width:100%; background:var(--btn); color:var(--ink); border:1px solid var(--btn-line); border-radius:8px; font-family:inherit; font-size:13px; padding:8px 9px; margin:8px 0 10px;}
+  #lb-rows{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:11.5px; line-height:1.9; color:var(--muted);}
+  #lb-card .lb-head{display:flex; justify-content:space-between; align-items:center;}
 </style>
 
 <div id="app">
@@ -217,13 +223,14 @@
         <div class="row2">
           <button class="rail-btn" id="quiz-start">Start quiz</button>
         </div>
+        <button class="rail-btn small" id="quiz-lbs">Leaderboards…</button>
         <div class="row2" id="quiz-tools" style="display:none">
           <button class="rail-btn small" id="quiz-submit" style="font-weight:700">Submit guess</button>
           <button class="rail-btn small" id="quiz-skip">Skip (0 pts)</button>
         </div>
         <button class="rail-btn small" id="quiz-next" style="display:none;font-weight:700">Next trial ▸</button>
         <div id="quiz-end" style="display:none">
-          <div style="display:grid;grid-template-columns:1fr auto;gap:6px;margin:6px 0">
+          <div id="quiz-savebar" style="display:grid;grid-template-columns:1fr auto;gap:6px;margin:6px 0">
             <input id="quiz-name" maxlength="12" placeholder="your name" style="background:var(--btn);border:1px solid var(--btn-line);border-radius:8px;color:var(--ink);font-family:inherit;font-size:12.5px;padding:6px 9px;min-width:0">
             <button class="rail-btn small" id="quiz-save">Save</button>
           </div>
@@ -670,11 +677,12 @@ function qFetch(url,opts){
   const ctl=new AbortController(); const t=setTimeout(()=>ctl.abort(),8000);
   return fetch(url,Object.assign({signal:ctl.signal},opts||{})).then(r=>r.json()).finally(()=>clearTimeout(t));
 }
-function qRows(rows,hn,hs,label){
-  const el=document.getElementById("quiz-board");
+function qRows(rows,hn,hs,label,el){
+  el=el||document.getElementById("quiz-board");
+  rows=(rows||[]).slice().sort((x,y)=> (y.s-x.s) || ((y.ts||0)-(x.ts||0)));
   const head="<div style='letter-spacing:.08em;font-size:10px;color:var(--muted);margin-bottom:2px'>"+label+"</div>";
   if(!rows||!rows.length){ el.innerHTML=head+"<div>No scores yet for this atlas. Be the first!</div>"; return; }
-  el.innerHTML=head+rows.slice(0,10).map((e,i)=>{
+  el.innerHTML=head+rows.slice(0,20).map((e,i)=>{
     const me= hn!==undefined&&e.n===hn&&e.s===hs;
     return "<div style='display:flex;gap:8px;"+(me?"color:var(--accent);font-weight:600;":"")+"'><span style='width:1.2em'>"+(i+1)+".</span><span style='flex:1;overflow:hidden;text-overflow:ellipsis'>"+String(e.n).replace(/[<>&]/g,"")+"</span><span>"+e.s+"</span></div>";
   }).join("");
@@ -703,6 +711,7 @@ function quizEnd(aborted){
   qQ.innerHTML="Final score: <span class='find'>"+quiz.score+" / "+(played*100)+"</span>";
   qSc.textContent=QAN[quiz.cat];
   const end=document.getElementById("quiz-end"); end.style.display="block";
+  document.getElementById("quiz-savebar").style.display="grid";
   try{ document.getElementById("quiz-name").value=localStorage.getItem("brainlab:player")||""; }catch(e){}
   document.getElementById("quiz-save").disabled=false;
   qBoard(qKey());
@@ -768,16 +777,46 @@ document.getElementById("quiz-save").addEventListener("click",()=>{
   const nm=(document.getElementById("quiz-name").value.trim()||"anon").slice(0,12);
   try{ localStorage.setItem("brainlab:player",nm); }catch(e){}
   const k=qKey(), a=qLoad(k);
-  a.push({n:nm,s:quiz.score,d:new Date().toISOString().slice(5,10)});
-  a.sort((x,y)=>y.s-x.s); qStore(k,a.slice(0,10));
+  a.push({n:nm,s:quiz.score,d:new Date().toISOString().slice(5,10),ts:Date.now()});
+  a.sort((x,y)=> y.s-x.s || (y.ts||0)-(x.ts||0)); qStore(k,a.slice(0,20));
   qBoard(k,nm,quiz.score);
-  document.getElementById("quiz-save").disabled=true;
+  document.getElementById("quiz-savebar").style.display="none";
   qFb.textContent="posting score to the class board…"; qFb.className="";
   qFetch(LB_URL,{method:"POST",body:JSON.stringify({board:k,name:nm,score:quiz.score})})
     .then(j=>{ if(j&&j.ok){ qRows(j.top,nm,quiz.score,"CLASS TOP 10"); qFb.textContent="saved to the class leaderboard"; }
       else{ qFb.textContent="offline: saved on this device only"; } })
     .catch(()=>{ qFb.textContent="offline: saved on this device only"; });
 });
+
+/* ---------- leaderboard viewer ---------- */
+const lbPanel=document.createElement("div"); lbPanel.id="lb-panel"; lbPanel.hidden=true;
+lbPanel.innerHTML='<div id="lb-card"><div class="lb-head"><span class="rail-label" style="margin:0">LEADERBOARDS</span>'+
+ '<button class="rail-btn small" id="lb-close" style="min-height:0;padding:4px 10px">\u2715</button></div>'+
+ '<select id="lb-sel" aria-label="Choose a leaderboard"></select><div id="lb-rows">loading\u2026</div></div>';
+document.body.appendChild(lbPanel);
+(function(){
+  const sel=document.getElementById("lb-sel");
+  const cats=[["lb","Lobes"],["dk","Desikan"],["dx","Destrieux"],["fn","Functional components"]];
+  for(const [ck,cn] of cats){
+    const o=document.createElement("option");
+    o.value="mri:board:"+ck; o.textContent=cn;
+    sel.appendChild(o);
+  }
+  function refresh(){
+    const k=sel.value, rowsEl=document.getElementById("lb-rows");
+    rowsEl.textContent="loading class scores\u2026";
+    qFetch(LB_URL+"?board="+encodeURIComponent(k))
+      .then(j=>{ if(j&&j.ok) qRows(j.top,undefined,undefined,"CLASS TOP 20",rowsEl); else throw 0; })
+      .catch(()=>{ qRows(qLoad(k),undefined,undefined,"THIS DEVICE (offline)",rowsEl); });
+  }
+  sel.addEventListener("change",refresh);
+  document.getElementById("quiz-lbs").addEventListener("click",()=>{
+    sel.value="mri:board:"+ui.atlasSel;
+    lbPanel.hidden=false; refresh();
+  });
+  document.getElementById("lb-close").addEventListener("click",()=>{ lbPanel.hidden=true; });
+  lbPanel.addEventListener("click",e=>{ if(e.target===lbPanel) lbPanel.hidden=true; });
+})();
 
 /* ---------- toggles & wiring ---------- */
 function bindChip(id,fn){ const el=document.getElementById(id);
