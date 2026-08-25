@@ -9,6 +9,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <style>
+  html{-webkit-text-size-adjust:100%; text-size-adjust:100%;}
+  body{overflow-x:hidden;}
+  #rail, #rail .card, #rail .rail-sec{min-width:0;}
   :root{
     --bg:#0a101c; --panel:#0e1626; --line:#22314d; --line-soft:#1a2740;
     --ink:#eaf1fc; --muted:#8fa0bc; --faint:#5f7093;
@@ -264,7 +267,7 @@
     <p><b>Conventions:</b> by default the display is <i>neurological</i> (the subject's left is on your left, as if standing behind the patient). The Radiological toggle mirrors left/right (as if facing the patient), the convention used in clinical imaging. Watch the L/R letters.</p>
     <p><b>Four label systems, four zoom levels:</b> <i>Lobes</i> shows the big picture: the four lobes plus cingulate, insula, and grouped deep structures (basal ganglia, ventricular system). <i>Desikan–Killiany</i> names 34 gyral regions per hemisphere. <i>Destrieux</i> divides the cortex into 74 finer regions and, uniquely, labels the <i>sulci</i> as structures in their own right. <i>Functional component</i> names areas the way the networks literature does (FEF, TPJ, dACC, mPFC…), derived by intersecting the Yeo 7-network map with this brain's own parcellation. The quiz draws its targets from whichever system is active: lobes for the first day, Destrieux sulci for the brave.</p>
     <p><b>Filtering:</b> "Filter labels…" opens a panel where you can show any subset of the current atlas: e.g. just the hippocampi, or only the ventricles. The crosshair readout always names what's under it, filtered or not (except during the quiz, when it hides to keep things fair).</p>
-    <p><b>Quiz, GeoGuessr rules:</b> ten structures, 100 points each. Park the crosshair where you think the structure is and press <i>Submit guess</i>. Your score falls off with the straight-line distance from your guess to the <i>nearest edge</i> of the structure. Anywhere inside counts as a direct hit, so grazing a big structure scores well even far from its middle. The structure lights up and the views glide over to its best slices (the longer the ride, the further you were) while a yellow pin stays at your guess. Scroll and inspect as long as you like, then press <i>Next trial</i>. Top-10 leaderboards per label system are stored on this computer.</p>
+    <p><b>Quiz, GeoGuessr rules:</b> ten structures, 100 points each. Park the crosshair where you think the structure is and press <i>Submit guess</i>. Your score falls off with the straight-line distance from your guess to the <i>nearest edge</i> of the structure. Anywhere inside counts as a direct hit, so grazing a big structure scores well even far from its middle. The structure lights up and the views glide over to its best slices (the longer the ride, the further you were) while a yellow pin stays at your guess. Scroll and inspect as long as you like, then press <i>Next trial</i>. Scores post to the shared class leaderboard, kept separately per label system; when offline they stay on your device.</p>
     <p><b>Atlas honesty:</b> the colored labels are FreeSurfer's automated segmentation. They're excellent, but borders are statistical estimates. Real anatomy doesn't come with outlines.</p>
     <table>
       <tr><td>click / drag</td><td>move the crosshair</td></tr>
@@ -662,13 +665,25 @@ const QAN={lb:"Lobes",dk:"Desikan",dx:"Destrieux",fn:"Functional components"};
 function qKey(){ return "mri:board:"+quiz.cat; }
 function qLoad(k){ try{ return JSON.parse(localStorage.getItem(k)||"[]"); }catch(e){ return []; } }
 function qStore(k,a){ try{ localStorage.setItem(k,JSON.stringify(a)); }catch(e){} }
-function qBoard(k,hn,hs){
-  const a=qLoad(k), el=document.getElementById("quiz-board");
-  if(!a.length){ el.textContent="No scores yet for this atlas. Be the first!"; return; }
-  el.innerHTML=a.slice(0,5).map((e,i)=>{
+const LB_URL="https://script.google.com/macros/s/AKfycby1_LvLVdQTv59r4cpXUXJQri3qNVabWu75otfGVjmBsxPIeTgAv2gxgH3x7m2xJWBX/exec";
+function qFetch(url,opts){
+  const ctl=new AbortController(); const t=setTimeout(()=>ctl.abort(),8000);
+  return fetch(url,Object.assign({signal:ctl.signal},opts||{})).then(r=>r.json()).finally(()=>clearTimeout(t));
+}
+function qRows(rows,hn,hs,label){
+  const el=document.getElementById("quiz-board");
+  const head="<div style='letter-spacing:.08em;font-size:10px;color:var(--muted);margin-bottom:2px'>"+label+"</div>";
+  if(!rows||!rows.length){ el.innerHTML=head+"<div>No scores yet for this atlas. Be the first!</div>"; return; }
+  el.innerHTML=head+rows.slice(0,10).map((e,i)=>{
     const me= hn!==undefined&&e.n===hn&&e.s===hs;
     return "<div style='display:flex;gap:8px;"+(me?"color:var(--accent);font-weight:600;":"")+"'><span style='width:1.2em'>"+(i+1)+".</span><span style='flex:1;overflow:hidden;text-overflow:ellipsis'>"+String(e.n).replace(/[<>&]/g,"")+"</span><span>"+e.s+"</span></div>";
   }).join("");
+}
+function qBoard(k,hn,hs){ qRows(qLoad(k),hn,hs,"THIS DEVICE"); }
+function qShowShared(k,hn,hs){
+  qFetch(LB_URL+"?board="+encodeURIComponent(k))
+    .then(j=>{ if(j&&j.ok) qRows(j.top,hn,hs,"CLASS TOP 10"); })
+    .catch(()=>{});
 }
 function quizStart(){
   quiz.active=true; quiz.order=shuffle(QUIZZES[ui.atlasSel].slice()).slice(0,10);
@@ -691,6 +706,7 @@ function quizEnd(aborted){
   try{ document.getElementById("quiz-name").value=localStorage.getItem("brainlab:player")||""; }catch(e){}
   document.getElementById("quiz-save").disabled=false;
   qBoard(qKey());
+  qShowShared(qKey());
 }
 function quizAsk(){
   if(quiz.at>=quiz.order.length){ quizEnd(false); return; }
@@ -756,6 +772,11 @@ document.getElementById("quiz-save").addEventListener("click",()=>{
   a.sort((x,y)=>y.s-x.s); qStore(k,a.slice(0,10));
   qBoard(k,nm,quiz.score);
   document.getElementById("quiz-save").disabled=true;
+  qFb.textContent="posting score to the class board…"; qFb.className="";
+  qFetch(LB_URL,{method:"POST",body:JSON.stringify({board:k,name:nm,score:quiz.score})})
+    .then(j=>{ if(j&&j.ok){ qRows(j.top,nm,quiz.score,"CLASS TOP 10"); qFb.textContent="saved to the class leaderboard"; }
+      else{ qFb.textContent="offline: saved on this device only"; } })
+    .catch(()=>{ qFb.textContent="offline: saved on this device only"; });
 });
 
 /* ---------- toggles & wiring ---------- */

@@ -9,6 +9,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <style>
+  html{-webkit-text-size-adjust:100%; text-size-adjust:100%;}
+  body{overflow-x:hidden;}
+  #rail, #rail .card, #rail .rail-sec{min-width:0;}
   :root{
     --bg:#0a101c; --panel:#0e1626; --line:#22314d;
     --ink:#eaf1fc; --muted:#8fa0bc; --faint:#5f7093;
@@ -286,7 +289,7 @@
     <p><b>Precision controls:</b> the arrow pad (and keyboard arrows, with <b>[</b> and <b>]</b> for roll) rotates in precise 1° steps. Hold a button for smooth continuous rotation, hold Shift for 5° steps. The ◎ button snaps to the nearest canonical view.</p>
     <p><b>Compass & orientation practice:</b> the edge labels name the anatomical directions as you rotate (dorsal, ventral, anterior, posterior, left, right), and the line at the bottom names the surface you're facing (including medial vs. lateral when one hemisphere is hidden). Orientation practice quizzes the vocabulary two ways: rotate-to-a-named-view (including medial views, which require hiding a hemisphere), and name-the-view-you're-shown (the compass hides during questions: no cheating).</p>
     <p><b>Atlases:</b> paint the surface with <i>Lobes</i> (the big picture), <i>Desikan–Killiany</i> (34 gyral regions), <i>Destrieux</i> (74 regions with sulci named as structures), or <i>Functional component</i> (FEF, TPJ, dACC, mPFC and friends, from intersecting the Yeo 7 networks with this brain's parcellation). Hovering names whatever is under the pointer using the selected atlas. "Filter labels…" limits the paint to any subset. Everything else falls back to sulci-gray, so a single region can be spotlighted at any stage of the unfold, flatmap included.</p>
-    <p><b>Find-the-structure quiz (GeoGuessr rules):</b> ten regions drawn from the selected label category, 100 points each. Click the surface to drop a yellow guess pin (click again to move it), then <i>Submit guess</i>. The score falls off with the distance from your pin to the nearest edge of the true region, measured in millimeters <i>along the cortical sheet</i> (the walking distance across the folded surface at any unfold stage, not the shortcut through space). After each guess both your pin and the true region stay on the brain, and you can rotate, unfold, and inspect freely before pressing <i>Next trial</i>. The <i>paint</i> row is your difficulty setting: with <i>Labels</i> painted you can read the map; in <i>Clay</i> or <i>Sulci</i> you're navigating from anatomy alone and your score lands on the separate blind-mode leaderboard. Pointer naming pauses during the quiz. Top-10 leaderboards are kept per category and mode, stored on this computer.</p>
+    <p><b>Find-the-structure quiz (GeoGuessr rules):</b> ten regions drawn from the selected label category, 100 points each. Click the surface to drop a yellow guess pin (click again to move it), then <i>Submit guess</i>. The score falls off with the distance from your pin to the nearest edge of the true region, measured in millimeters <i>along the cortical sheet</i> (the walking distance across the folded surface at any unfold stage, not the shortcut through space). After each guess both your pin and the true region stay on the brain, and you can rotate, unfold, and inspect freely before pressing <i>Next trial</i>. The <i>paint</i> row is your difficulty setting: with <i>Labels</i> painted you can read the map; in <i>Clay</i> or <i>Sulci</i> you're navigating from anatomy alone and your score lands on the separate blind-mode leaderboard. Pointer naming pauses during the quiz. Scores post to the shared class leaderboard, kept separately per category and mode; when offline they stay on your device.</p>
     <p><b>Flattening:</b> the sheet is cut around the medial wall (where the cortex attaches beneath the corpus callosum) and unfolded with FreeSurfer's <i>mris_flatten</i>, the exact tool behind the Gallant lab's pycortex flatmaps, run on this very brain, plus a brief rigidity-preserving cleanup pass. Some distortion is unavoidable (you can't flatten a curved sheet perfectly: ask any mapmaker). Spread out, this cortex covers ≈1,680&nbsp;cm².</p>
   </div>
 </div>
@@ -825,7 +828,7 @@ function updateCompass(){
   } else {
     const [tA]=bestAxis([0,1,0]); const [rA]=bestAxis([1,0,0]); const [fA,fd]=bestAxis([0,0,1]);
     vals=[AXNAME[tA],AXNAME[AXOPP[tA]],AXNAME[AXOPP[rA]],AXNAME[rA],
-          fd>0.85? faceText(fA):"oblique view"];
+          fd>VIEW_ALIGN? faceText(fA):"oblique view"];
     key=vals.join("|")+show.lh+show.rh;
   }
   if(key===cmpCache) return; cmpCache=key;
@@ -838,10 +841,11 @@ const TERMS={D:"dorsal (superior)",V:"ventral (inferior)",A:"anterior (rostral)"
   L:"lateral (left hemisphere)",R:"lateral (right hemisphere)",
   LM:"medial (left hemisphere)",RM:"medial (right hemisphere)"};
 const AX_OF={D:"+z",V:"-z",A:"+y",P:"-y",L:"-x",R:"+x",LM:"+x",RM:"-x"};
+const VIEW_ALIGN=0.88; /* one cutoff shared by grading, naming, and the compass */
 const VIEW_OF={D:"D",V:"V",A:"A",P:"P",L:"L",R:"R",LM:"R",RM:"L"};
 function checkTarget(t){
   const [fA,fd]=bestAxis([0,0,1]);
-  if(fd<=0.92||fA!==AX_OF[t]) return false;
+  if(fd<=VIEW_ALIGN||fA!==AX_OF[t]) return false;
   if(t==="L") return show.lh;
   if(t==="R") return show.rh;
   if(t==="LM") return show.lh&&!show.rh;
@@ -858,7 +862,7 @@ const OP={q:document.getElementById("op-q"),ans:document.getElementById("op-answ
   score:document.getElementById("op-score")};
 function curViewName(){
   const [fA,fd]=bestAxis([0,0,1]);
-  if(fd<=0.85) return "an oblique view";
+  if(fd<=VIEW_ALIGN) return "an oblique view";
   if(fA==="+z") return "the "+TERMS.D+" view";
   if(fA==="-z") return "the "+TERMS.V+" view";
   if(fA==="+y") return "the "+TERMS.A+" view";
@@ -1003,13 +1007,25 @@ function lbTitle(){ return AN[squiz.cat.atlas]+(squiz.cat.blind?" · blind mode"
 function lbKey(){ return "cortex:board:"+squiz.cat.atlas+":"+(squiz.cat.blind?"blind":"labels"); }
 function lbLoad(k){ try{ return JSON.parse(localStorage.getItem(k)||"[]"); }catch(e){ return []; } }
 function lbStore(k,a){ try{ localStorage.setItem(k,JSON.stringify(a)); }catch(e){} }
-function lbRender(k,hn,hs){
-  const a=lbLoad(k), el=document.getElementById("sq-board");
-  if(!a.length){ el.textContent="No scores yet in this mode. Be the first!"; return; }
-  el.innerHTML=a.slice(0,5).map((e,i)=>{
+const LB_URL="https://script.google.com/macros/s/AKfycby1_LvLVdQTv59r4cpXUXJQri3qNVabWu75otfGVjmBsxPIeTgAv2gxgH3x7m2xJWBX/exec";
+function lbFetch(url,opts){
+  const ctl=new AbortController(); const t=setTimeout(()=>ctl.abort(),8000);
+  return fetch(url,Object.assign({signal:ctl.signal},opts||{})).then(r=>r.json()).finally(()=>clearTimeout(t));
+}
+function lbRows(rows,hn,hs,label){
+  const el=document.getElementById("sq-board");
+  const head="<div style='letter-spacing:.08em;font-size:10px;color:var(--muted);margin-bottom:2px'>"+label+"</div>";
+  if(!rows||!rows.length){ el.innerHTML=head+"<div>No scores yet in this mode. Be the first!</div>"; return; }
+  el.innerHTML=head+rows.slice(0,10).map((e,i)=>{
     const me= hn!==undefined&&e.n===hn&&e.s===hs;
     return "<div style='display:flex;gap:8px;"+(me?"color:var(--accent);font-weight:600;":"")+"'><span style='width:1.2em'>"+(i+1)+".</span><span style='flex:1;overflow:hidden;text-overflow:ellipsis'>"+String(e.n).replace(/[<>&]/g,"")+"</span><span>"+e.s+"</span></div>";
   }).join("");
+}
+function lbRender(k,hn,hs){ lbRows(lbLoad(k),hn,hs,"THIS DEVICE"); }
+function lbShowShared(k,hn,hs){
+  lbFetch(LB_URL+"?board="+encodeURIComponent(k))
+    .then(j=>{ if(j&&j.ok) lbRows(j.top,hn,hs,"CLASS TOP 10"); })
+    .catch(()=>{});
 }
 function squizStart(){
   if(squiz.active){ squizEnd(true); return; }
@@ -1037,6 +1053,7 @@ function squizEnd(aborted){
   try{ inp.value=localStorage.getItem("brainlab:player")||""; }catch(e){}
   document.getElementById("sq-save").disabled=false;
   lbRender(lbKey());
+  lbShowShared(lbKey());
 }
 function squizAsk(){
   if(squiz.at>=squiz.order.length){ squizEnd(false); return; }
@@ -1090,6 +1107,11 @@ document.getElementById("sq-save").addEventListener("click",()=>{
   a.sort((x,y)=>y.s-x.s); lbStore(k,a.slice(0,10));
   lbRender(k,nm,squiz.score);
   document.getElementById("sq-save").disabled=true;
+  SQ.fb.textContent="posting score to the class board…";
+  lbFetch(LB_URL,{method:"POST",body:JSON.stringify({board:k,name:nm,score:squiz.score})})
+    .then(j=>{ if(j&&j.ok){ lbRows(j.top,nm,squiz.score,"CLASS TOP 10"); SQ.fb.textContent="saved to the class leaderboard"; }
+      else{ SQ.fb.textContent="offline: saved on this device only"; } })
+    .catch(()=>{ SQ.fb.textContent="offline: saved on this device only"; });
 });
 function qrotv(q,v){ const x=q[0],y=q[1],z=q[2],w=q[3];
   const tx=2*(y*v[2]-z*v[1]), ty=2*(z*v[0]-x*v[2]), tz=2*(x*v[1]-y*v[0]);
