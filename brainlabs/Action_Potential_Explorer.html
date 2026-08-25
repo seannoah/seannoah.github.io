@@ -1,0 +1,999 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Action Potential Explorer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --bg:#0a101c; --panel:#0e1626; --panel2:#101a2e; --line:#22314d; --line-soft:#1a2740;
+    --ink:#eaf1fc; --muted:#8fa0bc; --faint:#5f7093;
+    --exc:#d95926; --exc-bright:#f2764a; --inh:#3987e5; --inh-bright:#63a4f0;
+    --trace:#199e70; --axonT:#c98500; --thresh:#c05a4a; --rest:#64789a;
+    --btn:#131f36; --btn-hover:#1a2a48; --btn-line:#2a3c5e;
+    --accent-ring:rgba(242,118,74,.55);
+    --shadow:0 10px 30px rgba(0,0,0,.35);
+  }
+  :root.theme-light{
+    --bg:#e7ebf3; --panel:#f4f6fb; --panel2:#eef2f9; --line:#d3dbe8; --line-soft:#dee5f0;
+    --ink:#16202f; --muted:#5b6b85; --faint:#8b99b3;
+    --shadow:0 10px 24px rgba(30,45,80,.12);
+    --exc:#c9531c; --exc-bright:#e06a30; --inh:#2a78d6; --inh-bright:#4a8fdf;
+    --trace:#0f7a52; --axonT:#b5820a; --thresh:#b3492f; --rest:#7b8da8;
+    --btn:#ffffff; --btn-hover:#eef3fb; --btn-line:#c9d4e6;
+    --accent-ring:rgba(201,83,28,.45);
+  }
+  html,body{height:100%;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+    -webkit-font-smoothing:antialiased; overflow:hidden;
+  }
+  #app{height:100vh; display:grid; grid-template-rows:auto 1fr; padding:10px 12px 12px; box-sizing:border-box; gap:8px;}
+
+  /* ---------- header ---------- */
+  header{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:2px 2px 0;}
+  .brand{display:flex; align-items:baseline; gap:12px; min-width:0;}
+  .brand h1{font-size:clamp(16px,1.6vw,21px); font-weight:700; margin:0; letter-spacing:.01em; white-space:nowrap;}
+  .brand .eyebrow{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:10.5px; letter-spacing:.14em; color:var(--muted); white-space:nowrap;}
+  .hdr-controls{display:flex; align-items:center; gap:6px; flex-wrap:wrap; justify-content:flex-end;}
+  .chip{
+    display:inline-flex; align-items:center; gap:7px; border:1px solid var(--btn-line); background:var(--btn);
+    color:var(--muted); border-radius:999px; padding:5px 11px; font-size:12.5px; font-weight:500; cursor:pointer;
+    font-family:inherit; transition:background .12s,color .12s,border-color .12s;
+  }
+  .chip:hover{background:var(--btn-hover);}
+  .chip .dot{width:7px; height:7px; border-radius:50%; background:var(--faint); transition:background .12s, box-shadow .12s;}
+  .chip[aria-pressed="true"]{color:var(--ink); border-color:var(--accent-ring);}
+  .chip[aria-pressed="true"] .dot{background:var(--exc-bright); box-shadow:0 0 6px var(--accent-ring);}
+  .chip.util{padding:5px 10px;}
+  .chip:focus-visible, button:focus-visible{outline:2px solid var(--inh-bright); outline-offset:2px;}
+
+  /* ---------- main grid ---------- */
+  main{display:grid; grid-template-columns:234px 1fr; gap:10px; min-height:0;}
+  #rail{display:flex; flex-direction:column; gap:12px; min-height:0; overflow-y:auto; padding-right:2px;}
+  .rail-sec{display:flex; flex-direction:column; gap:6px;}
+  .rail-label{
+    font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:10px; letter-spacing:.16em;
+    color:var(--faint); padding:0 2px; user-select:none;
+  }
+  .rail-btn{
+    display:flex; align-items:center; gap:10px; text-align:left; width:100%;
+    background:var(--btn); border:1px solid var(--btn-line); color:var(--ink);
+    border-radius:10px; padding:9px 11px; cursor:pointer; font-family:inherit; font-size:13.5px; font-weight:500;
+    transition:background .12s, border-color .12s, transform .05s;
+  }
+  .rail-btn:hover{background:var(--btn-hover);}
+  .rail-btn:active{transform:translateY(1px);}
+  .syn-chip{width:13px; height:13px; border-radius:50%; flex:none; box-shadow:0 0 0 3px rgba(255,255,255,.04);}
+  .syn-e .syn-chip{background:var(--exc);}
+  .syn-i .syn-chip{background:var(--inh);}
+  .rail-btn .sub{margin-left:auto; color:var(--faint); font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:10.5px;}
+  kbd{
+    font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:10px; color:var(--muted);
+    border:1px solid var(--btn-line); border-bottom-width:2px; border-radius:4px; padding:1px 5px; background:transparent;
+  }
+  .preset-btn .num{
+    font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:11px; color:var(--exc-bright); flex:none; width:16px;
+  }
+  .preset-btn .t{line-height:1.25;}
+  .preset-btn .t small{display:block; color:var(--muted); font-size:11px; font-weight:400;}
+  .preset-btn[data-active="true"]{border-color:var(--accent-ring);}
+  .seg{display:flex; border:1px solid var(--btn-line); border-radius:10px; overflow:hidden; background:var(--btn);}
+  .seg button{
+    flex:1; background:transparent; border:0; color:var(--muted); font-family:"IBM Plex Mono",ui-monospace,monospace;
+    font-size:12px; padding:8px 0; cursor:pointer;
+  }
+  .seg button[aria-pressed="true"]{background:var(--btn-hover); color:var(--ink); font-weight:600;}
+  .row2{display:flex; gap:6px;}
+  .site-btn{padding:7px 11px; font-size:12.5px; color:var(--muted);}
+  .site-btn[aria-pressed="true"]{color:var(--ink); border-color:var(--btn-line);}
+  .site-btn[aria-pressed="false"] .tr-chip{opacity:.28;}
+  .tr-chip{width:15px; height:4px; border-radius:2px; flex:none;}
+  .lbl-row{display:flex; align-items:center; justify-content:space-between;}
+  .mini{background:none; border:none; color:var(--inh-bright); font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:9.5px; letter-spacing:.08em; cursor:pointer; padding:0 2px;}
+  .mini:hover{text-decoration:underline;}
+  .w-row{display:flex; align-items:center; gap:8px; padding:0 2px;}
+  .w-row input[type=range]{flex:1; min-width:0; height:18px; margin:0;}
+  .w-e{accent-color:var(--exc);} .w-i{accent-color:var(--inh);}
+  .w-val{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:11px; color:var(--muted); width:4.5ch; text-align:right;}
+  .row2 .rail-btn{justify-content:center; font-weight:600;}
+  #rail .foot{margin-top:auto; padding:6px 2px 2px; color:var(--faint); font-size:10.5px; font-family:"IBM Plex Mono",ui-monospace,monospace; letter-spacing:.06em;}
+  .cp-logo{display:block; width:138px; max-width:82%; margin:0 0 8px; opacity:.9;}
+  .cp-lt{display:none;}
+  :root.theme-light .cp-dk{display:none;}
+  :root.theme-light .cp-lt{display:block;}
+
+  /* ---------- stage ---------- */
+  #stage{display:grid; grid-template-rows:minmax(0,1.38fr) minmax(0,1fr); gap:8px; min-height:0; min-width:0;}
+  .panel{position:relative; background:var(--panel); border:1px solid var(--line); border-radius:12px; overflow:hidden;}
+  .panel canvas{position:absolute; inset:0; width:100%; height:100%; display:block;}
+  #scene-wrap canvas{cursor:default;}
+
+  #scope-wrap{display:flex; flex-direction:column;}
+  #scope-hdr{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:8px 14px 4px; position:relative; z-index:2;
+  }
+  #scope-hdr .lbl{display:flex; align-items:center; gap:8px; font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:10.5px; letter-spacing:.12em; color:var(--muted);}
+  #scope-hdr .lbl .rec{width:8px; height:8px; border-radius:50%; background:var(--trace); box-shadow:0 0 8px var(--trace);}
+  #readout{display:flex; align-items:baseline; gap:10px; font-family:"IBM Plex Mono",ui-monospace,monospace;}
+  #spikeflag{
+    font-size:10.5px; letter-spacing:.1em; color:var(--exc-bright); border:1px solid var(--accent-ring);
+    border-radius:999px; padding:2px 9px; opacity:0; transition:opacity .15s;
+  }
+  #spikeflag.on{opacity:1;}
+  #vread{font-size:clamp(15px,1.35vw,21px); font-weight:600; color:var(--ink); font-variant-numeric:tabular-nums; min-width:5.2ch; text-align:right;}
+  #vunit{font-size:11px; color:var(--muted);}
+  #scope-cv-wrap{position:relative; flex:1; min-height:0;}
+  #scope-cv-wrap canvas{position:absolute; inset:0; width:100%; height:100%;}
+
+  /* ---------- help overlay ---------- */
+  #help{
+    position:fixed; inset:0; background:rgba(4,8,16,.62); display:none; align-items:center; justify-content:center; z-index:50;
+  }
+  :root.theme-light #help{background:rgba(40,55,85,.35);}
+  #help.open{display:flex;}
+  #help .card{
+    width:min(560px,92vw); background:var(--panel); border:1px solid var(--line); border-radius:14px;
+    padding:22px 26px; box-shadow:var(--shadow);
+  }
+  #help h2{margin:0 0 4px; font-size:17px;}
+  #help p{color:var(--muted); font-size:13px; line-height:1.55; margin:10px 0;}
+  #help table{border-collapse:collapse; margin:12px 0 4px; width:100%;}
+  #help td{padding:4px 8px 4px 0; font-size:13px; color:var(--ink);}
+  #help td:first-child{width:120px; color:var(--muted);}
+  #help .close{float:right; margin-top:-2px;}
+
+  @media (max-width:1360px){
+    main{grid-template-columns:214px 1fr;}
+    .brand .eyebrow{display:none;}
+    .chip{padding:4px 9px; font-size:12px;}
+    #app{padding:8px 10px 10px;}
+    .rail-btn{padding:8px 10px; font-size:13px;}
+  }
+  @media (max-height:860px){
+    #rail{gap:9px;}
+    .rail-btn{padding:7px 10px;}
+    .rail-sec{gap:5px;}
+  }
+  @media (max-width:900px){
+    body{overflow:auto;}
+    #app{height:auto; min-height:100vh;}
+    main{grid-template-columns:1fr;}
+    #rail{flex-direction:row; flex-wrap:wrap; overflow:visible;}
+    .rail-sec{flex:1 1 210px;}
+    #rail .foot{display:none;}
+    #stage{grid-template-rows:54vh 42vh;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .chip,.rail-btn{transition:none;}
+  }
+  /* ---- phones ---- */
+  @media (max-width:640px){
+    #app{padding:8px 8px 14px;}
+    header{flex-wrap:wrap; gap:6px;}
+    .brand h1{font-size:19px;}
+    main{display:flex; flex-direction:column; gap:8px;}
+    #stage{order:-1; grid-template-rows:36vh 27vh;}
+    #rail{flex-direction:column; flex-wrap:nowrap; gap:9px;}
+    .rail-sec{flex:none; width:100%;}
+    .rail-btn{padding:11px 12px; font-size:14px; min-height:44px;}
+    .chip{padding:7px 12px; font-size:13px; min-height:38px;}
+    .preset-btn small{font-size:11px;}
+  }
+  .panel canvas{touch-action:manipulation;}
+</style>
+
+<div id="app">
+  <header>
+    <div class="brand">
+      <h1>Action Potential Explorer</h1>
+      <span class="eyebrow">SUMMATION&nbsp;·&nbsp;THRESHOLD&nbsp;·&nbsp;PROPAGATION</span>
+    </div>
+    <div class="hdr-controls">
+      <button class="chip" id="tg-labels" aria-pressed="true"><span class="dot"></span>Labels</button>
+      <button class="chip" id="tg-myelin" aria-pressed="false"><span class="dot"></span>Myelin</button>
+      <button class="chip util" id="tg-theme" aria-pressed="false">Light</button>
+      <button class="chip util" id="btn-full" title="Fullscreen">⛶</button>
+      <button class="chip util" id="btn-help" title="Help &amp; shortcuts">?</button>
+    </div>
+  </header>
+
+  <main>
+    <aside id="rail">
+      <div class="rail-sec">
+        <div class="rail-label">STIMULATE · CLICK A SYNAPSE</div>
+        <button class="rail-btn syn-e" id="stim-e1"><span class="syn-chip"></span>Excitatory A<span class="sub"><kbd>1</kbd></span></button>
+        <button class="rail-btn syn-e" id="stim-e2"><span class="syn-chip"></span>Excitatory B<span class="sub"><kbd>2</kbd></span></button>
+        <button class="rail-btn syn-i" id="stim-i"><span class="syn-chip"></span>Inhibitory<span class="sub"><kbd>3</kbd></span></button>
+      </div>
+      <div class="rail-sec">
+        <div class="rail-label">LECTURE DEMOS · IN ORDER</div>
+        <button class="rail-btn preset-btn" data-preset="1"><span class="num">1</span><span class="t">One EPSP<small>subthreshold: no spike</small></span></button>
+        <button class="rail-btn preset-btn" data-preset="2"><span class="num">2</span><span class="t">Temporal summation<small>same synapse, rapid-fire</small></span></button>
+        <button class="rail-btn preset-btn" data-preset="3"><span class="num">3</span><span class="t">Spatial summation<small>two synapses together</small></span></button>
+        <button class="rail-btn preset-btn" data-preset="4"><span class="num">4</span><span class="t">Add inhibition<small>IPSP vetoes the spike</small></span></button>
+        <button class="rail-btn preset-btn" data-preset="5"><span class="num">5</span><span class="t">Strong stimulus<small>rate coding: all-or-none</small></span></button>
+      </div>
+      <div class="rail-sec">
+        <div class="rail-label">RECORDING SITES</div>
+        <button class="rail-btn site-btn" id="site-hill" aria-pressed="true"><span class="tr-chip" style="background:var(--trace)"></span>Axon hillock</button>
+        <button class="rail-btn site-btn" id="site-axon" aria-pressed="false"><span class="tr-chip" style="background:var(--axonT)"></span>Distal axon</button>
+      </div>
+      <div class="rail-sec">
+        <div class="rail-label lbl-row">SYNAPTIC STRENGTH<button class="mini" id="w-def">defaults</button></div>
+        <div class="w-row"><span class="syn-chip" style="background:var(--exc)"></span><input type="range" id="w-e1" class="w-e" min="2" max="18" step="0.2" value="8.2" aria-label="Excitatory A strength (mV)"><span class="w-val" id="wv-e1">+8.2</span></div>
+        <div class="w-row"><span class="syn-chip" style="background:var(--exc)"></span><input type="range" id="w-e2" class="w-e" min="2" max="18" step="0.2" value="8.2" aria-label="Excitatory B strength (mV)"><span class="w-val" id="wv-e2">+8.2</span></div>
+        <div class="w-row"><span class="syn-chip" style="background:var(--inh)"></span><input type="range" id="w-i" class="w-i" min="2" max="18" step="0.2" value="8" aria-label="Inhibitory strength (mV)"><span class="w-val" id="wv-i">−8.0</span></div>
+      </div>
+      <div class="rail-sec">
+        <div class="rail-label">PLAYBACK</div>
+        <div class="seg" id="speed-seg">
+          <button data-sp="0.5" aria-pressed="false">½×</button>
+          <button data-sp="1" aria-pressed="true">1×</button>
+          <button data-sp="2" aria-pressed="false">2×</button>
+        </div>
+        <div class="row2">
+          <button class="rail-btn" id="btn-pause">Pause</button>
+          <button class="rail-btn" id="btn-reset">Reset</button>
+        </div>
+      </div>
+      <div class="foot">
+        <img class="cp-logo cp-dk" src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPCEtLSBHZW5lcmF0b3I6IEFkb2JlIElsbHVzdHJhdG9yIDIzLjAuMywgU1ZHIEV4cG9ydCBQbHVnLUluIC4gU1ZHIFZlcnNpb246IDYuMDAgQnVpbGQgMCkgIC0tPgo8c3ZnIHZlcnNpb249IjEuMSIgaWQ9IkxheWVyXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4IgoJIHdpZHRoPSIxMzBweCIgaGVpZ2h0PSI0NXB4IiB2aWV3Qm94PSIwIDAgMTMwIDQ1IiBzdHlsZT0iZW5hYmxlLWJhY2tncm91bmQ6bmV3IDAgMCAxMzAgNDU7IiB4bWw6c3BhY2U9InByZXNlcnZlIj4KPHN0eWxlIHR5cGU9InRleHQvY3NzIj4KCS5zdDB7ZmlsbDojRjJGNUVBO30KPC9zdHlsZT4KPGc+Cgk8cGF0aCBjbGFzcz0ic3QwIiBkPSJNMTA1Ljk4LDI3Ljg2Yy0wLjMyLTIuMTgtMS40MS0zLjgxLTMuMzUtNC43OWMtMS40Ny0wLjc0LTMuMDQtMC44OS00LjY0LTAuNjVjLTMuMTEsMC40Ny01Ljg3LDMuMDUtNS44OCw2Ljk3CgkJYzAuMDEsMC4xOCwwLjAyLDAuNCwwLjA0LDAuNjNjMC4yMiwyLjUyLDEuMzcsNC4zOCwzLjYzLDUuNDNjMS4zLDAuNiwyLjY3LDAuNzYsNC4wOCwwLjZjMi4wNC0wLjI0LDMuNzMtMS4xNSw0Ljk1LTIuODcKCQlDMTA1Ljk0LDMxLjU5LDEwNi4yNiwyOS43OCwxMDUuOTgsMjcuODYgTTEwMi4xLDMyLjU1Yy0wLjU0LDEuNDYtMS42MSwyLjMtMi45NiwyLjI4Yy0xLjA0LTAuMDItMS44NS0wLjUxLTIuNDUtMS4zNgoJCWMtMC42NS0wLjkyLTAuOTItMS45OS0xLjAzLTMuMTFjLTAuMTItMS4yNi0wLjEtMi41MiwwLjItMy43NWMwLjIyLTAuODksMC41Ni0xLjczLDEuMjgtMi4zM2MxLjM0LTEuMTIsMy4yMy0wLjg2LDQuMjgsMC41NgoJCWMwLjYxLDAuODMsMC45LDEuNzgsMS4wMywyLjc5YzAuMDgsMC41NywwLjEsMS4xNSwwLjEzLDEuNTFDMTAyLjU3LDMwLjQ1LDEwMi40OSwzMS41MiwxMDIuMSwzMi41NSIvPgoJPHBhdGggY2xhc3M9InN0MCIgZD0iTTYyLjExLDM0LjMzYy0wLjQ2LTAuMTItMC43Ni0wLjM3LTAuOTMtMC44NWMtMC44Ny0yLjUzLTEuNzYtNS4wNC0yLjY1LTcuNTZjLTAuMzYtMS4wMi0wLjcxLTIuMDQtMS4wNy0zLjA2CgkJaC00Ljc5bDAuMSwxLjFjMCwwLDAuMjgsMC4wMiwwLjU0LDAuMDZjMC4yMSwwLjAzLDAuMzQsMC4yMiwwLjI5LDAuNDNjLTAuMjcsMS4wNS0yLjYxLDcuNTktMy4wNiw4Ljg1CgkJYy0wLjMzLDAuOTEtMS43MiwxLjE4LTEuODUsMS4yMmMtMC4wMiwwLjM1LTAuMDYsMC42OS0wLjA4LDEuMDNoNC45NmMtMC4wMy0wLjM2LTAuMDYtMC43LTAuMDktMS4wMmMwLDAtMC42OC0wLjEtMC44Ny0wLjE5CgkJYy0wLjMtMC4xNi0wLjMtMC40NC0wLjIxLTAuNjZjMC4yOS0wLjcyLDAuNDktMS4zOCwwLjc0LTIuMWg0LjEzYzAuMiwwLjY5LDAuMzgsMS4zOCwwLjU0LDIuMDljMC4wOSwwLjM3LTAuMDQsMC41NS0wLjQyLDAuNjYKCQljLTAuMjksMC4wOC0wLjYsMC4xMy0wLjkyLDAuMmMtMC4wMywwLjM0LTAuMDYsMC42OC0wLjA4LDEuMDRoNi41OGMtMC4wMy0wLjM3LTAuMDYtMC43MS0wLjA5LTEuMDUKCQlDNjIuNjEsMzQuNDUsNjIuMzYsMzQuNCw2Mi4xMSwzNC4zMyBNNTMuNTQsMzAuNDhjMC41Ni0xLjU5LDEuMDktMy4xNCwxLjYzLTQuNjljMC4wMiwwLDAuMDUsMCwwLjA4LDAKCQljMC41MSwxLjU1LDEuMDYsMy4xLDEuNTksNC42OUg1My41NHoiLz4KCTxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik03My40NCwzMS4zNmMtMC4xMiwwLjQ1LTAuMjMsMC45MS0wLjM3LDEuMzVjLTAuMjIsMC42Ny0wLjY4LDEuMTEtMS4zNywxLjI4Yy0wLjY3LDAuMTctMS44OSwwLjItMi41MiwwLjIxCgkJYy0wLjIyLDAtMC4zOS0wLjE3LTAuMzktMC4zOWMwLTEuNDMsMC02LjQyLTAuMDEtOS4wNmMwLTAuMzIsMC4xNS0wLjUxLDAuNDctMC41N2MwLjM4LTAuMDcsMC43Ni0wLjE2LDEuMTMtMC4yNAoJCWMwLjAzLTAuMzgsMC4wOS0xLjA2LDAuMDktMS4wNmgtNi4zNWMwLDAsMC4wNiwwLjcxLDAuMDksMS4wN2MwLjMsMC4wOCwwLjYsMC4xNiwwLjksMC4yNGMwLjMxLDAuMDksMC40NywwLjI3LDAuNDcsMC42MgoJCWMtMC4wMSwyLjk1LTAuMDEsNS45MSwwLDguODZjMCwwLjM0LTAuMTQsMC41My0wLjQ3LDAuNjFjLTAuMzEsMC4wNy0wLjYxLDAuMTctMC45LDAuMjZjLTAuMDMsMC4zNi0wLjA1LDAuNjktMC4wOCwxLjA0aDEwLjE0CgkJbDAuMzctNC41NWgtMS4wOUM3My41MSwzMS4xMyw3My40OCwzMS4yNCw3My40NCwzMS4zNiIvPgoJPHBhdGggY2xhc3M9InN0MCIgZD0iTTExNi40OCwzMS4zNmMtMC4xMiwwLjQ1LTAuMjMsMC45MS0wLjM3LDEuMzVjLTAuMjIsMC42Ny0wLjY4LDEuMTEtMS4zNywxLjI4Yy0wLjY3LDAuMTctMS44OSwwLjItMi41MiwwLjIxCgkJYy0wLjIyLDAtMC4zOS0wLjE3LTAuMzktMC4zOWMwLTEuNDMsMC02LjQyLTAuMDEtOS4wNmMwLTAuMzIsMC4xNS0wLjUxLDAuNDctMC41N2MwLjM4LTAuMDcsMC43Ni0wLjE2LDEuMTMtMC4yNAoJCWMwLjAzLTAuMzgsMC4wNi0wLjcyLDAuMDktMS4wNmgtNi4zNWMwLDAsMC4wNiwwLjcxLDAuMDksMS4wN2MwLjMsMC4wOCwwLjYsMC4xNiwwLjksMC4yNGMwLjMxLDAuMDksMC40NywwLjI3LDAuNDcsMC42MgoJCWMtMC4wMSwyLjk1LTAuMDEsNS45MSwwLDguODZjMCwwLjM0LTAuMTQsMC41My0wLjQ3LDAuNjFjLTAuMzEsMC4wNy0wLjYxLDAuMTctMC45LDAuMjZjLTAuMDMsMC4zNi0wLjA1LDAuNjktMC4wOSwxLjA0aDEwLjE0CgkJbDAuMzctNC41NWgtMS4wOUMxMTYuNTUsMzEuMTMsMTE2LjUxLDMxLjI0LDExNi40OCwzMS4zNiIvPgoJPHBhdGggY2xhc3M9InN0MCIgZD0iTTQ2LjQ5LDIwLjk1Yy0xLjE3LTAuNTEtMi4zOC0wLjgxLTMuNjEtMC45Yy0xLjAyLTAuMDgtMi4wNSwwLTMuMDksMC4yMWMtMC4xOSwwLjA0LTAuMzgsMC4wOC0wLjU4LDAuMTMKCQljLTAuMzMsMC4wOS0wLjY1LDAuMTktMC45NiwwLjNjLTEuMDQsMC4zOS0xLjk2LDAuOTQtMi43NCwxLjdjLTAuNDYsMC40NC0wLjg3LDAuOTUtMS4yMywxLjU0Yy0wLjM1LDAuNTgtMC42MiwxLjE3LTAuODEsMS43OAoJCWMtMC40MSwxLjMxLTAuNDUsMi42OS0wLjIyLDQuMWMwLjEsMC42LDAuMjUsMS4xNSwwLjQ0LDEuNjZjMC43NiwyLDIuMjUsMy4zOSw0LjQ3LDQuMTRjMS43NCwwLjU5LDMuMzEsMC42Nyw1LjEyLDAuMzYKCQljMC42Ny0wLjEyLDEuMzQtMC4yNywxLjkyLTAuNTFjMC43Mi0wLjI5LDEuMzMtMC41OCwyLjA0LTEuMDJjMC4xMy0wLjA4LDAuMjItMC4xNywwLjI4LTAuMjdjMC4wOC0wLjEyLDAuMTItMC4yNywwLjEyLTAuNDUKCQljMC4wMi0wLjYxLDAuMTEtMS4zMiwwLjE2LTEuOTNjMC4wNC0wLjQ2LDAuMDctMS4xNywwLjExLTEuNjVoMGwtMS41OCwwLjA4YzAsMC4wMi0wLjAxLDAuMDQtMC4wMSwwLjA1CgkJYy0wLjAxLDAuMDUtMC4wMiwwLjEtMC4wMiwwLjE0YzAsMCwwLDAuMDEsMCwwLjAxYy0wLjIyLDEuMTktMC42MiwyLjQxLTEuNDgsMy4yNmMtMC42NiwwLjYyLTEuNTksMS4wOC0yLjg3LDEuMTRjMCwwLDAsMC0wLjAxLDAKCQljLTAuMzEsMC0wLjYtMC4wMi0wLjg5LTAuMDdjLTAuNjUtMC4xLTEuMjMtMC4zMy0xLjc1LTAuNjhjLTAuMDItMC4wMS0wLjAzLTAuMDItMC4wNS0wLjA0Yy0wLjA4LTAuMDUtMC4xNS0wLjExLTAuMjItMC4xNgoJCWMtMC4wNC0wLjAzLTAuMDctMC4wNi0wLjExLTAuMDljLTAuMDUtMC4wNC0wLjEtMC4wOC0wLjE1LTAuMTNjLTAuMDUtMC4wNC0wLjA5LTAuMDktMC4xNC0wLjE0Yy0wLjAzLTAuMDMtMC4wNy0wLjA3LTAuMTEtMC4xCgkJYy0wLjA0LTAuMDQtMC4wOC0wLjA5LTAuMTItMC4xNGMtMC4wNC0wLjA0LTAuMDgtMC4wOC0wLjExLTAuMTNjLTAuMDMtMC4wMy0wLjA1LTAuMDYtMC4wNy0wLjFjLTAuMDUtMC4wNi0wLjEtMC4xMi0wLjE0LTAuMTkKCQljMC0wLjAxLTAuMDEtMC4wMS0wLjAxLTAuMDJjLTAuMi0wLjI5LTAuMzgtMC42MS0wLjU0LTAuOTZjLTAuNTItMS4xNy0wLjgxLTIuMzYtMC44OC0zLjU3Yy0wLjA2LTEuMDgsMC4wNi0yLjE2LDAuMzYtMy4yNgoJCWMwLjEyLTAuNDUsMC4yOS0wLjg4LDAuNS0xLjI4YzAuNDMtMC44LDEuMDQtMS40NywxLjktMS45MmMwLjA3LTAuMDQsMC4xMy0wLjA3LDAuMi0wLjFjMC4wMi0wLjAxLDAuMDQtMC4wMiwwLjA2LTAuMDMKCQljMC44NC0wLjM5LDEuNzEtMC41OSwyLjU3LTAuNTJjMC42NiwwLjA2LDEuNCwwLjMsMi4wNCwwLjc2YzAuOTQsMC42OCwxLjUyLDEuNjYsMS44NiwyLjc0YzAsMC4wMSwwLjAxLDAuMDMsMC4wMSwwLjA0CgkJYzAuMDYsMC4xOCwwLjExLDAuMzcsMC4xNiwwLjU0aDBjMCwwLDAsMCwwLDBsMS4zOS0wLjA3djBoMGwtMC4xOS0zLjY3Yy0wLjEtMC4wNy0wLjIxLTAuMTYtMC4zMy0wLjIzCgkJQzQ2Ljk3LDIxLjIxLDQ2Ljc0LDIxLjA2LDQ2LjQ5LDIwLjk1Ii8+Cgk8cGF0aCBjbGFzcz0ic3QwIiBkPSJNODAuNjcsMzIuMDh2MS42NWMwLTAuMDEsMC0wLjAyLDAtMC4wM0M4MC42NywzMy4xNSw4MC42NywzMi42Miw4MC42NywzMi4wOCIvPgoJPHBhdGggY2xhc3M9InN0MCIgZD0iTTkyLjA4LDIzLjg4Yy0wLjE5LTEuMzgtMS4wNS0yLjI4LTIuMjYtMi44N2MtMS4xOS0wLjU4LTIuNDctMC43Ni0zLjc3LTAuNzdjLTAuMTYsMC0wLjMyLDAtMC40OSwwCgkJYzAsMCwwLDAsMCwwbC02LjM1LDBjMC4wMiwwLjM1LDAuMDcsMC42OCwwLjA4LDEuMDJjMCwwLjAxLDAsMC4wMywwLDAuMDRjMC4zNSwwLjEsMC42NywwLjE5LDAuOTgsMC4yOQoJCWMwLjI3LDAuMDgsMC40LDAuMjUsMC40LDAuNTVjLTAuMDEsMi45OC0wLjAxLDUuOTUsMCw4LjkzYzAsMCwwLDIuMDksMCwyLjYzYzAsMC4wMSwwLDAuMDIsMCwwLjAzYy0wLjAxLDAuMjktMC4xNCwwLjQ2LTAuNDIsMC41MwoJCWMtMC4zLDAuMDktMC42MSwwLjE3LTAuOTUsMC4yN2MwLDAuMDEsMCwwLjAzLDAsMC4wNGMtMC4wMiwwLjMyLTAuMDgsMC45OS0wLjA4LDAuOTlsNi4xNy0wLjAxYzAsMC0wLjA2LTAuNy0wLjA4LTEuMDMKCQljMCwwLDAsMCwwLDBjLTAuMzQtMC4xLTAuNjQtMC4xOC0wLjk1LTAuMjdjLTAuMjItMC4wNi0wLjM1LTAuMTgtMC40LTAuMzhjMC0wLjA1LDAtMC4xLDAtMC4xNWMwLTMuNDYsMC4wMS0xMC4xNywwLjAyLTExLjk4CgkJYzAtMC4yNiwwLjIxLTAuNDYsMC40Ni0wLjQ3YzAuNDMtMC4wMSwwLjg0LTAuMDIsMS4yNSwwLjAxYzEuMzUsMC4xLDIuMywwLjg4LDIuNzEsMi4xNmMwLjI5LDAuOTIsMC4zMSwxLjg1LDAuMDMsMi43NwoJCWMtMC4zNiwxLjIxLTEuMDcsMi4yMy0zLjE4LDIuMjZsLTAuMDgsMS4wNWMxLjkxLDAuMDQsMy42NS0wLjI2LDUuMTctMS40M0M5MS43MiwyNy4wNSw5Mi4zMiwyNS42Miw5Mi4wOCwyMy44OCIvPgoJPHBhdGggY2xhc3M9InN0MCIgZD0iTTEyOS40MywyMi44N2gtNC44NWMwLjAyLDAuMzgsMC4wNywwLjczLDAuMDksMS4xYzAuMTYsMC4wNCwwLjI2LDAuMDYsMC4zNSwwLjA5CgkJYzAuNzEsMC4yLDAuODMsMC41MiwwLjQ0LDEuMTZjLTAuMzgsMC42My0yLjIxLDQuNDYtMi4yMSw0LjQ2cy0xLjY3LTMtMi4zMy00LjMxYy0wLjExLTAuMjItMC42MS0xLjA1LDAuMjQtMS4yNwoJCWMwLjIyLTAuMDYsMC40NS0wLjA4LDAuNzMtMC4xM2MwLjAyLTAuMzcsMC4wOS0xLjA5LDAuMDktMS4wOWgtNi40M2MwLjAzLDAuMzksMC4wNiwwLjc1LDAuMDksMS4xYzAuMTMsMC4wMywxLjEyLDAuMywxLjU3LDAuOTkKCQljMC4zOCwwLjU4LDIuODMsNS4zMiwzLjY3LDYuNjFsMC4wMSwyLjE2Yy0wLjAxLDAuMjktMC4xNCwwLjQ2LTAuNDIsMC41M2MtMC4xLDAuMDMtMC4yMSwwLjA2LTAuMzEsMC4wOQoJCWMtMC4yMSwwLjA2LTAuNDIsMC4xMi0wLjY0LDAuMThjMCwwLjAxLTAuMDgsMS4wMy0wLjA4LDEuMDNjMCwwLDYuMTcsMCw2LjE3LDBjMCwwLTAuMDctMC43LTAuMDktMS4wM2MwLDAsMCwwLDAsMAoJCWMtMC4zNC0wLjEtMC42NC0wLjE4LTAuOTUtMC4yN2MtMC4wMy0wLjAxLTAuMDYtMC4wMi0wLjA5LTAuMDNjLTAuMTctMC4wNy0wLjI5LTAuMTctMC4zMi0wLjM1YzAtMC4wNSwwLTAuMSwwLTAuMTUKCQljMC0wLjM2LTAuMDYtMi4wNywwLjAyLTIuMmwyLjQ3LTUuMTdjMC42Ni0xLjA1LDEuMzUtMi4wOCwyLjY4LTIuMzhDMTI5LjM2LDIzLjc2LDEyOS40MywyMi44NywxMjkuNDMsMjIuODciLz4KCTxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik0xOC42MSwzMi4xM2wtMS4yMS0xLjMxbDAuNzEtMC42N2wtMC43Ni0wLjgxbC0wLjQ1LDAuNDNsMC4wNiwwLjY2bC0xLjYxLTEuNzJsLTAuNjEtMC4wMmwtMS4zNCwxLjE5CgkJbC0wLjAyLDAuNTdsMS4zLDEuNDFsLTAuMDcsMC4wNmwtMC4yNSwwLjIzbC0xLjU3LDEuNTFMOC4yLDI4LjY5bC0wLjMzLTAuMzNsLTAuMDgsMi4zOWMtMC4wMSwwLjM4LDAuMDYsMC42MSwwLjIsMC44MQoJCWMwLjAyLDAuMDIsMC4wMywwLjA1LDAuMDUsMC4wN2MwLjE3LDAuMjEsMC4zNiwwLjM5LDAuNzUsMC41NWMwLjcsMC4yOCwxLjUxLDAuMzMsMS41MSwwLjMzbDAuMzYsMC4wMmwtMC4zMiwwLjE3CgkJYzAsMC0wLjAyLDAuMDEtMC4wNSwwLjAyYy0wLjEsMC4wNC0wLjM4LDAuMTQtMC44MiwwLjEzQzkuMiwzMi44NCw4Ljg3LDMyLjgsOC41LDMyLjcxYzAuMDYsMC4wNywwLjE0LDAuMTUsMC4yMywwLjI0CgkJYzAuMDIsMC4wMiwwLjA0LDAuMDQsMC4wNiwwLjA2YzAuMzgsMC4zNywwLjc4LDAuNSwxLjMsMC42YzAuNDksMC4wOSwxLjM5LDAuMjIsMS40LDAuMjJsMC4zMSwwLjA0TDExLjU1LDM0bC0wLjAzLDAuMDEKCQljLTAuMDEsMC4wMS0wLjMyLDAuMTctMC44OCwwLjE1Yy0wLjM3LTAuMDEtMC42OS0wLjA3LTAuOTEtMC4xM2wwLjE3LDAuMTlsMC4wNywwLjA3YzAuMTksMC4yMSwwLjUyLDAuMzgsMS4wMSwwLjUyCgkJYzAuMTQsMC4wNCwwLjI5LDAuMDgsMC40MywwLjExYzAuNSwwLjExLDAuOTUsMC4xNiwwLjk2LDAuMTZsMC4zMywwLjAzbC0wLjE5LDAuMTFsLTAuMSwwLjA1Yy0wLjA0LDAuMDItMC4zNiwwLjE5LTAuOTQsMC4xNQoJCWMtMC4xNy0wLjAxLTAuMzQtMC4wMy0wLjUxLTAuMDdjMCwwLDAsMC0wLjAxLDBsMCwwbC0yLjI3LDIuMTRsMC43NiwwLjgxbDIuMzMtMi4xOWMwLjQ3LDAuMjYsMS4yMywwLjUsMS44NSwwLjUybDEuMDEsMC4wMwoJCWwxLjcxLDEuNzdsMC44OSwwbC0zLjY5LTMuOThsMS42Mi0xLjUybDAuMjMtMC4yMWwwLjA1LTAuMDVsMC4wNC0wLjA0bDEuMjEsMS4zbDAuNjEsMC4wMmwxLjM0LTEuMTlsMC4wMi0wLjU3TDE4LjYxLDMyLjEzeiIvPgoJPHBhdGggY2xhc3M9InN0MCIgZD0iTTEyLjk3LDE2LjI2YzAtMC4wNS0wLjAxLTAuMDktMC4wNC0wLjExYy0wLjA0LTAuMDQtMC4xMS0wLjA2LTAuMjItMC4wNmgtMC4wMWwtMC4xNywwdjAuMzZsMC4xNywwCgkJQzEyLjg4LDE2LjQ1LDEyLjk3LDE2LjM4LDEyLjk3LDE2LjI2Ii8+Cgk8cGF0aCBjbGFzcz0ic3QwIiBkPSJNOC41LDE2LjQ0YzAtMC4wNy0wLjAyLTAuMTEtMC4wNS0wLjE0Yy0wLjA1LTAuMDQtMC4xMy0wLjA2LTAuMjYtMC4wNWwtMC4xOSwwLjAxdjAuNDZsMC4xOS0wLjAxCgkJQzguNCwxNi42OSw4LjUsMTYuNjEsOC41LDE2LjQ0Ii8+Cgk8cGF0aCBjbGFzcz0ic3QwIiBkPSJNMTMuMDYsMTcuMDFjMC0wLjA2LTAuMDEtMC4xLTAuMDUtMC4xM2MtMC4wNS0wLjA1LTAuMTMtMC4wNy0wLjI2LTAuMDdoLTAuMDFsLTAuMjEsMHYwLjQybDAuMjEsMAoJCUMxMi45NiwxNy4yMywxMy4wNiwxNy4xNSwxMy4wNiwxNy4wMSIvPgoJPHBhdGggY2xhc3M9InN0MCIgZD0iTTE4LjgyLDE3LjM4YzAuMDksMC4wMSwwLjE3LTAuMDIsMC4yMy0wLjA4YzAuMS0wLjA5LDAuMTUtMC4yNiwwLjE1LTAuNDdjMC0wLjM1LTAuMTQtMC41Ny0wLjM4LTAuNTgKCQljLTAuMDEsMC0wLjAyLDAtMC4wMiwwYy0wLjA4LDAtMC4xNSwwLjAzLTAuMjEsMC4wOGMtMC4xLDAuMDktMC4xNSwwLjI1LTAuMTUsMC40NkMxOC40MywxNy4xMywxOC41OCwxNy4zNiwxOC44MiwxNy4zOCIvPgoJPHBhdGggY2xhc3M9InN0MCIgZD0iTTE3LjAzLDE3LjE2YzAuMDktMC4wOSwwLjE0LTAuMjQsMC4xNC0wLjQ0YzAtMC4zOC0wLjE2LTAuNTYtMC41LTAuNTdsLTAuMDUsMHYxLjEybDAuMDUsMAoJCUMxNi44NCwxNy4yNywxNi45NSwxNy4yNCwxNy4wMywxNy4xNiIvPgoJPHBhdGggY2xhc3M9InN0MCIgZD0iTTI0LjU4LDI1LjMyQzI0LjU4LDI1LjMyLDI0LjU4LDI1LjMyLDI0LjU4LDI1LjMyYy0wLjAxLDAtMC4wMS0wLjAxLTAuMDItMC4wMQoJCWMtMC4wMi0wLjAxLTAuMDQtMC4wMi0wLjA2LTAuMDRoMGMtMC44OC0wLjYxLTIuNjEtMi4yNS0yLjctMi4yNWMtMC4wMiwwLTYuMTIsMi4yMi02LjEyLDIuMjJjLTAuMDEsMC0wLjA5LDAuMDItMC4xNSwwLjAyCgkJbC0wLjMtMC4wN2wtMS4xMy0wLjI2bC0wLjE2LTAuMDRsLTAuMTYtMC4wNGwtMC4wNS0wLjAxbC0wLjE0LTAuMDNsLTAuMTQtMC4wM2wtMC40Mi0wLjFsLTAuMTItMC4wM2wtMC4yLTAuMDVsLTAuMTEtMC4wMwoJCWwtMC4yNi0wLjA2bC0wLjExLTAuMDJsLTAuMTgtMC4wNGwtMC4xMS0wLjAybC0wLjA3LTAuMDJsLTAuMTksMC4xbC0wLjEsMC4wNWwtMC4xNSwwLjA4bC0wLjEsMC4wNWwtMC4yLDAuMTFsLTAuMSwwLjA1CgkJbC0wLjE2LDAuMDhsLTAuMSwwLjA1bC0wLjI4LDAuMTRsLTAuMTIsMC4wNmwtMC4yMiwwLjExYy0wLjAyLDAtMC4wNCwwLTAuMDYsMGMtMC4xMiwwLTAuMjMsMC0wLjMyLDBjLTAuMjQsMC0wLjM5LDAtMC4zOSwwCgkJQzkuMTMsMjUuMyw4Ljg0LDI1LjMsOC41NiwyNS4zYy0yLjY2LTAuMDEtNS43NSwwLjE3LTYuMjcsMC4ybDAuMTEtMi45bDYuMjcsMi4zYzAuMDEtMC4wMywwLjAyLTAuMDcsMC4wNC0wLjEKCQljMC4wMS0wLjAzLDAuMDMtMC4wNywwLjA0LTAuMWMwLjAyLTAuMDYsMC4wNS0wLjEyLDAuMDctMC4xN2MwLjAyLTAuMDMsMC4wMy0wLjA3LDAuMDUtMC4xYzAuMDItMC4wMywwLjAzLTAuMDYsMC4wNS0wLjEKCQlsLTYuNDYtMy4yOGwwLjAzLTAuNzNjMC43Ny0wLjA4LDEuOC0wLjE4LDMuMDItMC4yOWwzLjkyLDMuNmMwLjAyLTAuMDMsMC4wNS0wLjA1LDAuMDgtMC4wOGMwLjAzLTAuMDMsMC4wNS0wLjA1LDAuMDgtMC4wOAoJCWMwLjA1LTAuMDQsMC4wOS0wLjA4LDAuMTQtMC4xMmMwLjAzLTAuMDIsMC4wNi0wLjA1LDAuMDgtMC4wN2MwLjAzLTAuMDIsMC4wNi0wLjA0LDAuMDktMC4wN2wtMi42LTMuMzIKCQljMC42MS0wLjA0LDEuMjYtMC4wOCwxLjkyLTAuMTFsMS40MywzLjAyYzAuMDMtMC4wMSwwLjA3LTAuMDMsMC4xLTAuMDRjMC4wMy0wLjAxLDAuMDctMC4wMiwwLjEtMC4wMwoJCWMwLjA2LTAuMDIsMC4xMi0wLjA0LDAuMTgtMC4wNWMwLjA0LTAuMDEsMC4wNy0wLjAyLDAuMTEtMC4wM2MwLjA0LTAuMDEsMC4wNy0wLjAyLDAuMTEtMC4wMmwtMC42Ny0yLjkKCQljMC4xNy0wLjAxLDAuMzQtMC4wMSwwLjUxLTAuMDJjMC40My0wLjAxLDAuODYtMC4wMiwxLjI5LTAuMDNsLTAuMjYsMi44OWMwLjA0LDAsMC4wNywwLDAuMTEsMC4wMWMwLjA0LDAsMC4wNywwLjAxLDAuMTEsMC4wMQoJCWMwLjA2LDAuMDEsMC4xMiwwLjAyLDAuMTgsMC4wM2MwLjA0LDAuMDEsMC4wNywwLjAxLDAuMTEsMC4wMmMwLjA0LDAuMDEsMC4wNywwLjAyLDAuMTEsMC4wMmwwLjg5LTIuOTloMC4wMQoJCWMwLjYxLDAsMS4yMSwwLjAxLDEuODEsMC4wMmwtMS45MSwzLjI4YzAuMDMsMC4wMiwwLjA2LDAuMDMsMC4wOSwwLjA1YzAuMDMsMC4wMiwwLjA2LDAuMDQsMC4wOSwwLjA2YzAuMDUsMC4wMywwLjEsMC4wNywwLjE2LDAuMQoJCWMwLjAzLDAuMDIsMC4wNiwwLjA0LDAuMDksMC4wNmMwLjAzLDAuMDIsMC4wNSwwLjA0LDAuMDgsMC4wNmwwLDAuMDFsMC4wMS0wLjAxYzAsMCwwLDAsMCwwbDAuMDYtMC4wOGwyLjk3LTMuNQoJCWMxLjE3LDAuMDUsMi4zLDAuMTEsMy4zMywwLjE5bC01Ljc1LDQuMDFjMC4wMiwwLjAzLDAuMDQsMC4wNiwwLjA2LDAuMDljMC4wMiwwLjAzLDAuMDQsMC4wNiwwLjA2LDAuMDkKCQljMC4wMiwwLjAzLDAuMDMsMC4wNSwwLjA1LDAuMDhjMC4wMiwwLjAzLDAuMDMsMC4wNSwwLjA1LDAuMDhjMC4wMiwwLjAzLDAuMDQsMC4wNiwwLjA1LDAuMWMwLjAyLDAuMDMsMC4wMywwLjA2LDAuMDUsMC4xCgkJbDguMS00LjMxYzAuNDUsMC4wNCwwLjg2LDAuMDgsMS4yMiwwLjEyYzAuMDUsMC4wMSwwLjEsMC4wMSwwLjE0LDAuMDJMMjQuNTgsMjUuMzJMMjQuNTgsMjUuMzJ6IE0xNy42MSwyNS41CgkJYzAuMDMtMC4wMSwwLjEzLTAuMDUsMC4yOS0wLjFjMC44Ny0wLjMxLDMuMzMtMS4yMSwzLjMzLTEuMjFsMCwwYzAsMCwwLDAsMCwwbC0yLjE4LDEuNDJoMGgwTDE3LjYxLDI1LjUKCQlDMTcuNjEsMjUuNSwxNy42MSwyNS41LDE3LjYxLDI1LjVMMTcuNjEsMjUuNXogTTI0LjUxLDI5LjQ3Yy0wLjA0LDAuNDItMC4xMSwwLjk4LTAuMjYsMS42NGMtMC4yLDAuODgtMC41MywxLjkyLTEuMDksMy4wNAoJCWMtMC42LDEuMjEtMS40NywyLjUtMi43MSwzLjc0Yy0zLjg1LDMuODUtNy4yNCw0Ljc0LTcuMjQsNC43NHMtMy4xNy0wLjk5LTYuODgtNC43QzUuMSwzNi42OCw0LjIzLDM1LjQsMy42MiwzNC4yCgkJYy0wLjUtMC45OS0wLjgzLTEuOTEtMS4wNC0yLjcxYy0wLjE1LTAuNTgtMC4yNC0xLjEtMC4zLTEuNTJjLTAuMS0wLjc0LTAuMDgtMS4xOS0wLjA4LTEuMTlzMC4wMy0wLjAxLDAuMDgtMC4wNAoJCWMwLjI0LTAuMTMsMS4wOC0wLjUzLDIuNTUtMC45M2MwLjk5LTAuMjcsMi4yNy0wLjU0LDMuODUtMC43M2MxLjI0LTAuMTUsMi42Ni0wLjI0LDQuMjgtMC4yNGMwLjc4LDAsMS41MiwwLjAyLDIuMjIsMC4wNQoJCWM1LjU3LDAuMjcsOC44MiwxLjQ4LDkuMywxLjY2YzAuMDQsMC4wMiwwLjA2LDAuMDIsMC4wNiwwLjAyUzI0LjU2LDI4LjkyLDI0LjUxLDI5LjQ3IE0yLjQ0LDE2LjM2bDAuMDIsMAoJCWMwLjE0LTAuMDIsMC4yOC0wLjAzLDAuNDEtMC4wNWwwLjAzLDB2MS40OWMwLjIzLTAuMDMsMC40Ni0wLjA1LDAuNjktMC4wOGwwLjAzLDB2MC40bC0wLjAyLDBjLTAuMzgsMC4wNC0wLjc2LDAuMDgtMS4xMywwLjEzCgkJbC0wLjAzLDBWMTYuMzZ6IE00LjA1LDE2LjE5bDAuMDIsMGMwLjM4LTAuMDQsMC43Ny0wLjA4LDEuMTUtMC4xMWwwLjAzLDB2MC40bC0wLjAyLDBjLTAuMjQsMC4wMi0wLjQ3LDAuMDQtMC43MSwwLjA3djAuMzIKCQljMC4yLTAuMDIsMC40LTAuMDQsMC42LTAuMDZsMC4wMywwdjAuNGwtMC4wMiwwYy0wLjIsMC4wMi0wLjQsMC4wNC0wLjYsMC4wNnYwLjM3YzAuMjQtMC4wMiwwLjQ5LTAuMDUsMC43My0wLjA3bDAuMDMsMHYwLjQKCQlsLTAuMDIsMGMtMC4zOCwwLjAzLTAuNzgsMC4wNy0xLjE3LDAuMTFsLTAuMDMsMFYxNi4xOXogTTUuNTQsMTcuOWMwLjE5LTAuNjMsMC4zOC0xLjI1LDAuNTgtMS44OGwwLTAuMDJsMC4wMiwwCgkJYzAuMTctMC4wMSwwLjMzLTAuMDMsMC41LTAuMDRsMC4wMiwwbDAuMDEsMC4wMmwwLjU5LDEuODJsLTAuMDMsMGMtMC4xNSwwLjAxLTAuMjksMC4wMi0wLjQ0LDAuMDNsLTAuMDIsMGwtMC4xMS0wLjQzCgkJYy0wLjE3LDAuMDEtMC4zNSwwLjAzLTAuNTIsMC4wNGMtMC4wNCwwLjE0LTAuMDcsMC4yOS0wLjExLDAuNDNsMCwwLjAybC0wLjAyLDBjLTAuMTQsMC4wMS0wLjI4LDAuMDItMC40MiwwLjAzbC0wLjA0LDBMNS41NCwxNy45CgkJeiBNNy41NCwxNS45bDAuMDIsMGMwLjIyLTAuMDEsMC40NC0wLjAzLDAuNjYtMC4wNGMwLjI2LTAuMDEsMC40NiwwLjA0LDAuNTgsMC4xNWMwLjEsMC4wOSwwLjE1LDAuMjMsMC4xNSwwLjQxCgkJYzAsMC4yNS0wLjExLDAuNDQtMC4zMiwwLjU2YzAuMTMsMC4yMywwLjI3LDAuNDYsMC40LDAuNjlsMC4wMiwwLjA0bC0wLjA0LDBjLTAuMTUsMC4wMS0wLjMxLDAuMDItMC40NiwwLjAybC0wLjAyLDBsLTAuMDEtMC4wMQoJCWMtMC4xMS0wLjIxLTAuMjMtMC40Mi0wLjM0LTAuNjNjLTAuMDYsMC0wLjEzLDAuMDEtMC4xOSwwLjAxdjAuNjZsLTAuMDIsMGMtMC4xNCwwLjAxLTAuMjgsMC4wMi0wLjQxLDAuMDNsLTAuMDMsMFYxNS45egoJCSBNOS4zNiwxNS44bDAuMDIsMGMwLjE0LTAuMDEsMC4yOC0wLjAxLDAuNDMtMC4wMmwwLjAyLDBsMC4wMSwwLjAxYzAuMTYsMC4zLDAuMzIsMC42LDAuNDgsMC44OWwwLjEzLDAuMjkKCQljLTAuMDItMC4xNy0wLjA0LTAuMzctMC4wNC0wLjU1di0wLjY3bDAuMDIsMGMwLjEzLDAsMC4yNi0wLjAxLDAuNC0wLjAxbDAuMDMsMHYxLjg4bC0wLjAyLDBjLTAuMTQsMC0wLjI4LDAuMDEtMC40MiwwLjAxbC0wLjAyLDAKCQlsLTAuMDEtMC4wMWMtMC4xNi0wLjMtMC4zMi0wLjYtMC40OC0wLjlsLTAuMTMtMC4yOWMwLDAuMDEsMCwwLjAyLDAsMC4wM2MwLjAyLDAuMTYsMC4wNCwwLjM1LDAuMDQsMC41MnYwLjY3bC0wLjAyLDAKCQljLTAuMTMsMC4wMS0wLjI2LDAuMDEtMC40LDAuMDJsLTAuMDMsMFYxNS44eiBNMTIuMDcsMTUuNzJsMC4wMiwwYzAuMjEsMCwwLjQyLTAuMDEsMC42My0wLjAxYzAuMjgsMCwwLjQ3LDAuMDUsMC41OCwwLjE3CgkJYzAuMDgsMC4wOCwwLjEyLDAuMTgsMC4xMiwwLjMxYzAsMC4xNy0wLjA5LDAuMzMtMC4yMSwwLjRjMC4xOSwwLjA3LDAuMywwLjIzLDAuMywwLjQ0YzAsMC4zNS0wLjI4LDAuNTYtMC43NCwwLjU3CgkJYy0wLjIzLDAtMC40NSwwLTAuNjgsMC4wMWwtMC4wMywwVjE1LjcyeiBNMTMuNjgsMTUuNzFjMC4xNSwwLDAuMywwLDAuNDQsMGwwLjAyLDBsMC4wMSwwLjAyYzAuMDUsMC4xNCwwLjExLDAuMjgsMC4xNiwwLjQyCgkJYzAuMDMsMC4wOSwwLjA2LDAuMTcsMC4wOSwwLjI2bDAuMDQsMC4xYzAuMDItMC4wNSwwLjA0LTAuMSwwLjA2LTAuMTVjMC4wMy0wLjA3LDAuMDUtMC4xMywwLjA4LTAuMmwwLjE3LTAuNDRsMC4wMiwwCgkJYzAuMTQsMCwwLjI5LDAsMC40MywwLjAxbDAuMDQsMGwtMC4wMiwwLjA0Yy0wLjE4LDAuMzktMC4zNywwLjc4LTAuNTUsMS4xN3YwLjY3bC0wLjAzLDBjLTAuMTQsMC0wLjI4LDAtMC40MSwwbC0wLjAyLDB2LTAuNjcKCQljLTAuMTgtMC4zOS0wLjM3LTAuNzktMC41NS0xLjE4bC0wLjAyLTAuMDRMMTMuNjgsMTUuNzF6IE0xNi4xNiwxNS43NWwwLjAzLDBjMC4xNywwLjAxLDAuMzUsMC4wMSwwLjUyLDAuMDIKCQljMC42MSwwLjAyLDAuOTUsMC4zNywwLjk1LDAuOTdjMCwwLjMtMC4wOCwwLjU0LTAuMjUsMC43Yy0wLjE1LDAuMTQtMC4zNiwwLjIyLTAuNjMsMC4yMmMtMC4wMiwwLTAuMDMsMC0wLjA1LDAKCQljLTAuMTgtMC4wMS0wLjM2LTAuMDEtMC41NC0wLjAybC0wLjAyLDBWMTUuNzV6IE0xOC4yMiwxNi4wM2MwLjE1LTAuMTQsMC4zNS0wLjIxLDAuNi0wLjJjMC41MiwwLjAzLDAuODYsMC40MywwLjg2LDEuMDIKCQljMCwwLjMyLTAuMDksMC41Ny0wLjI3LDAuNzRjLTAuMTQsMC4xMy0wLjMyLDAuMi0wLjUzLDAuMmMtMC4wMiwwLTAuMDQsMC0wLjA2LDBjLTAuNTItMC4wMy0wLjg2LTAuNDMtMC44Ni0xLjAzCgkJQzE3Ljk2LDE2LjQ0LDE4LjA1LDE2LjE5LDE4LjIyLDE2LjAzIE0yMC4wNSwxNS45NWwwLjAzLDBjMC4xNCwwLjAxLDAuMjgsMC4wMiwwLjQxLDAuMDNsMC4wMiwwdjEuODhsLTAuMDMsMAoJCWMtMC4xNC0wLjAxLTAuMjgtMC4wMi0wLjQxLTAuMDNsLTAuMDIsMFYxNS45NXogTTIxLjA5LDE2LjAybDAuMDMsMGMwLjE0LDAuMDEsMC4yOCwwLjAyLDAuNDIsMC4wNGwwLjAxLDBsMC4wMSwwLjAxCgkJYzAuMTYsMC4zMiwwLjMyLDAuNjQsMC40OCwwLjk1bDAuMTMsMC4zYzAsMCwwLDAsMCwwYy0wLjAyLTAuMTctMC4wNC0wLjM3LTAuMDQtMC41NHYtMC42N2wwLjAzLDBjMC4xMywwLjAxLDAuMjYsMC4wMiwwLjM5LDAuMDQKCQlsMC4wMiwwdjEuODhsLTAuMDMsMGMtMC4xNC0wLjAxLTAuMjgtMC4wMy0wLjQyLTAuMDRsLTAuMDEsMGwtMC4wMS0wLjAxYy0wLjE2LTAuMzItMC4zMi0wLjY0LTAuNDgtMC45NmwtMC4xMy0wLjMKCQljMCwwLjAxLDAsMC4wMSwwLDAuMDJjMC4wMiwwLjE3LDAuMDQsMC4zNSwwLjA0LDAuNTJ2MC42OGwtMC4wMywwYy0wLjEzLTAuMDEtMC4yNi0wLjAyLTAuMzktMC4wM2wtMC4wMiwwVjE2LjAyeiBNMjMuMjIsMTYuNDUKCQljMC4xNy0wLjE1LDAuMzktMC4yMSwwLjY0LTAuMTljMC4yOSwwLjAzLDAuNDgsMC4xOSwwLjU5LDAuMzFsMC4wMSwwLjAybC0wLjI1LDAuMjhsLTAuMDItMC4wMmMtMC4wOS0wLjA5LTAuMTgtMC4xNi0wLjMzLTAuMTgKCQljLTAuMTItMC4wMS0wLjIyLDAuMDItMC4zLDAuMDljLTAuMSwwLjA5LTAuMTUsMC4yNC0wLjE1LDAuNDJjMCwwLjM3LDAuMTcsMC41OSwwLjQ5LDAuNjNjMC4wNiwwLjAxLDAuMTMsMCwwLjE3LTAuMDJWMTcuNQoJCWMtMC4wOS0wLjAxLTAuMTktMC4wMi0wLjI4LTAuMDNsLTAuMDIsMHYtMC4zOWwwLjAzLDBjMC4yMiwwLjAyLDAuNDUsMC4wNSwwLjY3LDAuMDhsMC4wMiwwdjAuODhsLTAuMDEsMC4wMQoJCWMtMC4xMiwwLjExLTAuMzEsMC4xNi0wLjUxLDAuMTZjLTAuMDQsMC0wLjA3LDAtMC4xMS0wLjAxYy0wLjU2LTAuMDYtMC45Mi0wLjQ4LTAuOTItMS4wNkMyMi45NSwxNi44NSwyMy4wNCwxNi42MSwyMy4yMiwxNi40NQoJCSBNMTkuMDIsMTMuODNjLTAuMDYsMC0wLjEyLTAuMDEtMC4xOC0wLjAxYy0xLjMzLTAuMDgtMi43Ni0wLjE0LTQuMjItMC4xNWMtMC4wNCwwLTAuMDcsMC0wLjExLDBjLTAuMDQsMC0wLjA3LDAtMC4xMSwwCgkJYy0wLjI2LDAtMC41MiwwLTAuNzksMGMtMC4xNiwwLTAuMzMsMC0wLjQ5LDBjLTAuMDQsMC0wLjA3LDAtMC4xMSwwYy0wLjA0LDAtMC4wNywwLTAuMTEsMGMtMS4yNiwwLjAxLTIuNTIsMC4wNS0zLjcyLDAuMTEKCQljLTAuMDQsMC0wLjA3LDAtMC4xMSwwLjAxYy0wLjA0LDAtMC4wNywwLTAuMTEsMC4wMWMtMC40NSwwLjAyLTAuODksMC4wNS0xLjMyLDAuMDdjLTAuMDQsMC0wLjA4LDAtMC4xMSwwLjAxCgkJYy0wLjA0LDAtMC4wOCwwLTAuMTEsMC4wMUMzLjc2LDE0LjExLDEsMTQuNDUsMSwxNC40NXYzLjI4bDAuMDQsMi41OWwwLDAuMTJsMCwwLjAxbDAsMC4xMWwwLjAyLDEuMzFsMCwwLjEybDAsMC4xMmwwLjEsNi40MwoJCWMtMC4wMiwyLjI1LDAuNTQsNC4yNywxLjQyLDYuMDdjMi41NCw1LjE3LDcuNzgsOC40NCw5LjgxLDkuNTZsMC44NywwLjQ1bDAuODMtMC40NWMyLjExLTEuMTMsNy41OC00LjQ0LDEwLjIxLTkuNjcKCQljMC44OS0xLjc3LDEuNDUtMy43NiwxLjQ1LTUuOTVsMC4xMi04LjFsMC4wNC0zLjAxdi0yLjk5QzI1LjkxLDE0LjQ1LDIyLjk0LDE0LjA3LDE5LjAyLDEzLjgzIi8+Cgk8cGF0aCBjbGFzcz0ic3QwIiBkPSJNNi41LDE2LjkxYy0wLjAzLTAuMTEtMC4wNi0wLjI0LTAuMDktMC4zNmMtMC4wMS0wLjA1LTAuMDItMC4wOS0wLjAzLTAuMTRjLTAuMDQsMC4xNy0wLjA4LDAuMzYtMC4xMywwLjUzCgkJYy0wLjAxLDAuMDUtMC4wMiwwLjA5LTAuMDQsMC4xNGMwLjExLTAuMDEsMC4yMi0wLjAyLDAuMzMtMC4wMkw2LjUsMTYuOTF6Ii8+CjwvZz4KPC9zdmc+Cg==" alt="Cal Poly">
+        <img class="cp-logo cp-lt" src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPCEtLSBHZW5lcmF0b3I6IEFkb2JlIElsbHVzdHJhdG9yIDIzLjAuMywgU1ZHIEV4cG9ydCBQbHVnLUluIC4gU1ZHIFZlcnNpb246IDYuMDAgQnVpbGQgMCkgIC0tPgo8c3ZnIHZlcnNpb249IjEuMSIgaWQ9IkxheWVyXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4IgoJIHdpZHRoPSIxMzBweCIgaGVpZ2h0PSI0NXB4IiB2aWV3Qm94PSIwIDAgMTMwIDQ1IiBzdHlsZT0iZW5hYmxlLWJhY2tncm91bmQ6bmV3IDAgMCAxMzAgNDU7IiB4bWw6c3BhY2U9InByZXNlcnZlIj4KPHN0eWxlIHR5cGU9InRleHQvY3NzIj4KCS5zdDB7ZmlsbDojMDI0MDIzO30KPC9zdHlsZT4KPGc+Cgk8cGF0aCBjbGFzcz0ic3QwIiBkPSJNMTA1Ljk4LDI3Ljg2Yy0wLjMyLTIuMTgtMS40MS0zLjgxLTMuMzUtNC43OWMtMS40Ny0wLjc0LTMuMDQtMC44OS00LjY0LTAuNjVjLTMuMTEsMC40Ny01Ljg3LDMuMDUtNS44OCw2Ljk3CgkJYzAuMDEsMC4xOCwwLjAyLDAuNCwwLjA0LDAuNjNjMC4yMiwyLjUyLDEuMzcsNC4zOCwzLjYzLDUuNDNjMS4zLDAuNiwyLjY3LDAuNzYsNC4wOCwwLjZjMi4wNC0wLjI0LDMuNzMtMS4xNSw0Ljk1LTIuODcKCQlDMTA1Ljk0LDMxLjU5LDEwNi4yNiwyOS43OCwxMDUuOTgsMjcuODYgTTEwMi4xLDMyLjU1Yy0wLjU0LDEuNDYtMS42MSwyLjMtMi45NiwyLjI4Yy0xLjA0LTAuMDItMS44NS0wLjUxLTIuNDUtMS4zNgoJCWMtMC42NS0wLjkyLTAuOTItMS45OS0xLjAzLTMuMTFjLTAuMTItMS4yNi0wLjEtMi41MiwwLjItMy43NWMwLjIyLTAuODksMC41Ni0xLjczLDEuMjgtMi4zM2MxLjM0LTEuMTIsMy4yMy0wLjg2LDQuMjgsMC41NgoJCWMwLjYxLDAuODMsMC45LDEuNzgsMS4wMywyLjc5YzAuMDgsMC41NywwLjEsMS4xNSwwLjEzLDEuNTFDMTAyLjU3LDMwLjQ1LDEwMi40OSwzMS41MiwxMDIuMSwzMi41NSIvPgoJPHBhdGggY2xhc3M9InN0MCIgZD0iTTYyLjExLDM0LjMzYy0wLjQ2LTAuMTItMC43Ni0wLjM3LTAuOTMtMC44NWMtMC44Ny0yLjUzLTEuNzYtNS4wNC0yLjY1LTcuNTZjLTAuMzYtMS4wMi0wLjcxLTIuMDQtMS4wNy0zLjA2CgkJaC00Ljc5bDAuMSwxLjFjMCwwLDAuMjgsMC4wMiwwLjU0LDAuMDZjMC4yMSwwLjAzLDAuMzQsMC4yMiwwLjI5LDAuNDNjLTAuMjcsMS4wNS0yLjYxLDcuNTktMy4wNiw4Ljg1CgkJYy0wLjMzLDAuOTEtMS43MiwxLjE4LTEuODUsMS4yMmMtMC4wMiwwLjM1LTAuMDYsMC42OS0wLjA4LDEuMDNoNC45NmMtMC4wMy0wLjM2LTAuMDYtMC43LTAuMDktMS4wMmMwLDAtMC42OC0wLjEtMC44Ny0wLjE5CgkJYy0wLjMtMC4xNi0wLjMtMC40NC0wLjIxLTAuNjZjMC4yOS0wLjcyLDAuNDktMS4zOCwwLjc0LTIuMWg0LjEzYzAuMiwwLjY5LDAuMzgsMS4zOCwwLjU0LDIuMDljMC4wOSwwLjM3LTAuMDQsMC41NS0wLjQyLDAuNjYKCQljLTAuMjksMC4wOC0wLjYsMC4xMy0wLjkyLDAuMmMtMC4wMywwLjM0LTAuMDYsMC42OC0wLjA4LDEuMDRoNi41OGMtMC4wMy0wLjM3LTAuMDYtMC43MS0wLjA5LTEuMDUKCQlDNjIuNjEsMzQuNDUsNjIuMzYsMzQuNCw2Mi4xMSwzNC4zMyBNNTMuNTQsMzAuNDhjMC41Ni0xLjU5LDEuMDktMy4xNCwxLjYzLTQuNjljMC4wMiwwLDAuMDUsMCwwLjA4LDAKCQljMC41MSwxLjU1LDEuMDYsMy4xLDEuNTksNC42OUg1My41NHoiLz4KCTxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik03My40NCwzMS4zNmMtMC4xMiwwLjQ1LTAuMjMsMC45MS0wLjM3LDEuMzVjLTAuMjIsMC42Ny0wLjY4LDEuMTEtMS4zNywxLjI4Yy0wLjY3LDAuMTctMS44OSwwLjItMi41MiwwLjIxCgkJYy0wLjIyLDAtMC4zOS0wLjE3LTAuMzktMC4zOWMwLTEuNDMsMC02LjQyLTAuMDEtOS4wNmMwLTAuMzIsMC4xNS0wLjUxLDAuNDctMC41N2MwLjM4LTAuMDcsMC43Ni0wLjE2LDEuMTMtMC4yNAoJCWMwLjAzLTAuMzgsMC4wOS0xLjA2LDAuMDktMS4wNmgtNi4zNWMwLDAsMC4wNiwwLjcxLDAuMDksMS4wN2MwLjMsMC4wOCwwLjYsMC4xNiwwLjksMC4yNGMwLjMxLDAuMDksMC40NywwLjI3LDAuNDcsMC42MgoJCWMtMC4wMSwyLjk1LTAuMDEsNS45MSwwLDguODZjMCwwLjM0LTAuMTQsMC41My0wLjQ3LDAuNjFjLTAuMzEsMC4wNy0wLjYxLDAuMTctMC45LDAuMjZjLTAuMDMsMC4zNi0wLjA1LDAuNjktMC4wOCwxLjA0aDEwLjE0CgkJbDAuMzctNC41NWgtMS4wOUM3My41MSwzMS4xMyw3My40OCwzMS4yNCw3My40NCwzMS4zNiIvPgoJPHBhdGggY2xhc3M9InN0MCIgZD0iTTExNi40OCwzMS4zNmMtMC4xMiwwLjQ1LTAuMjMsMC45MS0wLjM3LDEuMzVjLTAuMjIsMC42Ny0wLjY4LDEuMTEtMS4zNywxLjI4Yy0wLjY3LDAuMTctMS44OSwwLjItMi41MiwwLjIxCgkJYy0wLjIyLDAtMC4zOS0wLjE3LTAuMzktMC4zOWMwLTEuNDMsMC02LjQyLTAuMDEtOS4wNmMwLTAuMzIsMC4xNS0wLjUxLDAuNDctMC41N2MwLjM4LTAuMDcsMC43Ni0wLjE2LDEuMTMtMC4yNAoJCWMwLjAzLTAuMzgsMC4wNi0wLjcyLDAuMDktMS4wNmgtNi4zNWMwLDAsMC4wNiwwLjcxLDAuMDksMS4wN2MwLjMsMC4wOCwwLjYsMC4xNiwwLjksMC4yNGMwLjMxLDAuMDksMC40NywwLjI3LDAuNDcsMC42MgoJCWMtMC4wMSwyLjk1LTAuMDEsNS45MSwwLDguODZjMCwwLjM0LTAuMTQsMC41My0wLjQ3LDAuNjFjLTAuMzEsMC4wNy0wLjYxLDAuMTctMC45LDAuMjZjLTAuMDMsMC4zNi0wLjA1LDAuNjktMC4wOSwxLjA0aDEwLjE0CgkJbDAuMzctNC41NWgtMS4wOUMxMTYuNTUsMzEuMTMsMTE2LjUxLDMxLjI0LDExNi40OCwzMS4zNiIvPgoJPHBhdGggY2xhc3M9InN0MCIgZD0iTTQ2LjQ5LDIwLjk1Yy0xLjE3LTAuNTEtMi4zOC0wLjgxLTMuNjEtMC45Yy0xLjAyLTAuMDgtMi4wNSwwLTMuMDksMC4yMWMtMC4xOSwwLjA0LTAuMzgsMC4wOC0wLjU4LDAuMTMKCQljLTAuMzMsMC4wOS0wLjY1LDAuMTktMC45NiwwLjNjLTEuMDQsMC4zOS0xLjk2LDAuOTQtMi43NCwxLjdjLTAuNDYsMC40NC0wLjg3LDAuOTUtMS4yMywxLjU0Yy0wLjM1LDAuNTgtMC42MiwxLjE3LTAuODEsMS43OAoJCWMtMC40MSwxLjMxLTAuNDUsMi42OS0wLjIyLDQuMWMwLjEsMC42LDAuMjUsMS4xNSwwLjQ0LDEuNjZjMC43NiwyLDIuMjUsMy4zOSw0LjQ3LDQuMTRjMS43NCwwLjU5LDMuMzEsMC42Nyw1LjEyLDAuMzYKCQljMC42Ny0wLjEyLDEuMzQtMC4yNywxLjkyLTAuNTFjMC43Mi0wLjI5LDEuMzMtMC41OCwyLjA0LTEuMDJjMC4xMy0wLjA4LDAuMjItMC4xNywwLjI4LTAuMjdjMC4wOC0wLjEyLDAuMTItMC4yNywwLjEyLTAuNDUKCQljMC4wMi0wLjYxLDAuMTEtMS4zMiwwLjE2LTEuOTNjMC4wNC0wLjQ2LDAuMDctMS4xNywwLjExLTEuNjVoMGwtMS41OCwwLjA4YzAsMC4wMi0wLjAxLDAuMDQtMC4wMSwwLjA1CgkJYy0wLjAxLDAuMDUtMC4wMiwwLjEtMC4wMiwwLjE0YzAsMCwwLDAuMDEsMCwwLjAxYy0wLjIyLDEuMTktMC42MiwyLjQxLTEuNDgsMy4yNmMtMC42NiwwLjYyLTEuNTksMS4wOC0yLjg3LDEuMTRjMCwwLDAsMC0wLjAxLDAKCQljLTAuMzEsMC0wLjYtMC4wMi0wLjg5LTAuMDdjLTAuNjUtMC4xLTEuMjMtMC4zMy0xLjc1LTAuNjhjLTAuMDItMC4wMS0wLjAzLTAuMDItMC4wNS0wLjA0Yy0wLjA4LTAuMDUtMC4xNS0wLjExLTAuMjItMC4xNgoJCWMtMC4wNC0wLjAzLTAuMDctMC4wNi0wLjExLTAuMDljLTAuMDUtMC4wNC0wLjEtMC4wOC0wLjE1LTAuMTNjLTAuMDUtMC4wNC0wLjA5LTAuMDktMC4xNC0wLjE0Yy0wLjAzLTAuMDMtMC4wNy0wLjA3LTAuMTEtMC4xCgkJYy0wLjA0LTAuMDQtMC4wOC0wLjA5LTAuMTItMC4xNGMtMC4wNC0wLjA0LTAuMDgtMC4wOC0wLjExLTAuMTNjLTAuMDMtMC4wMy0wLjA1LTAuMDYtMC4wNy0wLjFjLTAuMDUtMC4wNi0wLjEtMC4xMi0wLjE0LTAuMTkKCQljMC0wLjAxLTAuMDEtMC4wMS0wLjAxLTAuMDJjLTAuMi0wLjI5LTAuMzgtMC42MS0wLjU0LTAuOTZjLTAuNTItMS4xNy0wLjgxLTIuMzYtMC44OC0zLjU3Yy0wLjA2LTEuMDgsMC4wNi0yLjE2LDAuMzYtMy4yNgoJCWMwLjEyLTAuNDUsMC4yOS0wLjg4LDAuNS0xLjI4YzAuNDMtMC44LDEuMDQtMS40NywxLjktMS45MmMwLjA3LTAuMDQsMC4xMy0wLjA3LDAuMi0wLjFjMC4wMi0wLjAxLDAuMDQtMC4wMiwwLjA2LTAuMDMKCQljMC44NC0wLjM5LDEuNzEtMC41OSwyLjU3LTAuNTJjMC42NiwwLjA2LDEuNCwwLjMsMi4wNCwwLjc2YzAuOTQsMC42OCwxLjUyLDEuNjYsMS44NiwyLjc0YzAsMC4wMSwwLjAxLDAuMDMsMC4wMSwwLjA0CgkJYzAuMDYsMC4xOCwwLjExLDAuMzcsMC4xNiwwLjU0aDBjMCwwLDAsMCwwLDBsMS4zOS0wLjA3djBoMGwtMC4xOS0zLjY3Yy0wLjEtMC4wNy0wLjIxLTAuMTYtMC4zMy0wLjIzCgkJQzQ2Ljk3LDIxLjIxLDQ2Ljc0LDIxLjA2LDQ2LjQ5LDIwLjk1Ii8+Cgk8cGF0aCBjbGFzcz0ic3QwIiBkPSJNODAuNjcsMzIuMDh2MS42NWMwLTAuMDEsMC0wLjAyLDAtMC4wM0M4MC42NywzMy4xNSw4MC42NywzMi42Miw4MC42NywzMi4wOCIvPgoJPHBhdGggY2xhc3M9InN0MCIgZD0iTTkyLjA4LDIzLjg4Yy0wLjE5LTEuMzgtMS4wNS0yLjI4LTIuMjYtMi44N2MtMS4xOS0wLjU4LTIuNDctMC43Ni0zLjc3LTAuNzdjLTAuMTYsMC0wLjMyLDAtMC40OSwwCgkJYzAsMCwwLDAsMCwwbC02LjM1LDBjMC4wMiwwLjM1LDAuMDcsMC42OCwwLjA4LDEuMDJjMCwwLjAxLDAsMC4wMywwLDAuMDRjMC4zNSwwLjEsMC42NywwLjE5LDAuOTgsMC4yOQoJCWMwLjI3LDAuMDgsMC40LDAuMjUsMC40LDAuNTVjLTAuMDEsMi45OC0wLjAxLDUuOTUsMCw4LjkzYzAsMCwwLDIuMDksMCwyLjYzYzAsMC4wMSwwLDAuMDIsMCwwLjAzYy0wLjAxLDAuMjktMC4xNCwwLjQ2LTAuNDIsMC41MwoJCWMtMC4zLDAuMDktMC42MSwwLjE3LTAuOTUsMC4yN2MwLDAuMDEsMCwwLjAzLDAsMC4wNGMtMC4wMiwwLjMyLTAuMDgsMC45OS0wLjA4LDAuOTlsNi4xNy0wLjAxYzAsMC0wLjA2LTAuNy0wLjA4LTEuMDMKCQljMCwwLDAsMCwwLDBjLTAuMzQtMC4xLTAuNjQtMC4xOC0wLjk1LTAuMjdjLTAuMjItMC4wNi0wLjM1LTAuMTgtMC40LTAuMzhjMC0wLjA1LDAtMC4xLDAtMC4xNWMwLTMuNDYsMC4wMS0xMC4xNywwLjAyLTExLjk4CgkJYzAtMC4yNiwwLjIxLTAuNDYsMC40Ni0wLjQ3YzAuNDMtMC4wMSwwLjg0LTAuMDIsMS4yNSwwLjAxYzEuMzUsMC4xLDIuMywwLjg4LDIuNzEsMi4xNmMwLjI5LDAuOTIsMC4zMSwxLjg1LDAuMDMsMi43NwoJCWMtMC4zNiwxLjIxLTEuMDcsMi4yMy0zLjE4LDIuMjZsLTAuMDgsMS4wNWMxLjkxLDAuMDQsMy42NS0wLjI2LDUuMTctMS40M0M5MS43MiwyNy4wNSw5Mi4zMiwyNS42Miw5Mi4wOCwyMy44OCIvPgoJPHBhdGggY2xhc3M9InN0MCIgZD0iTTEyOS40MywyMi44N2gtNC44NWMwLjAyLDAuMzgsMC4wNywwLjczLDAuMDksMS4xYzAuMTYsMC4wNCwwLjI2LDAuMDYsMC4zNSwwLjA5CgkJYzAuNzEsMC4yLDAuODMsMC41MiwwLjQ0LDEuMTZjLTAuMzgsMC42My0yLjIxLDQuNDYtMi4yMSw0LjQ2cy0xLjY3LTMtMi4zMy00LjMxYy0wLjExLTAuMjItMC42MS0xLjA1LDAuMjQtMS4yNwoJCWMwLjIyLTAuMDYsMC40NS0wLjA4LDAuNzMtMC4xM2MwLjAyLTAuMzcsMC4wOS0xLjA5LDAuMDktMS4wOWgtNi40M2MwLjAzLDAuMzksMC4wNiwwLjc1LDAuMDksMS4xYzAuMTMsMC4wMywxLjEyLDAuMywxLjU3LDAuOTkKCQljMC4zOCwwLjU4LDIuODMsNS4zMiwzLjY3LDYuNjFsMC4wMSwyLjE2Yy0wLjAxLDAuMjktMC4xNCwwLjQ2LTAuNDIsMC41M2MtMC4xLDAuMDMtMC4yMSwwLjA2LTAuMzEsMC4wOQoJCWMtMC4yMSwwLjA2LTAuNDIsMC4xMi0wLjY0LDAuMThjMCwwLjAxLTAuMDgsMS4wMy0wLjA4LDEuMDNjMCwwLDYuMTcsMCw2LjE3LDBjMCwwLTAuMDctMC43LTAuMDktMS4wM2MwLDAsMCwwLDAsMAoJCWMtMC4zNC0wLjEtMC42NC0wLjE4LTAuOTUtMC4yN2MtMC4wMy0wLjAxLTAuMDYtMC4wMi0wLjA5LTAuMDNjLTAuMTctMC4wNy0wLjI5LTAuMTctMC4zMi0wLjM1YzAtMC4wNSwwLTAuMSwwLTAuMTUKCQljMC0wLjM2LTAuMDYtMi4wNywwLjAyLTIuMmwyLjQ3LTUuMTdjMC42Ni0xLjA1LDEuMzUtMi4wOCwyLjY4LTIuMzhDMTI5LjM2LDIzLjc2LDEyOS40MywyMi44NywxMjkuNDMsMjIuODciLz4KCTxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik0xOC42MSwzMi4xM2wtMS4yMS0xLjMxbDAuNzEtMC42N2wtMC43Ni0wLjgxbC0wLjQ1LDAuNDNsMC4wNiwwLjY2bC0xLjYxLTEuNzJsLTAuNjEtMC4wMmwtMS4zNCwxLjE5CgkJbC0wLjAyLDAuNTdsMS4zLDEuNDFsLTAuMDcsMC4wNmwtMC4yNSwwLjIzbC0xLjU3LDEuNTFMOC4yLDI4LjY5bC0wLjMzLTAuMzNsLTAuMDgsMi4zOWMtMC4wMSwwLjM4LDAuMDYsMC42MSwwLjIsMC44MQoJCWMwLjAyLDAuMDIsMC4wMywwLjA1LDAuMDUsMC4wN2MwLjE3LDAuMjEsMC4zNiwwLjM5LDAuNzUsMC41NWMwLjcsMC4yOCwxLjUxLDAuMzMsMS41MSwwLjMzbDAuMzYsMC4wMmwtMC4zMiwwLjE3CgkJYzAsMC0wLjAyLDAuMDEtMC4wNSwwLjAyYy0wLjEsMC4wNC0wLjM4LDAuMTQtMC44MiwwLjEzQzkuMiwzMi44NCw4Ljg3LDMyLjgsOC41LDMyLjcxYzAuMDYsMC4wNywwLjE0LDAuMTUsMC4yMywwLjI0CgkJYzAuMDIsMC4wMiwwLjA0LDAuMDQsMC4wNiwwLjA2YzAuMzgsMC4zNywwLjc4LDAuNSwxLjMsMC42YzAuNDksMC4wOSwxLjM5LDAuMjIsMS40LDAuMjJsMC4zMSwwLjA0TDExLjU1LDM0bC0wLjAzLDAuMDEKCQljLTAuMDEsMC4wMS0wLjMyLDAuMTctMC44OCwwLjE1Yy0wLjM3LTAuMDEtMC42OS0wLjA3LTAuOTEtMC4xM2wwLjE3LDAuMTlsMC4wNywwLjA3YzAuMTksMC4yMSwwLjUyLDAuMzgsMS4wMSwwLjUyCgkJYzAuMTQsMC4wNCwwLjI5LDAuMDgsMC40MywwLjExYzAuNSwwLjExLDAuOTUsMC4xNiwwLjk2LDAuMTZsMC4zMywwLjAzbC0wLjE5LDAuMTFsLTAuMSwwLjA1Yy0wLjA0LDAuMDItMC4zNiwwLjE5LTAuOTQsMC4xNQoJCWMtMC4xNy0wLjAxLTAuMzQtMC4wMy0wLjUxLTAuMDdjMCwwLDAsMC0wLjAxLDBsMCwwbC0yLjI3LDIuMTRsMC43NiwwLjgxbDIuMzMtMi4xOWMwLjQ3LDAuMjYsMS4yMywwLjUsMS44NSwwLjUybDEuMDEsMC4wMwoJCWwxLjcxLDEuNzdsMC44OSwwbC0zLjY5LTMuOThsMS42Mi0xLjUybDAuMjMtMC4yMWwwLjA1LTAuMDVsMC4wNC0wLjA0bDEuMjEsMS4zbDAuNjEsMC4wMmwxLjM0LTEuMTlsMC4wMi0wLjU3TDE4LjYxLDMyLjEzeiIvPgoJPHBhdGggY2xhc3M9InN0MCIgZD0iTTEyLjk3LDE2LjI2YzAtMC4wNS0wLjAxLTAuMDktMC4wNC0wLjExYy0wLjA0LTAuMDQtMC4xMS0wLjA2LTAuMjItMC4wNmgtMC4wMWwtMC4xNywwdjAuMzZsMC4xNywwCgkJQzEyLjg4LDE2LjQ1LDEyLjk3LDE2LjM4LDEyLjk3LDE2LjI2Ii8+Cgk8cGF0aCBjbGFzcz0ic3QwIiBkPSJNOC41LDE2LjQ0YzAtMC4wNy0wLjAyLTAuMTEtMC4wNS0wLjE0Yy0wLjA1LTAuMDQtMC4xMy0wLjA2LTAuMjYtMC4wNWwtMC4xOSwwLjAxdjAuNDZsMC4xOS0wLjAxCgkJQzguNCwxNi42OSw4LjUsMTYuNjEsOC41LDE2LjQ0Ii8+Cgk8cGF0aCBjbGFzcz0ic3QwIiBkPSJNMTMuMDYsMTcuMDFjMC0wLjA2LTAuMDEtMC4xLTAuMDUtMC4xM2MtMC4wNS0wLjA1LTAuMTMtMC4wNy0wLjI2LTAuMDdoLTAuMDFsLTAuMjEsMHYwLjQybDAuMjEsMAoJCUMxMi45NiwxNy4yMywxMy4wNiwxNy4xNSwxMy4wNiwxNy4wMSIvPgoJPHBhdGggY2xhc3M9InN0MCIgZD0iTTE4LjgyLDE3LjM4YzAuMDksMC4wMSwwLjE3LTAuMDIsMC4yMy0wLjA4YzAuMS0wLjA5LDAuMTUtMC4yNiwwLjE1LTAuNDdjMC0wLjM1LTAuMTQtMC41Ny0wLjM4LTAuNTgKCQljLTAuMDEsMC0wLjAyLDAtMC4wMiwwYy0wLjA4LDAtMC4xNSwwLjAzLTAuMjEsMC4wOGMtMC4xLDAuMDktMC4xNSwwLjI1LTAuMTUsMC40NkMxOC40MywxNy4xMywxOC41OCwxNy4zNiwxOC44MiwxNy4zOCIvPgoJPHBhdGggY2xhc3M9InN0MCIgZD0iTTE3LjAzLDE3LjE2YzAuMDktMC4wOSwwLjE0LTAuMjQsMC4xNC0wLjQ0YzAtMC4zOC0wLjE2LTAuNTYtMC41LTAuNTdsLTAuMDUsMHYxLjEybDAuMDUsMAoJCUMxNi44NCwxNy4yNywxNi45NSwxNy4yNCwxNy4wMywxNy4xNiIvPgoJPHBhdGggY2xhc3M9InN0MCIgZD0iTTI0LjU4LDI1LjMyQzI0LjU4LDI1LjMyLDI0LjU4LDI1LjMyLDI0LjU4LDI1LjMyYy0wLjAxLDAtMC4wMS0wLjAxLTAuMDItMC4wMQoJCWMtMC4wMi0wLjAxLTAuMDQtMC4wMi0wLjA2LTAuMDRoMGMtMC44OC0wLjYxLTIuNjEtMi4yNS0yLjctMi4yNWMtMC4wMiwwLTYuMTIsMi4yMi02LjEyLDIuMjJjLTAuMDEsMC0wLjA5LDAuMDItMC4xNSwwLjAyCgkJbC0wLjMtMC4wN2wtMS4xMy0wLjI2bC0wLjE2LTAuMDRsLTAuMTYtMC4wNGwtMC4wNS0wLjAxbC0wLjE0LTAuMDNsLTAuMTQtMC4wM2wtMC40Mi0wLjFsLTAuMTItMC4wM2wtMC4yLTAuMDVsLTAuMTEtMC4wMwoJCWwtMC4yNi0wLjA2bC0wLjExLTAuMDJsLTAuMTgtMC4wNGwtMC4xMS0wLjAybC0wLjA3LTAuMDJsLTAuMTksMC4xbC0wLjEsMC4wNWwtMC4xNSwwLjA4bC0wLjEsMC4wNWwtMC4yLDAuMTFsLTAuMSwwLjA1CgkJbC0wLjE2LDAuMDhsLTAuMSwwLjA1bC0wLjI4LDAuMTRsLTAuMTIsMC4wNmwtMC4yMiwwLjExYy0wLjAyLDAtMC4wNCwwLTAuMDYsMGMtMC4xMiwwLTAuMjMsMC0wLjMyLDBjLTAuMjQsMC0wLjM5LDAtMC4zOSwwCgkJQzkuMTMsMjUuMyw4Ljg0LDI1LjMsOC41NiwyNS4zYy0yLjY2LTAuMDEtNS43NSwwLjE3LTYuMjcsMC4ybDAuMTEtMi45bDYuMjcsMi4zYzAuMDEtMC4wMywwLjAyLTAuMDcsMC4wNC0wLjEKCQljMC4wMS0wLjAzLDAuMDMtMC4wNywwLjA0LTAuMWMwLjAyLTAuMDYsMC4wNS0wLjEyLDAuMDctMC4xN2MwLjAyLTAuMDMsMC4wMy0wLjA3LDAuMDUtMC4xYzAuMDItMC4wMywwLjAzLTAuMDYsMC4wNS0wLjEKCQlsLTYuNDYtMy4yOGwwLjAzLTAuNzNjMC43Ny0wLjA4LDEuOC0wLjE4LDMuMDItMC4yOWwzLjkyLDMuNmMwLjAyLTAuMDMsMC4wNS0wLjA1LDAuMDgtMC4wOGMwLjAzLTAuMDMsMC4wNS0wLjA1LDAuMDgtMC4wOAoJCWMwLjA1LTAuMDQsMC4wOS0wLjA4LDAuMTQtMC4xMmMwLjAzLTAuMDIsMC4wNi0wLjA1LDAuMDgtMC4wN2MwLjAzLTAuMDIsMC4wNi0wLjA0LDAuMDktMC4wN2wtMi42LTMuMzIKCQljMC42MS0wLjA0LDEuMjYtMC4wOCwxLjkyLTAuMTFsMS40MywzLjAyYzAuMDMtMC4wMSwwLjA3LTAuMDMsMC4xLTAuMDRjMC4wMy0wLjAxLDAuMDctMC4wMiwwLjEtMC4wMwoJCWMwLjA2LTAuMDIsMC4xMi0wLjA0LDAuMTgtMC4wNWMwLjA0LTAuMDEsMC4wNy0wLjAyLDAuMTEtMC4wM2MwLjA0LTAuMDEsMC4wNy0wLjAyLDAuMTEtMC4wMmwtMC42Ny0yLjkKCQljMC4xNy0wLjAxLDAuMzQtMC4wMSwwLjUxLTAuMDJjMC40My0wLjAxLDAuODYtMC4wMiwxLjI5LTAuMDNsLTAuMjYsMi44OWMwLjA0LDAsMC4wNywwLDAuMTEsMC4wMWMwLjA0LDAsMC4wNywwLjAxLDAuMTEsMC4wMQoJCWMwLjA2LDAuMDEsMC4xMiwwLjAyLDAuMTgsMC4wM2MwLjA0LDAuMDEsMC4wNywwLjAxLDAuMTEsMC4wMmMwLjA0LDAuMDEsMC4wNywwLjAyLDAuMTEsMC4wMmwwLjg5LTIuOTloMC4wMQoJCWMwLjYxLDAsMS4yMSwwLjAxLDEuODEsMC4wMmwtMS45MSwzLjI4YzAuMDMsMC4wMiwwLjA2LDAuMDMsMC4wOSwwLjA1YzAuMDMsMC4wMiwwLjA2LDAuMDQsMC4wOSwwLjA2YzAuMDUsMC4wMywwLjEsMC4wNywwLjE2LDAuMQoJCWMwLjAzLDAuMDIsMC4wNiwwLjA0LDAuMDksMC4wNmMwLjAzLDAuMDIsMC4wNSwwLjA0LDAuMDgsMC4wNmwwLDAuMDFsMC4wMS0wLjAxYzAsMCwwLDAsMCwwbDAuMDYtMC4wOGwyLjk3LTMuNQoJCWMxLjE3LDAuMDUsMi4zLDAuMTEsMy4zMywwLjE5bC01Ljc1LDQuMDFjMC4wMiwwLjAzLDAuMDQsMC4wNiwwLjA2LDAuMDljMC4wMiwwLjAzLDAuMDQsMC4wNiwwLjA2LDAuMDkKCQljMC4wMiwwLjAzLDAuMDMsMC4wNSwwLjA1LDAuMDhjMC4wMiwwLjAzLDAuMDMsMC4wNSwwLjA1LDAuMDhjMC4wMiwwLjAzLDAuMDQsMC4wNiwwLjA1LDAuMWMwLjAyLDAuMDMsMC4wMywwLjA2LDAuMDUsMC4xCgkJbDguMS00LjMxYzAuNDUsMC4wNCwwLjg2LDAuMDgsMS4yMiwwLjEyYzAuMDUsMC4wMSwwLjEsMC4wMSwwLjE0LDAuMDJMMjQuNTgsMjUuMzJMMjQuNTgsMjUuMzJ6IE0xNy42MSwyNS41CgkJYzAuMDMtMC4wMSwwLjEzLTAuMDUsMC4yOS0wLjFjMC44Ny0wLjMxLDMuMzMtMS4yMSwzLjMzLTEuMjFsMCwwYzAsMCwwLDAsMCwwbC0yLjE4LDEuNDJoMGgwTDE3LjYxLDI1LjUKCQlDMTcuNjEsMjUuNSwxNy42MSwyNS41LDE3LjYxLDI1LjVMMTcuNjEsMjUuNXogTTI0LjUxLDI5LjQ3Yy0wLjA0LDAuNDItMC4xMSwwLjk4LTAuMjYsMS42NGMtMC4yLDAuODgtMC41MywxLjkyLTEuMDksMy4wNAoJCWMtMC42LDEuMjEtMS40NywyLjUtMi43MSwzLjc0Yy0zLjg1LDMuODUtNy4yNCw0Ljc0LTcuMjQsNC43NHMtMy4xNy0wLjk5LTYuODgtNC43QzUuMSwzNi42OCw0LjIzLDM1LjQsMy42MiwzNC4yCgkJYy0wLjUtMC45OS0wLjgzLTEuOTEtMS4wNC0yLjcxYy0wLjE1LTAuNTgtMC4yNC0xLjEtMC4zLTEuNTJjLTAuMS0wLjc0LTAuMDgtMS4xOS0wLjA4LTEuMTlzMC4wMy0wLjAxLDAuMDgtMC4wNAoJCWMwLjI0LTAuMTMsMS4wOC0wLjUzLDIuNTUtMC45M2MwLjk5LTAuMjcsMi4yNy0wLjU0LDMuODUtMC43M2MxLjI0LTAuMTUsMi42Ni0wLjI0LDQuMjgtMC4yNGMwLjc4LDAsMS41MiwwLjAyLDIuMjIsMC4wNQoJCWM1LjU3LDAuMjcsOC44MiwxLjQ4LDkuMywxLjY2YzAuMDQsMC4wMiwwLjA2LDAuMDIsMC4wNiwwLjAyUzI0LjU2LDI4LjkyLDI0LjUxLDI5LjQ3IE0yLjQ0LDE2LjM2bDAuMDIsMAoJCWMwLjE0LTAuMDIsMC4yOC0wLjAzLDAuNDEtMC4wNWwwLjAzLDB2MS40OWMwLjIzLTAuMDMsMC40Ni0wLjA1LDAuNjktMC4wOGwwLjAzLDB2MC40bC0wLjAyLDBjLTAuMzgsMC4wNC0wLjc2LDAuMDgtMS4xMywwLjEzCgkJbC0wLjAzLDBWMTYuMzZ6IE00LjA1LDE2LjE5bDAuMDIsMGMwLjM4LTAuMDQsMC43Ny0wLjA4LDEuMTUtMC4xMWwwLjAzLDB2MC40bC0wLjAyLDBjLTAuMjQsMC4wMi0wLjQ3LDAuMDQtMC43MSwwLjA3djAuMzIKCQljMC4yLTAuMDIsMC40LTAuMDQsMC42LTAuMDZsMC4wMywwdjAuNGwtMC4wMiwwYy0wLjIsMC4wMi0wLjQsMC4wNC0wLjYsMC4wNnYwLjM3YzAuMjQtMC4wMiwwLjQ5LTAuMDUsMC43My0wLjA3bDAuMDMsMHYwLjQKCQlsLTAuMDIsMGMtMC4zOCwwLjAzLTAuNzgsMC4wNy0xLjE3LDAuMTFsLTAuMDMsMFYxNi4xOXogTTUuNTQsMTcuOWMwLjE5LTAuNjMsMC4zOC0xLjI1LDAuNTgtMS44OGwwLTAuMDJsMC4wMiwwCgkJYzAuMTctMC4wMSwwLjMzLTAuMDMsMC41LTAuMDRsMC4wMiwwbDAuMDEsMC4wMmwwLjU5LDEuODJsLTAuMDMsMGMtMC4xNSwwLjAxLTAuMjksMC4wMi0wLjQ0LDAuMDNsLTAuMDIsMGwtMC4xMS0wLjQzCgkJYy0wLjE3LDAuMDEtMC4zNSwwLjAzLTAuNTIsMC4wNGMtMC4wNCwwLjE0LTAuMDcsMC4yOS0wLjExLDAuNDNsMCwwLjAybC0wLjAyLDBjLTAuMTQsMC4wMS0wLjI4LDAuMDItMC40MiwwLjAzbC0wLjA0LDBMNS41NCwxNy45CgkJeiBNNy41NCwxNS45bDAuMDIsMGMwLjIyLTAuMDEsMC40NC0wLjAzLDAuNjYtMC4wNGMwLjI2LTAuMDEsMC40NiwwLjA0LDAuNTgsMC4xNWMwLjEsMC4wOSwwLjE1LDAuMjMsMC4xNSwwLjQxCgkJYzAsMC4yNS0wLjExLDAuNDQtMC4zMiwwLjU2YzAuMTMsMC4yMywwLjI3LDAuNDYsMC40LDAuNjlsMC4wMiwwLjA0bC0wLjA0LDBjLTAuMTUsMC4wMS0wLjMxLDAuMDItMC40NiwwLjAybC0wLjAyLDBsLTAuMDEtMC4wMQoJCWMtMC4xMS0wLjIxLTAuMjMtMC40Mi0wLjM0LTAuNjNjLTAuMDYsMC0wLjEzLDAuMDEtMC4xOSwwLjAxdjAuNjZsLTAuMDIsMGMtMC4xNCwwLjAxLTAuMjgsMC4wMi0wLjQxLDAuMDNsLTAuMDMsMFYxNS45egoJCSBNOS4zNiwxNS44bDAuMDIsMGMwLjE0LTAuMDEsMC4yOC0wLjAxLDAuNDMtMC4wMmwwLjAyLDBsMC4wMSwwLjAxYzAuMTYsMC4zLDAuMzIsMC42LDAuNDgsMC44OWwwLjEzLDAuMjkKCQljLTAuMDItMC4xNy0wLjA0LTAuMzctMC4wNC0wLjU1di0wLjY3bDAuMDIsMGMwLjEzLDAsMC4yNi0wLjAxLDAuNC0wLjAxbDAuMDMsMHYxLjg4bC0wLjAyLDBjLTAuMTQsMC0wLjI4LDAuMDEtMC40MiwwLjAxbC0wLjAyLDAKCQlsLTAuMDEtMC4wMWMtMC4xNi0wLjMtMC4zMi0wLjYtMC40OC0wLjlsLTAuMTMtMC4yOWMwLDAuMDEsMCwwLjAyLDAsMC4wM2MwLjAyLDAuMTYsMC4wNCwwLjM1LDAuMDQsMC41MnYwLjY3bC0wLjAyLDAKCQljLTAuMTMsMC4wMS0wLjI2LDAuMDEtMC40LDAuMDJsLTAuMDMsMFYxNS44eiBNMTIuMDcsMTUuNzJsMC4wMiwwYzAuMjEsMCwwLjQyLTAuMDEsMC42My0wLjAxYzAuMjgsMCwwLjQ3LDAuMDUsMC41OCwwLjE3CgkJYzAuMDgsMC4wOCwwLjEyLDAuMTgsMC4xMiwwLjMxYzAsMC4xNy0wLjA5LDAuMzMtMC4yMSwwLjRjMC4xOSwwLjA3LDAuMywwLjIzLDAuMywwLjQ0YzAsMC4zNS0wLjI4LDAuNTYtMC43NCwwLjU3CgkJYy0wLjIzLDAtMC40NSwwLTAuNjgsMC4wMWwtMC4wMywwVjE1LjcyeiBNMTMuNjgsMTUuNzFjMC4xNSwwLDAuMywwLDAuNDQsMGwwLjAyLDBsMC4wMSwwLjAyYzAuMDUsMC4xNCwwLjExLDAuMjgsMC4xNiwwLjQyCgkJYzAuMDMsMC4wOSwwLjA2LDAuMTcsMC4wOSwwLjI2bDAuMDQsMC4xYzAuMDItMC4wNSwwLjA0LTAuMSwwLjA2LTAuMTVjMC4wMy0wLjA3LDAuMDUtMC4xMywwLjA4LTAuMmwwLjE3LTAuNDRsMC4wMiwwCgkJYzAuMTQsMCwwLjI5LDAsMC40MywwLjAxbDAuMDQsMGwtMC4wMiwwLjA0Yy0wLjE4LDAuMzktMC4zNywwLjc4LTAuNTUsMS4xN3YwLjY3bC0wLjAzLDBjLTAuMTQsMC0wLjI4LDAtMC40MSwwbC0wLjAyLDB2LTAuNjcKCQljLTAuMTgtMC4zOS0wLjM3LTAuNzktMC41NS0xLjE4bC0wLjAyLTAuMDRMMTMuNjgsMTUuNzF6IE0xNi4xNiwxNS43NWwwLjAzLDBjMC4xNywwLjAxLDAuMzUsMC4wMSwwLjUyLDAuMDIKCQljMC42MSwwLjAyLDAuOTUsMC4zNywwLjk1LDAuOTdjMCwwLjMtMC4wOCwwLjU0LTAuMjUsMC43Yy0wLjE1LDAuMTQtMC4zNiwwLjIyLTAuNjMsMC4yMmMtMC4wMiwwLTAuMDMsMC0wLjA1LDAKCQljLTAuMTgtMC4wMS0wLjM2LTAuMDEtMC41NC0wLjAybC0wLjAyLDBWMTUuNzV6IE0xOC4yMiwxNi4wM2MwLjE1LTAuMTQsMC4zNS0wLjIxLDAuNi0wLjJjMC41MiwwLjAzLDAuODYsMC40MywwLjg2LDEuMDIKCQljMCwwLjMyLTAuMDksMC41Ny0wLjI3LDAuNzRjLTAuMTQsMC4xMy0wLjMyLDAuMi0wLjUzLDAuMmMtMC4wMiwwLTAuMDQsMC0wLjA2LDBjLTAuNTItMC4wMy0wLjg2LTAuNDMtMC44Ni0xLjAzCgkJQzE3Ljk2LDE2LjQ0LDE4LjA1LDE2LjE5LDE4LjIyLDE2LjAzIE0yMC4wNSwxNS45NWwwLjAzLDBjMC4xNCwwLjAxLDAuMjgsMC4wMiwwLjQxLDAuMDNsMC4wMiwwdjEuODhsLTAuMDMsMAoJCWMtMC4xNC0wLjAxLTAuMjgtMC4wMi0wLjQxLTAuMDNsLTAuMDIsMFYxNS45NXogTTIxLjA5LDE2LjAybDAuMDMsMGMwLjE0LDAuMDEsMC4yOCwwLjAyLDAuNDIsMC4wNGwwLjAxLDBsMC4wMSwwLjAxCgkJYzAuMTYsMC4zMiwwLjMyLDAuNjQsMC40OCwwLjk1bDAuMTMsMC4zYzAsMCwwLDAsMCwwYy0wLjAyLTAuMTctMC4wNC0wLjM3LTAuMDQtMC41NHYtMC42N2wwLjAzLDBjMC4xMywwLjAxLDAuMjYsMC4wMiwwLjM5LDAuMDQKCQlsMC4wMiwwdjEuODhsLTAuMDMsMGMtMC4xNC0wLjAxLTAuMjgtMC4wMy0wLjQyLTAuMDRsLTAuMDEsMGwtMC4wMS0wLjAxYy0wLjE2LTAuMzItMC4zMi0wLjY0LTAuNDgtMC45NmwtMC4xMy0wLjMKCQljMCwwLjAxLDAsMC4wMSwwLDAuMDJjMC4wMiwwLjE3LDAuMDQsMC4zNSwwLjA0LDAuNTJ2MC42OGwtMC4wMywwYy0wLjEzLTAuMDEtMC4yNi0wLjAyLTAuMzktMC4wM2wtMC4wMiwwVjE2LjAyeiBNMjMuMjIsMTYuNDUKCQljMC4xNy0wLjE1LDAuMzktMC4yMSwwLjY0LTAuMTljMC4yOSwwLjAzLDAuNDgsMC4xOSwwLjU5LDAuMzFsMC4wMSwwLjAybC0wLjI1LDAuMjhsLTAuMDItMC4wMmMtMC4wOS0wLjA5LTAuMTgtMC4xNi0wLjMzLTAuMTgKCQljLTAuMTItMC4wMS0wLjIyLDAuMDItMC4zLDAuMDljLTAuMSwwLjA5LTAuMTUsMC4yNC0wLjE1LDAuNDJjMCwwLjM3LDAuMTcsMC41OSwwLjQ5LDAuNjNjMC4wNiwwLjAxLDAuMTMsMCwwLjE3LTAuMDJWMTcuNQoJCWMtMC4wOS0wLjAxLTAuMTktMC4wMi0wLjI4LTAuMDNsLTAuMDIsMHYtMC4zOWwwLjAzLDBjMC4yMiwwLjAyLDAuNDUsMC4wNSwwLjY3LDAuMDhsMC4wMiwwdjAuODhsLTAuMDEsMC4wMQoJCWMtMC4xMiwwLjExLTAuMzEsMC4xNi0wLjUxLDAuMTZjLTAuMDQsMC0wLjA3LDAtMC4xMS0wLjAxYy0wLjU2LTAuMDYtMC45Mi0wLjQ4LTAuOTItMS4wNkMyMi45NSwxNi44NSwyMy4wNCwxNi42MSwyMy4yMiwxNi40NQoJCSBNMTkuMDIsMTMuODNjLTAuMDYsMC0wLjEyLTAuMDEtMC4xOC0wLjAxYy0xLjMzLTAuMDgtMi43Ni0wLjE0LTQuMjItMC4xNWMtMC4wNCwwLTAuMDcsMC0wLjExLDBjLTAuMDQsMC0wLjA3LDAtMC4xMSwwCgkJYy0wLjI2LDAtMC41MiwwLTAuNzksMGMtMC4xNiwwLTAuMzMsMC0wLjQ5LDBjLTAuMDQsMC0wLjA3LDAtMC4xMSwwYy0wLjA0LDAtMC4wNywwLTAuMTEsMGMtMS4yNiwwLjAxLTIuNTIsMC4wNS0zLjcyLDAuMTEKCQljLTAuMDQsMC0wLjA3LDAtMC4xMSwwLjAxYy0wLjA0LDAtMC4wNywwLTAuMTEsMC4wMWMtMC40NSwwLjAyLTAuODksMC4wNS0xLjMyLDAuMDdjLTAuMDQsMC0wLjA4LDAtMC4xMSwwLjAxCgkJYy0wLjA0LDAtMC4wOCwwLTAuMTEsMC4wMUMzLjc2LDE0LjExLDEsMTQuNDUsMSwxNC40NXYzLjI4bDAuMDQsMi41OWwwLDAuMTJsMCwwLjAxbDAsMC4xMWwwLjAyLDEuMzFsMCwwLjEybDAsMC4xMmwwLjEsNi40MwoJCWMtMC4wMiwyLjI1LDAuNTQsNC4yNywxLjQyLDYuMDdjMi41NCw1LjE3LDcuNzgsOC40NCw5LjgxLDkuNTZsMC44NywwLjQ1bDAuODMtMC40NWMyLjExLTEuMTMsNy41OC00LjQ0LDEwLjIxLTkuNjcKCQljMC44OS0xLjc3LDEuNDUtMy43NiwxLjQ1LTUuOTVsMC4xMi04LjFsMC4wNC0zLjAxdi0yLjk5QzI1LjkxLDE0LjQ1LDIyLjk0LDE0LjA3LDE5LjAyLDEzLjgzIi8+Cgk8cGF0aCBjbGFzcz0ic3QwIiBkPSJNNi41LDE2LjkxYy0wLjAzLTAuMTEtMC4wNi0wLjI0LTAuMDktMC4zNmMtMC4wMS0wLjA1LTAuMDItMC4wOS0wLjAzLTAuMTRjLTAuMDQsMC4xNy0wLjA4LDAuMzYtMC4xMywwLjUzCgkJYy0wLjAxLDAuMDUtMC4wMiwwLjA5LTAuMDQsMC4xNGMwLjExLTAuMDEsMC4yMi0wLjAyLDAuMzMtMC4wMkw2LjUsMTYuOTF6Ii8+CjwvZz4KPC9zdmc+Cg==" alt="Cal Poly">
+        CAL POLY · PSY 4480 · COGNITIVE NEUROSCIENCE<br>© 2026 Sean Noah · v1.1</div>
+    </aside>
+
+    <section id="stage">
+      <div class="panel" id="scene-wrap"><canvas id="scene" aria-hidden="true"></canvas></div>
+      <div class="panel" id="scope-wrap">
+        <div id="scope-hdr">
+          <div class="lbl"><span class="rec"></span>MEMBRANE POTENTIAL · READOUT AT HILLOCK</div>
+          <div id="readout"><span id="spikeflag">● SPIKE</span><span id="vread">−70.0</span><span id="vunit">mV</span></div>
+        </div>
+        <div id="scope-cv-wrap"><canvas id="scope" aria-hidden="true"></canvas></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div id="help" role="dialog" aria-label="Help and keyboard shortcuts">
+  <div class="card">
+    <button class="chip util close" id="help-close">✕</button>
+    <h2>Driving the demo</h2>
+    <p>Click the synapses on the neuron (or the buttons at left) to send inputs. Excitatory inputs (EPSPs) nudge the membrane toward threshold; inhibitory inputs (IPSPs) pull it away. When the summed potential at the <b>axon hillock</b> reaches −55&nbsp;mV, an action potential fires and travels down the axon.</p>
+    <table>
+      <tr><td><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></td><td>fire synapse A / B / inhibitory</td></tr>
+      <tr><td><kbd>space</kbd></td><td>pause / resume</td></tr>
+      <tr><td><kbd>R</kbd></td><td>reset</td></tr>
+      <tr><td><kbd>L</kbd> <kbd>M</kbd></td><td>toggle labels · myelin</td></tr>
+    </table>
+    <p>After each spike the dashed threshold line jumps up and decays back: the refractory period. Inputs that arrive too soon can't fire a second spike (only a much stronger drive can, once the absolute period ends).</p>
+    <p>Scale notes: voltages (rest −70, threshold −55, peak +40&nbsp;mV) and millisecond timings are realistic, but time is slowed ~150× so you can watch. With myelin on, the true speed-up (15–100×) is compressed to stay visible.</p>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ================= palette (validated: dataviz six-checks, both surfaces) ================= */
+const PAL = {
+  dark: {
+    panel:"#0e1626", line:"#22314d", ink:"#eaf1fc", muted:"#8fa0bc", faint:"#5f7093",
+    exc:"#d95926", excB:"#f2764a", inh:"#3987e5", inhB:"#63a4f0",
+    trace:"#199e70", traceGlow:"rgba(25,158,112,.85)", axonT:"#c98500", thresh:"#c05a4a", rest:"#64789a",
+    grid:"rgba(143,160,188,.10)", axis:"rgba(143,160,188,.28)",
+    somaF:"#1d2c47", somaE:"#5d7cae", axonBase:"#3c5378",
+    hot1:"#f59e0b", hot2:"#ffe7b8", refr:"#16345f",
+    myelF:"#26364f", myelE:"#4a5f81", nodeE:"#9fc1ff",
+    silF:"#16233a", silE:"#2d4265", electrode:"#9fb3d4",
+    label:"#8fa0bc", leader:"rgba(143,160,188,.45)",
+    ntE:"#ffc46b", ntI:"#86a8ff", flash:"#ffe082"
+  },
+  light: {
+    panel:"#f4f6fb", line:"#d3dbe8", ink:"#16202f", muted:"#5b6b85", faint:"#8b99b3",
+    exc:"#c9531c", excB:"#e06a30", inh:"#2a78d6", inhB:"#4a8fdf",
+    trace:"#0f7a52", traceGlow:"rgba(15,122,82,.55)", axonT:"#b5820a", thresh:"#b3492f", rest:"#7b8da8",
+    grid:"rgba(91,107,133,.13)", axis:"rgba(91,107,133,.34)",
+    somaF:"#dbe4f2", somaE:"#52719f", axonBase:"#8fa3c2",
+    hot1:"#f59e0b", hot2:"#e8590c", refr:"#7f97bd",
+    myelF:"#cfdaeb", myelE:"#7e94b8", nodeE:"#3f6ea8",
+    silF:"#e3eaf6", silE:"#9fb2cf", electrode:"#52719f",
+    label:"#5b6b85", leader:"rgba(91,107,133,.45)",
+    ntE:"#e07b1a", ntI:"#4a8fdf", flash:"#f59e0b"
+  }
+};
+let theme = "dark";
+const C = () => PAL[theme];
+
+/* ================= simulation constants ================= */
+const REST=-70, THRESH=-55, PEAK=40, AHP=-79;
+const TAU_R=1.2, TAU_D_E=14, TAU_D_I=18;
+const ABS_REF=2.2;              // absolute refractory (ms) — no spike possible
+const MIN_ISI=5.2;              // shortest possible interspike interval (ms)
+const REL_A=28, REL_TAU=3.2;    // relative refractory: threshold bump (mV), decay (ms)
+const PROBE_S=0.68;             // distal-axon probe (fraction of axon length)
+const AP_RISE=0.7, AP_FALL=1.3, AP_END=7;
+const TRAVEL_U=14, TRAVEL_M=5.5; // ms for spike to traverse axon
+const DELAY={e1:1.6, e2:1.2, i:1.0}; // dendritic conduction delay to hillock
+const TIME_SCALE=7;             // sim-ms per real second at 1× speed
+const WINDOW=80;                // scope window (ms)
+
+function pspNorm(tauD){ const tpk=(TAU_R*tauD/(tauD-TAU_R))*Math.log(tauD/TAU_R);
+  return Math.exp(-tpk/tauD)-Math.exp(-tpk/TAU_R); }
+const NORM_E=pspNorm(TAU_D_E), NORM_I=pspNorm(TAU_D_I);
+const DEF_W={e1:8.2,e2:8.2,i:8.0};
+const W={...DEF_W};             // live synaptic strengths (mV); i stored as magnitude
+function effThresh(dtF){
+  if(!(dtF>0) || dtF>60) return THRESH;
+  if(dtF<=ABS_REF) return 999;
+  return THRESH + REL_A*Math.exp(-(dtF-ABS_REF)/REL_TAU);
+}
+
+/* ================= state ================= */
+const sim = {
+  t:0, speed:1, paused:false,
+  psps:[],        // {t0, amp, tauD, norm}
+  queue:[],       // scheduled stims {tSim, syn}
+  pulses:[],      // {t0, travel, arrived}
+  wavelets:[],    // {syn, t0}  dendritic PSP travelling to soma
+  ntIn:[],        // {syn, t0}  transmitter at an input synapse
+  ntOut:[],       // {t0}       transmitter release at terminals
+  spikes:[],      // sim-times of APs
+  marks:[],       // {t, kind:'e'|'i'} arrival marks for the scope
+  trace:[],       // {t, v}
+  lastFire:-1e9, lastV:REST,
+  hoverSyn:null,
+};
+const ui = { labels:true, myelin:false, preset:0,
+  sites:{hillock:true,axon:false} };
+const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ================= geometry ================= */
+const scene = document.getElementById("scene"), scopeCv = document.getElementById("scope");
+const sctx = scene.getContext("2d"), gctx = scopeCv.getContext("2d");
+let G = null; // geometry cache
+const SHEATHS=[[0.07,0.245],[0.295,0.47],[0.52,0.695],[0.745,0.92]];
+const NODES=[0.27,0.495,0.72,0.945];
+
+function cubicPts(p0,p1,p2,p3,n){
+  const out=[]; for(let i=0;i<=n;i++){ const u=i/n, v=1-u;
+    out.push({ x:v*v*v*p0.x+3*v*v*u*p1.x+3*v*u*u*p2.x+u*u*u*p3.x,
+               y:v*v*v*p0.y+3*v*v*u*p1.y+3*v*u*u*p2.y+u*u*u*p3.y }); }
+  return out;
+}
+function buildGeometry(w,h){
+  const somaR=Math.max(24, Math.min(w*0.072, h*0.15));
+  const S={x:w*0.175, y:h*0.56};
+  const syn={ e1:{x:w*0.058,y:h*0.145}, e2:{x:w*0.036,y:h*0.50}, i:{x:w*0.064,y:h*0.875} };
+  const dend={
+    e1:cubicPts(syn.e1,{x:w*0.10,y:h*0.17},{x:S.x-somaR*0.9,y:S.y-somaR*1.5},{x:S.x-somaR*0.35,y:S.y-somaR*0.8},44),
+    e2:cubicPts(syn.e2,{x:w*0.09,y:h*0.50},{x:S.x-somaR*1.7,y:S.y-somaR*0.1},{x:S.x-somaR*0.92,y:S.y-somaR*0.05},44),
+    i :cubicPts(syn.i ,{x:w*0.105,y:h*0.86},{x:S.x-somaR*0.9,y:S.y+somaR*1.5},{x:S.x-somaR*0.35,y:S.y+somaR*0.8},44),
+  };
+  // small decorative side-branches for each dendrite (drawn only)
+  const twig=(pts,at,dx,dy)=>{const p=pts[at];return [p,{x:p.x+dx*0.5,y:p.y+dy*0.7},{x:p.x+dx,y:p.y+dy}];};
+  const twigs=[
+    twig(dend.e1,14, -w*0.012, -h*0.07), twig(dend.e1,30, w*0.010, -h*0.075),
+    twig(dend.e2,16, -w*0.008, -h*0.08), twig(dend.e2,16, -w*0.006, h*0.08),
+    twig(dend.i,14, -w*0.013, h*0.065), twig(dend.i,30, w*0.012, h*0.07),
+  ];
+  const A0={x:S.x+somaR*1.85, y:S.y};
+  const Aend={x:w*0.845, y:S.y};
+  const mid={x:(A0.x+Aend.x)/2, y:S.y+h*0.032};
+  const axon=[]; const N=150;
+  for(let i=0;i<=N;i++){ const u=i/N, v=1-u;
+    axon.push({ x:v*v*A0.x+2*v*u*mid.x+u*u*Aend.x, y:v*v*A0.y+2*v*u*mid.y+u*u*Aend.y }); }
+  const term={
+    t1:cubicPts(Aend,{x:w*0.88,y:S.y-h*0.02},{x:w*0.895,y:S.y-h*0.13},{x:w*0.923,y:S.y-h*0.165},24),
+    t2:cubicPts(Aend,{x:w*0.885,y:S.y},{x:w*0.905,y:S.y+h*0.005},{x:w*0.935,y:S.y+h*0.01},24),
+    t3:cubicPts(Aend,{x:w*0.88,y:S.y+h*0.02},{x:w*0.895,y:S.y+h*0.12},{x:w*0.918,y:S.y+h*0.175},24),
+  };
+  const sil={x:w*0.9655, yTop:S.y-h*0.24, yBot:S.y+h*0.25, r:w*0.0125};
+  const elec={tip:{x:A0.x+somaR*0.12, y:S.y-somaR*0.34},
+              top:{x:A0.x+somaR*0.95, y:S.y-somaR*2.1}};
+  return {w,h,somaR,S,syn,dend,twigs,A0,Aend,axon,term,sil,elec,
+          probeA:axon[Math.round(PROBE_S*N)],
+          hitR:Math.max(17,somaR*0.42)};
+}
+
+/* resize handling */
+function fitCanvas(cv,ctx){
+  const r=cv.parentElement.getBoundingClientRect();
+  const dpr=window.devicePixelRatio||1;
+  const w=Math.max(50,Math.round(r.width)), h=Math.max(50,Math.round(r.height));
+  if(cv.width!==Math.round(w*dpr)||cv.height!==Math.round(h*dpr)){
+    cv.width=Math.round(w*dpr); cv.height=Math.round(h*dpr);
+  }
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {w,h};
+}
+new ResizeObserver(()=>{ G=null; }).observe(document.getElementById("scene-wrap"));
+
+/* ================= math & color helpers ================= */
+const ss = u => { u=Math.min(1,Math.max(0,u)); return u*u*(3-2*u); };
+const clamp = (v,a,b)=>Math.min(b,Math.max(a,v));
+const RGB={};
+function rgb(hex){ if(RGB[hex]) return RGB[hex];
+  const n=parseInt(hex.slice(1),16); const v=[(n>>16)&255,(n>>8)&255,n&255]; RGB[hex]=v; return v; }
+function mix(h1,h2,f){ f=clamp(f,0,1); const a=rgb(h1),b=rgb(h2);
+  return `rgb(${Math.round(a[0]+(b[0]-a[0])*f)},${Math.round(a[1]+(b[1]-a[1])*f)},${Math.round(a[2]+(b[2]-a[2])*f)})`; }
+function voltColor(d){ const c=C();
+  return d<0.55 ? mix(c.axonBase,c.hot1,d/0.55) : mix(c.hot1,c.hot2,(d-0.55)/0.45); }
+
+/* ================= membrane model ================= */
+function pspValue(p,t){ const dt=t-p.t0; if(dt<=0) return 0;
+  return p.amp*(Math.exp(-dt/p.tauD)-Math.exp(-dt/TAU_R))/p.norm; }
+function pspSum(t){ let s=0; for(const p of sim.psps) s+=pspValue(p,t); return s; }
+function apShape(dtF,psp){
+  if(dtF<AP_RISE) return -55+(PEAK+55)*ss(dtF/AP_RISE);
+  if(dtF<AP_RISE+AP_FALL) return PEAK-(PEAK-AHP)*ss((dtF-AP_RISE)/AP_FALL);
+  const rec=AHP+(REST-AHP)*(1-Math.exp(-(dtF-2)/1.6));
+  const m=clamp((dtF-4.5)/2.5,0,1);
+  return rec*(1-m)+(REST+psp)*m;
+}
+let fireFlashUntil=0;
+
+/* voltage seen by the distal-axon probe: flat until the full-size spike passes */
+function axonV(t){
+  let v=REST;
+  for(const p of sim.pulses){
+    const dtP=t-(p.t0+p.travel*PROBE_S);
+    if(dtP>0 && dtP<AP_END) v += apShape(dtP,0)-REST;
+  }
+  return v;
+}
+
+function doStim(syn,tAt){
+  sim.wavelets.push({syn,t0:tAt});
+  sim.ntIn.push({syn,t0:tAt});
+  const exc = syn!=="i";
+  sim.psps.push({syn, t0:tAt+DELAY[syn], amp:exc?W[syn]:-W.i, tauD:exc?TAU_D_E:TAU_D_I, norm:exc?NORM_E:NORM_I});
+  sim.marks.push({t:tAt+DELAY[syn], kind:exc?"e":"i"});
+}
+
+function stepSim(dtReal){
+  const total=dtReal*TIME_SCALE*sim.speed;
+  const steps=clamp(Math.ceil(total/0.05),1,600), dt=total/steps;
+  for(let k=0;k<steps;k++){
+    sim.t+=dt; const t=sim.t;
+    for(let i=sim.queue.length-1;i>=0;i--){ if(sim.queue[i].tSim<=t){ doStim(sim.queue[i].syn,sim.queue[i].tSim); sim.queue.splice(i,1);} }
+    let psp=pspSum(t);
+    /* driving-force saturation: summation compresses as V climbs (or dives) far from rest */
+    if(psp>18) psp=18+(psp-18)*0.35;
+    else if(psp<-16) psp=-16+(psp+16)*0.5;
+    const dtF=t-sim.lastFire;
+    let V = dtF<=AP_END ? apShape(dtF,psp) : REST+psp;
+    const vPsp=REST+psp, eth=effThresh(dtF);
+    if(dtF>MIN_ISI && vPsp>=eth){
+      sim.lastFire=t; sim.spikes.push(t);
+      sim.pulses.push({t0:t, travel:ui.myelin?TRAVEL_M:TRAVEL_U, arrived:false});
+      V=Math.min(vPsp,eth); fireFlashUntil=performance.now()+900;
+    }
+    const tr=sim.trace;
+    if(!tr.length || t-tr[tr.length-1].t>=0.12) tr.push({t,v:V,va:axonV(t)});
+    sim.lastV=V;
+    for(const p of sim.pulses){
+      if(!p.arrived && (t-p.t0)/p.travel>=1){ p.arrived=true; sim.ntOut.push({t0:t}); }
+    }
+    /* pruning */
+    while(tr.length && t-tr[0].t>WINDOW+10) tr.shift();
+    if(sim.psps.length>60) sim.psps.splice(0,sim.psps.length-60);
+    sim.psps=sim.psps.filter(p=>t-p.t0<95);
+    sim.marks=sim.marks.filter(m=>t-m.t<WINDOW+10);
+    sim.spikes=sim.spikes.filter(s=>t-s<WINDOW+10);
+    sim.wavelets=sim.wavelets.filter(w=>(t-w.t0)/DELAY[w.syn]<=1.02);
+    sim.ntIn=sim.ntIn.filter(n=>t-n.t0<1.3);
+    sim.ntOut=sim.ntOut.filter(n=>t-n.t0<3.0);
+    sim.pulses=sim.pulses.filter(p=>t-p.t0 < p.travel*1.35 + 8);
+  }
+}
+
+/* ================= presets ================= */
+function runPreset(n){
+  sim.psps=[]; sim.queue=[]; sim.wavelets=[]; sim.ntIn=[];
+  ui.preset=n; document.querySelectorAll(".preset-btn").forEach(b=>b.dataset.active=(+b.dataset.preset===n));
+  const q=(off,syn)=>sim.queue.push({tSim:sim.t+off, syn});
+  if(n===1){ q(0.4,"e1"); }
+  if(n===2){ q(0.4,"e1"); q(6.4,"e1"); q(12.4,"e1"); }
+  if(n===3){ q(0.4,"e1"); q(0.75,"e2"); }
+  if(n===4){ q(0.3,"i"); q(0.8,"e1"); q(1.15,"e2"); }
+  if(n===5){ for(let k=0;k<7;k++){ q(0.4+k*4.5,"e1"); q(0.8+k*4.5,"e2"); } }
+  if(sim.paused) togglePause(false);
+}
+
+/* ================= scene drawing ================= */
+function drawDendrite(pts,w1){
+  const c=C(); sctx.strokeStyle=c.axonBase; sctx.lineCap="round"; sctx.lineJoin="round";
+  const chunks=[[0,0.33,w1*0.45],[0.30,0.66,w1*0.7],[0.63,1,w1]];
+  for(const [a,b,w] of chunks){
+    sctx.beginPath(); const i0=Math.floor(a*(pts.length-1)), i1=Math.floor(b*(pts.length-1));
+    sctx.moveTo(pts[i0].x,pts[i0].y);
+    for(let i=i0+1;i<=i1;i++) sctx.lineTo(pts[i].x,pts[i].y);
+    sctx.lineWidth=w; sctx.stroke();
+  }
+}
+function pathStroke(pts,i0,i1){
+  sctx.beginPath(); sctx.moveTo(pts[i0].x,pts[i0].y);
+  for(let i=i0+1;i<=i1;i++) sctx.lineTo(pts[i].x,pts[i].y); sctx.stroke();
+}
+function labelAt(x,y,text,ax,ay,align="left"){
+  const c=C();
+  sctx.strokeStyle=c.leader; sctx.lineWidth=1;
+  sctx.beginPath(); sctx.moveTo(ax,ay); sctx.lineTo(x,y); sctx.stroke();
+  sctx.fillStyle=c.label; sctx.font='12.5px "IBM Plex Sans",sans-serif';
+  sctx.textAlign=align; sctx.textBaseline="middle";
+  sctx.fillText(text, x+(align==="left"?4:-4), y);
+}
+function isExposed(s){
+  if(s< SHEATHS[0][0]-0.004) return true;
+  if(s> SHEATHS[3][1]+0.004) return true;
+  for(let i=0;i<3;i++) if(s>SHEATHS[i][1]+0.004 && s<SHEATHS[i+1][0]-0.004) return true;
+  return false;
+}
+
+function drawScene(){
+  const c=C(); const {w,h}=G; const t=sim.t;
+  sctx.clearRect(0,0,w,h);
+  const N=G.axon.length-1;
+  const baseW=Math.max(4.5,G.somaR*0.17);
+
+  /* depolarization field along axon */
+  const d=new Float32Array(N+1), rf=new Float32Array(N+1);
+  for(const p of sim.pulses){
+    const frac=(t-p.t0)/p.travel;
+    for(let i=0;i<=N;i++){ const s=i/N;
+      const g=Math.exp(-Math.pow(s-frac,2)/(2*0.045*0.045));
+      const r=Math.exp(-Math.pow(s-(frac-0.105),2)/(2*0.055*0.055));
+      d[i]=Math.min(1.25,d[i]+g); rf[i]=Math.min(1,rf[i]+r*0.8);
+    }
+  }
+  const Vnow=sim.lastV;
+  const hillockTint=clamp((Vnow-REST)/(PEAK-REST),0,1);
+  const subTint=clamp((Vnow-REST)/20,0,0.55);
+
+  /* --- next neuron silhouette --- */
+  sctx.fillStyle=c.silF; sctx.strokeStyle=c.silE; sctx.lineWidth=1.5;
+  const sil=G.sil;
+  sctx.beginPath();
+  sctx.moveTo(sil.x-sil.r,sil.yTop+sil.r);
+  sctx.arcTo(sil.x-sil.r,sil.yTop,sil.x,sil.yTop,sil.r);
+  sctx.arcTo(sil.x+sil.r*2.2,sil.yTop,sil.x+sil.r*2.2,sil.yTop+sil.r,sil.r);
+  sctx.lineTo(sil.x+sil.r*2.2,sil.yBot-sil.r);
+  sctx.arcTo(sil.x+sil.r*2.2,sil.yBot,sil.x+sil.r,sil.yBot,sil.r);
+  sctx.arcTo(sil.x-sil.r,sil.yBot,sil.x-sil.r,sil.yBot-sil.r,sil.r);
+  sctx.closePath(); sctx.fill(); sctx.stroke();
+
+  /* --- dendrites & twigs --- */
+  drawDendrite(G.dend.e1, baseW*0.85);
+  drawDendrite(G.dend.e2, baseW*0.85);
+  drawDendrite(G.dend.i , baseW*0.85);
+  sctx.strokeStyle=c.axonBase; sctx.lineWidth=Math.max(1.5,baseW*0.28);
+  for(const tw of G.twigs){ sctx.beginPath(); sctx.moveTo(tw[0].x,tw[0].y);
+    sctx.quadraticCurveTo(tw[1].x,tw[1].y,tw[2].x,tw[2].y); sctx.stroke(); }
+
+  /* --- soma --- */
+  const S=G.S,R=G.somaR;
+  const grad=sctx.createRadialGradient(S.x-R*0.3,S.y-R*0.3,R*0.2,S.x,S.y,R*1.05);
+  grad.addColorStop(0, mix(c.somaF,c.hot1,subTint*0.5));
+  grad.addColorStop(1, c.somaF);
+  sctx.fillStyle=grad; sctx.strokeStyle=c.somaE; sctx.lineWidth=2;
+  sctx.beginPath(); sctx.ellipse(S.x,S.y,R*1.08,R*0.96,0,-Math.PI,Math.PI); sctx.fill(); sctx.stroke();
+  sctx.fillStyle=mix(c.somaF,c.somaE,0.35); sctx.beginPath();
+  sctx.ellipse(S.x-R*0.18,S.y-R*0.08,R*0.34,R*0.3,0.4,0,7); sctx.fill();
+
+  /* --- axon hillock cone --- */
+  const A0=G.A0;
+  const hx0=S.x+R*0.97, hh=R*0.40;
+  sctx.beginPath();
+  sctx.moveTo(hx0,S.y-hh);
+  sctx.quadraticCurveTo(S.x+R*1.42,S.y-R*0.10, A0.x,S.y-baseW*0.5);
+  sctx.lineTo(A0.x,S.y+baseW*0.5);
+  sctx.quadraticCurveTo(S.x+R*1.42,S.y+R*0.10, hx0,S.y+hh);
+  sctx.closePath();
+  sctx.fillStyle=mix(c.somaF, c.hot1, Math.max(subTint*0.7,Math.min(1,d[0])));
+  sctx.fill();
+  sctx.strokeStyle=c.somaE; sctx.lineWidth=1.6;
+  sctx.beginPath(); sctx.moveTo(hx0,S.y-hh);
+  sctx.quadraticCurveTo(S.x+R*1.42,S.y-R*0.10, A0.x,S.y-baseW*0.5); sctx.stroke();
+  sctx.beginPath(); sctx.moveTo(hx0,S.y+hh);
+  sctx.quadraticCurveTo(S.x+R*1.42,S.y+R*0.10, A0.x,S.y+baseW*0.5); sctx.stroke();
+
+  /* --- axon: base + depolarization overlay --- */
+  sctx.lineCap="round"; sctx.lineJoin="round";
+  sctx.strokeStyle=c.axonBase; sctx.lineWidth=ui.myelin?baseW*0.72:baseW;
+  pathStroke(G.axon,0,N);
+  for(let i=0;i<N;i++){
+    const dv=(d[i]+d[i+1])/2, rv=(rf[i]+rf[i+1])/2, s=(i+0.5)/N;
+    if(dv<0.03 && rv<0.05) continue;
+    if(ui.myelin && !isExposed(s)) continue;
+    let col=voltColor(Math.min(1,dv));
+    if(rv>0.05 && dv<0.35) col=mix(c.axonBase===col?c.axonBase:c.axonBase, c.refr, rv*0.85);
+    sctx.strokeStyle= dv>=0.35? col : mix(c.axonBase,c.refr,rv*0.85);
+    if(dv>=0.35) sctx.strokeStyle=voltColor(Math.min(1,dv));
+    sctx.lineWidth=(ui.myelin?baseW*0.72:baseW)*(1+0.75*Math.min(1,dv));
+    if(!REDUCED && dv>0.5){ sctx.shadowBlur=14; sctx.shadowColor=c.hot1; } else sctx.shadowBlur=0;
+    sctx.beginPath(); sctx.moveTo(G.axon[i].x,G.axon[i].y); sctx.lineTo(G.axon[i+1].x,G.axon[i+1].y); sctx.stroke();
+    sctx.shadowBlur=0;
+  }
+
+  /* --- myelin sheaths & nodes --- */
+  if(ui.myelin){
+    for(const [a,b] of SHEATHS){
+      const i0=Math.round(a*N), i1=Math.round(b*N);
+      sctx.strokeStyle=c.myelE; sctx.lineWidth=baseW*2.45+2; pathStroke(G.axon,i0,i1);
+      sctx.strokeStyle=c.myelF; sctx.lineWidth=baseW*2.45; pathStroke(G.axon,i0,i1);
+    }
+    for(const ns of NODES){
+      const i=Math.round(ns*N), pt=G.axon[i], glow=Math.min(1,d[i]);
+      sctx.beginPath(); sctx.arc(pt.x,pt.y,baseW*0.62+glow*baseW*0.9,0,7);
+      sctx.fillStyle= glow>0.05? voltColor(glow) : c.panel;
+      if(!REDUCED && glow>0.35){ sctx.shadowBlur=18; sctx.shadowColor=c.hot1; }
+      sctx.fill(); sctx.shadowBlur=0;
+      sctx.strokeStyle=c.nodeE; sctx.lineWidth=1.3; sctx.stroke();
+    }
+  }
+
+  /* --- terminal branches + boutons --- */
+  let tGlow=0;
+  for(const p of sim.pulses){ const frac=(t-p.t0)/p.travel;
+    if(frac>0.86) tGlow=Math.max(tGlow, 1-Math.abs(1.02-frac)/0.17); }
+  tGlow=clamp(tGlow,0,1);
+  sctx.lineWidth=Math.max(2.5,baseW*0.5);
+  sctx.strokeStyle= tGlow>0.04? mix(c.axonBase,c.hot1,tGlow) : c.axonBase;
+  for(const key of ["t1","t2","t3"]){ const pts=G.term[key];
+    sctx.beginPath(); sctx.moveTo(pts[0].x,pts[0].y);
+    for(let i=1;i<pts.length;i++) sctx.lineTo(pts[i].x,pts[i].y); sctx.stroke();
+    const e=pts[pts.length-1];
+    sctx.beginPath(); sctx.arc(e.x,e.y,Math.max(5,G.somaR*0.17),0,7);
+    sctx.fillStyle= tGlow>0.04? mix(c.axonBase,c.hot2,tGlow):c.axonBase; sctx.fill();
+  }
+
+  /* --- transmitter release at terminals --- */
+  for(const ev of sim.ntOut){
+    const age=clamp((t-ev.t0)/2.4,0,1);
+    for(const key of ["t1","t2","t3"]){
+      const e=G.term[key][G.term[key].length-1];
+      for(let k=0;k<4;k++){
+        const f=clamp(age*1.25-k*0.06,0,1);
+        const x=e.x+(G.sil.x-G.sil.r-e.x)*f, y=e.y+(k-1.5)*3.2;
+        sctx.globalAlpha=(1-f)*0.95;
+        sctx.fillStyle=c.ntE; sctx.beginPath(); sctx.arc(x,y,2.3,0,7); sctx.fill();
+      }
+      sctx.globalAlpha=clamp(0.5-age*0.5,0,0.5);
+      sctx.strokeStyle=c.excB; sctx.lineWidth=1.5;
+      sctx.beginPath(); sctx.arc(G.sil.x-G.sil.r,e.y, 6+age*14, -1.9, 1.9); sctx.stroke();
+      sctx.globalAlpha=1;
+    }
+  }
+
+  /* --- dendritic wavelets (graded potentials) --- */
+  for(const wv of sim.wavelets){
+    const p=clamp((t-wv.t0)/DELAY[wv.syn],0,1);
+    const pts=G.dend[wv.syn]; const idx=Math.min(pts.length-1,Math.floor(p*(pts.length-1)));
+    const pt=pts[idx]; const col= wv.syn==="i"? c.inhB : c.excB;
+    if(!REDUCED){ sctx.shadowBlur=16; sctx.shadowColor=col; }
+    sctx.fillStyle=col; sctx.globalAlpha=0.95;
+    sctx.beginPath(); sctx.arc(pt.x,pt.y,baseW*0.55,0,7); sctx.fill();
+    for(let k=1;k<=4;k++){ const j=Math.max(0,idx-k*3); sctx.globalAlpha=0.5-(k*0.11);
+      sctx.beginPath(); sctx.arc(pts[j].x,pts[j].y,baseW*0.42,0,7); sctx.fill(); }
+    sctx.globalAlpha=1; sctx.shadowBlur=0;
+  }
+
+  /* --- input synapses (boutons) --- */
+  const names={e1:"1",e2:"2",i:"3"};
+  for(const key of ["e1","e2","i"]){
+    const b=G.syn[key]; const exc=key!=="i";
+    const col= exc? c.exc : c.inh;
+    const rr=Math.max(9,G.somaR*0.26);
+    /* presynaptic terminal shape: circle + short stem outward */
+    sctx.strokeStyle=col; sctx.lineWidth=Math.max(3,baseW*0.5);
+    sctx.beginPath();
+    const dx=b.x<G.S.x? -rr*1.5 : rr*1.5;
+    sctx.moveTo(b.x+dx*0.9, b.y+(key==="e1"?-rr*1.1:key==="i"?rr*1.1:0));
+    sctx.lineTo(b.x+dx*0.35, b.y+(key==="e1"?-rr*0.5:key==="i"?rr*0.5:0));
+    sctx.stroke();
+    if(sim.hoverSyn===key){ sctx.beginPath(); sctx.arc(b.x,b.y,rr+5,0,7);
+      sctx.strokeStyle= exc? c.excB:c.inhB; sctx.lineWidth=2; sctx.stroke(); }
+    sctx.beginPath(); sctx.arc(b.x,b.y,rr,0,7); sctx.fillStyle=col; sctx.fill();
+    sctx.fillStyle="rgba(255,255,255,.92)";
+    sctx.font=`600 ${Math.round(rr*0.95)}px "IBM Plex Mono",monospace`;
+    sctx.textAlign="center"; sctx.textBaseline="middle";
+    sctx.fillText(names[key], b.x, b.y+0.5);
+    /* transmitter puffs at this synapse */
+    for(const n of sim.ntIn){ if(n.syn!==key) continue;
+      const age=clamp((t-n.t0)/1.1,0,1);
+      const tip=G.dend[key][2];
+      for(let k=0;k<5;k++){
+        const f=clamp(age*1.3-k*0.05,0,1);
+        const x=b.x+(tip.x-b.x)*(0.25+0.5*f), y=b.y+(tip.y-b.y)*(0.25+0.5*f)+(k-2)*2.6;
+        sctx.globalAlpha=(1-f)*0.9;
+        sctx.fillStyle= exc? c.ntE:c.ntI; sctx.beginPath(); sctx.arc(x,y,2.1,0,7); sctx.fill();
+      }
+      sctx.globalAlpha=1;
+    }
+  }
+
+  /* --- spike flash at hillock --- */
+  for(const s of sim.spikes){ const age=(t-s)/1.4; if(age>1) continue;
+    sctx.globalAlpha=(1-age)*0.85; sctx.strokeStyle=c.flash; sctx.lineWidth=2.5;
+    sctx.beginPath(); sctx.arc(A0.x,A0.y,baseW*1.2+age*G.somaR*1.7,0,7); sctx.stroke();
+    sctx.globalAlpha=1; }
+
+  /* --- recording electrode --- */
+  const E=G.elec;
+  sctx.strokeStyle=c.electrode; sctx.lineWidth=2.5; sctx.lineCap="round";
+  sctx.beginPath(); sctx.moveTo(E.top.x,E.top.y); sctx.lineTo(E.tip.x,E.tip.y); sctx.stroke();
+  sctx.strokeStyle=c.electrode; sctx.lineWidth=1.2;
+  sctx.beginPath(); sctx.moveTo(E.top.x-5,E.top.y-2); sctx.lineTo(E.top.x+7,E.top.y-8); sctx.stroke();
+  sctx.fillStyle=c.trace; sctx.beginPath(); sctx.arc(E.tip.x,E.tip.y,4,0,7); sctx.fill();
+  if(!REDUCED && hillockTint>0.2){ sctx.shadowBlur=10; sctx.shadowColor=c.trace;
+    sctx.beginPath(); sctx.arc(E.tip.x,E.tip.y,4,0,7); sctx.fill(); sctx.shadowBlur=0; }
+
+  /* --- recording probes --- */
+  const drawProbe=(pt,col,on)=>{ if(!on||!pt) return;
+    sctx.beginPath(); sctx.arc(pt.x,pt.y,8,0,7);
+    sctx.strokeStyle=col; sctx.lineWidth=2.2; sctx.stroke();
+    sctx.beginPath(); sctx.arc(pt.x,pt.y,3,0,7); sctx.fillStyle=col; sctx.fill(); };
+  drawProbe(G.probeA, c.axonT, ui.sites.axon);
+
+  /* --- labels --- */
+  if(ui.labels){
+    const L=(fx,fy,text,pt,align)=>labelAt(fx*w,fy*h,text,pt.x,pt.y,align);
+    L(0.115,0.055,"synapses from other neurons",{x:G.syn.e1.x+10,y:G.syn.e1.y-6});
+    L(0.205,0.155,"dendrites",G.dend.e1[30]);
+    L(0.115,0.79,"cell body (soma)",{x:S.x-R*0.55,y:S.y+R*0.75});
+    L(0.315,0.87,"axon hillock: the trigger zone",{x:A0.x+2,y:A0.y+baseW*1.1});
+    L(0.52,0.73,"axon",G.axon[Math.round(N*0.52)],"left");
+    if(ui.myelin){
+      L(0.42,0.28,"myelin sheath",G.axon[Math.round(0.38*N)]);
+      L(0.60,0.28,"node of Ranvier",G.axon[Math.round(NODES[1]*N)]);
+    }
+    L(0.845,0.83,"axon terminals",G.term.t3[20]);
+    L(0.895,0.13,"next neuron",{x:G.sil.x+2,y:G.sil.yTop+6},"right");
+    L(0.395,0.10,"recording electrode",{x:E.top.x-2,y:E.top.y+4});
+  }
+}
+
+/* ================= scope drawing ================= */
+function drawScope(){
+  const c=C();
+  const r=scopeCv.parentElement.getBoundingClientRect();
+  const w=r.width,h=r.height;
+  gctx.clearRect(0,0,w,h);
+  const L=48,Rm=118,T=8,B=22;
+  const pw=w-L-Rm, ph=h-T-B;
+  if(pw<40||ph<30) return;
+  const VMIN=-92,VMAX=48;
+  const yOf=v=>T+(VMAX-v)/(VMAX-VMIN)*ph;
+  const tNow=sim.t;
+  const xOf=tt=>L+(tt-(tNow-WINDOW))/WINDOW*pw;
+
+  /* grid */
+  gctx.lineWidth=1;
+  gctx.strokeStyle=c.grid;
+  for(const gv of [-80,-60,-40,-20,0,20,40]){
+    gctx.beginPath(); gctx.moveTo(L,yOf(gv)); gctx.lineTo(L+pw,yOf(gv)); gctx.stroke(); }
+  for(let k=0;k<=8;k++){ const x=L+pw*k/8;
+    gctx.beginPath(); gctx.moveTo(x,T); gctx.lineTo(x,T+ph); gctx.stroke(); }
+  gctx.font='10.5px "IBM Plex Mono",monospace'; gctx.fillStyle=c.faint;
+  gctx.textAlign="center"; gctx.textBaseline="top";
+  for(let k=0;k<=4;k++){ const x=L+pw*k/4; gctx.fillText(String(-WINDOW+k*20), x, T+ph+6); }
+  gctx.textAlign="left"; gctx.fillText("ms", L+pw+8, T+ph+6);
+
+  /* reference lines — threshold is dynamic: it jumps after a spike (refractory) and decays back */
+  gctx.setLineDash([5,4]);
+  gctx.strokeStyle=c.thresh; gctx.lineWidth=1.3;
+  gctx.beginPath();
+  { let first=true;
+    for(let px=0;px<=pw;px+=3){
+      const tt=tNow-WINDOW+px/pw*WINDOW;
+      let lastS=-1e9;
+      for(const s of sim.spikes){ if(s<=tt && s>lastS) lastS=s; }
+      const y=yOf(clamp(effThresh(tt-lastS),VMIN,VMAX-4));
+      if(first){ gctx.moveTo(L+px,y); first=false; } else gctx.lineTo(L+px,y);
+    } }
+  gctx.stroke();
+  gctx.strokeStyle=c.rest;
+  gctx.beginPath(); gctx.moveTo(L,yOf(REST)); gctx.lineTo(L+pw,yOf(REST)); gctx.stroke();
+  gctx.setLineDash([]);
+  gctx.textBaseline="middle"; gctx.textAlign="left"; gctx.font='11px "IBM Plex Mono",monospace';
+  gctx.fillStyle=c.muted;
+  gctx.fillText("threshold −55", L+pw+8, yOf(THRESH));
+  gctx.fillText("rest −70", L+pw+8, yOf(REST));
+  gctx.textAlign="right"; gctx.fillStyle=c.faint;
+  gctx.fillText("+40", L-7, yOf(40)); gctx.fillText("0", L-7, yOf(0));
+  gctx.fillText("−55", L-7, yOf(THRESH)); gctx.fillText("−70", L-7, yOf(REST));
+
+  /* stimulus arrival marks */
+  for(const m of sim.marks){
+    const x=xOf(m.t); if(x<L||x>L+pw) continue;
+    gctx.fillStyle= m.kind==="e"? c.exc : c.inh;
+    gctx.beginPath();
+    if(m.kind==="e"){ gctx.moveTo(x,T+ph-9); gctx.lineTo(x-5,T+ph-1); gctx.lineTo(x+5,T+ph-1); }
+    else{ gctx.moveTo(x,T+ph-1); gctx.lineTo(x-5,T+ph-9); gctx.lineTo(x+5,T+ph-9); }
+    gctx.closePath(); gctx.fill();
+  }
+  /* spike time ticks */
+  gctx.strokeStyle=c.excB; gctx.lineWidth=2;
+  for(const s of sim.spikes){ const x=xOf(s); if(x<L||x>L+pw) continue;
+    gctx.beginPath(); gctx.moveTo(x,T+2); gctx.lineTo(x,T+10); gctx.stroke(); }
+
+  /* traces — one per enabled recording site, hillock on top */
+  gctx.save();
+  gctx.beginPath(); gctx.rect(L,T,pw,ph); gctx.clip();
+  gctx.lineJoin="round"; gctx.lineCap="round";
+  const drawTrace=(key,col,wd,glow)=>{
+    gctx.beginPath(); let started=false;
+    for(const pt of sim.trace){
+      const x=xOf(pt.t); if(x<L-4) continue;
+      const y=yOf(clamp(pt[key],VMIN,VMAX));
+      if(!started){ gctx.moveTo(x,y); started=true; } else gctx.lineTo(x,y);
+    }
+    gctx.strokeStyle=col; gctx.lineWidth=wd;
+    if(glow && !REDUCED && theme==="dark"){ gctx.shadowBlur=9; gctx.shadowColor=c.traceGlow; }
+    gctx.stroke(); gctx.shadowBlur=0;
+    if(sim.trace.length){
+      const last=sim.trace[sim.trace.length-1];
+      gctx.fillStyle=col; gctx.beginPath();
+      gctx.arc(xOf(last.t),yOf(clamp(last[key],VMIN,VMAX)),3.4,0,7); gctx.fill();
+    }
+  };
+  if(ui.sites.axon) drawTrace("va",c.axonT,2.1,false);
+  if(ui.sites.hillock) drawTrace("v",c.trace, theme==="dark"?2.4:2.8, true);
+  gctx.restore();
+  if(sim.paused){ gctx.font='600 12px "IBM Plex Mono",monospace';
+    gctx.fillStyle=c.muted; gctx.textAlign="right"; gctx.fillText("PAUSED", L+pw-8, T+16); }
+}
+
+/* ================= UI wiring ================= */
+const vread=document.getElementById("vread"), spikeflag=document.getElementById("spikeflag");
+function fmtV(v){ const s=(Math.round(v*10)/10).toFixed(1); return s.startsWith("-")?"−"+s.slice(1):s; }
+function updateReadout(){
+  vread.textContent=fmtV(sim.lastV);
+  spikeflag.classList.toggle("on", performance.now()<fireFlashUntil);
+}
+function doStimNow(syn){
+  if(sim.paused) togglePause(false);
+  sim.queue.push({tSim:sim.t, syn});
+}
+document.getElementById("stim-e1").addEventListener("click",()=>doStimNow("e1"));
+document.getElementById("stim-e2").addEventListener("click",()=>doStimNow("e2"));
+document.getElementById("stim-i").addEventListener("click",()=>doStimNow("i"));
+document.querySelectorAll(".preset-btn").forEach(b=>b.addEventListener("click",()=>runPreset(+b.dataset.preset)));
+
+const pauseBtn=document.getElementById("btn-pause");
+function togglePause(v){ sim.paused=(v===undefined)?!sim.paused:v;
+  pauseBtn.textContent=sim.paused?"Resume":"Pause"; }
+pauseBtn.addEventListener("click",()=>togglePause());
+document.getElementById("btn-reset").addEventListener("click",resetAll);
+function resetAll(){
+  Object.assign(sim,{t:0,psps:[],queue:[],pulses:[],wavelets:[],ntIn:[],ntOut:[],spikes:[],
+    marks:[],trace:[],lastFire:-1e9,lastV:REST});
+  ui.preset=0; document.querySelectorAll(".preset-btn").forEach(b=>b.dataset.active="false");
+  togglePause(false);
+}
+document.getElementById("speed-seg").addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  sim.speed=+b.dataset.sp; savePrefs();
+  document.querySelectorAll("#speed-seg button").forEach(x=>x.setAttribute("aria-pressed",x===b?"true":"false"));
+});
+
+/* toggles */
+function bindToggle(id,key){
+  const el=document.getElementById(id);
+  el.addEventListener("click",()=>{
+    ui[key]=!ui[key]; el.setAttribute("aria-pressed",ui[key]); savePrefs();
+  });
+  return el;
+}
+const tgLabels=bindToggle("tg-labels","labels");
+const tgMyelin=bindToggle("tg-myelin","myelin");
+
+/* recording-site toggles */
+function bindSite(id,key){ const el=document.getElementById(id);
+  el.addEventListener("click",()=>{ ui.sites[key]=!ui.sites[key];
+    el.setAttribute("aria-pressed",ui.sites[key]); savePrefs(); });
+  return el; }
+const siteEls={hillock:bindSite("site-hill","hillock"), axon:bindSite("site-axon","axon")};
+
+/* synaptic-strength sliders */
+const wEls={e1:document.getElementById("w-e1"), e2:document.getElementById("w-e2"), i:document.getElementById("w-i")};
+const wVals={e1:document.getElementById("wv-e1"), e2:document.getElementById("wv-e2"), i:document.getElementById("wv-i")};
+function wLabel(k){ wVals[k].textContent=(k==="i"?"−":"+")+W[k].toFixed(1); }
+for(const k of ["e1","e2","i"]){
+  wEls[k].addEventListener("input",()=>{ W[k]=+wEls[k].value; wLabel(k); savePrefs(); });
+}
+document.getElementById("w-def").addEventListener("click",()=>{
+  for(const k of ["e1","e2","i"]){ W[k]=DEF_W[k]; wEls[k].value=DEF_W[k]; wLabel(k); } savePrefs();
+});
+
+/* theme */
+const themeBtn=document.getElementById("tg-theme");
+function applyTheme(name){ theme=name;
+  document.documentElement.classList.toggle("theme-light",theme==="light");
+  themeBtn.textContent= theme==="dark"?"Light":"Dark";
+  themeBtn.setAttribute("aria-pressed", theme==="light");
+}
+themeBtn.addEventListener("click",()=>{ applyTheme(theme==="dark"?"light":"dark"); savePrefs(); });
+
+/* fullscreen + help */
+document.getElementById("btn-full").addEventListener("click",()=>{
+  try{
+    if(document.fullscreenElement) document.exitFullscreen();
+    else document.documentElement.requestFullscreen().catch(()=>{});
+  }catch(err){}
+});
+const help=document.getElementById("help");
+document.getElementById("btn-help").addEventListener("click",()=>help.classList.add("open"));
+document.getElementById("help-close").addEventListener("click",()=>help.classList.remove("open"));
+help.addEventListener("click",e=>{ if(e.target===help) help.classList.remove("open"); });
+
+/* keyboard */
+addEventListener("keydown",e=>{
+  if(e.key==="Escape"){ help.classList.remove("open"); return; }
+  if(help.classList.contains("open")) return;
+  const onBtn=e.target && (e.target.tagName==="BUTTON");
+  if(e.key==="1") doStimNow("e1");
+  else if(e.key==="2") doStimNow("e2");
+  else if(e.key==="3") doStimNow("i");
+  else if(e.key===" "&&!onBtn){ e.preventDefault(); togglePause(); }
+  else if(e.key==="r"||e.key==="R"){ if(!onBtn) resetAll(); }
+  else if(e.key==="l"||e.key==="L") tgLabels.click();
+  else if(e.key==="m"||e.key==="M") tgMyelin.click();
+  else if(e.key==="?") help.classList.add("open");
+});
+
+/* clickable synapses on canvas */
+scene.addEventListener("pointermove",e=>{
+  if(!G) return;
+  const r=scene.getBoundingClientRect(); const x=e.clientX-r.left,y=e.clientY-r.top;
+  let hov=null;
+  for(const key of ["e1","e2","i"]){ const b=G.syn[key];
+    if((x-b.x)**2+(y-b.y)**2 < G.hitR**2){ hov=key; break; } }
+  sim.hoverSyn=hov; scene.style.cursor=hov?"pointer":"default";
+});
+scene.addEventListener("pointerdown",e=>{
+  if(!G||!sim.hoverSyn) return; doStimNow(sim.hoverSyn);
+});
+
+/* prefs */
+function savePrefs(){ try{ localStorage.setItem("aplab:prefs",
+  JSON.stringify({theme,labels:ui.labels,myelin:ui.myelin,speed:sim.speed,
+    sites:ui.sites, w:W})); }catch(_e){} }
+function loadPrefs(){ try{
+  const p=JSON.parse(localStorage.getItem("aplab:prefs")||"{}");
+  if(p.theme==="light") applyTheme("light");
+  if(typeof p.labels==="boolean"){ ui.labels=p.labels; tgLabels.setAttribute("aria-pressed",p.labels); }
+  if(typeof p.myelin==="boolean"){ ui.myelin=p.myelin; tgMyelin.setAttribute("aria-pressed",p.myelin); }
+  if(p.speed && [0.5,1,2].includes(p.speed)){ sim.speed=p.speed;
+    document.querySelectorAll("#speed-seg button").forEach(x=>x.setAttribute("aria-pressed", +x.dataset.sp===p.speed?"true":"false")); }
+  if(p.sites){ for(const k of ["hillock","axon"]){
+    if(typeof p.sites[k]==="boolean") ui.sites[k]=p.sites[k]; }
+    siteEls.hillock.setAttribute("aria-pressed",ui.sites.hillock);
+    siteEls.axon.setAttribute("aria-pressed",ui.sites.axon); }
+  if(p.w){ for(const k of ["e1","e2","i"]){ const v=+p.w[k];
+    if(v>=2 && v<=18){ W[k]=v; wEls[k].value=v; wLabel(k); } } }
+}catch(_e){} }
+
+/* ================= main loop ================= */
+let lastTs=0;
+function frame(ts){
+  const dtReal=Math.min(0.06,(ts-lastTs)/1000||0.016); lastTs=ts;
+  const dim=fitCanvas(scene,sctx);
+  if(!G||G.w!==dim.w||G.h!==dim.h) G=buildGeometry(dim.w,dim.h);
+  fitCanvas(scopeCv,gctx);
+  if(!sim.paused) stepSim(dtReal);
+  drawScene(); drawScope(); updateReadout();
+  requestAnimationFrame(frame);
+}
+loadPrefs();
+window.APLAB={sim,ui,W,stim:doStimNow,preset:runPreset,get v(){return sim.lastV;}};
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
