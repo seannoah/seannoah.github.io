@@ -19,7 +19,7 @@
    - `lab` (optional) links the learn card to a Brain Lab page.
    ===================================================================== */
 window.COGNEURDLE = {
-  version: 1,
+  version: 2,
   epoch: '2026-09-04',            // date of CogNeurdle #1 (local time)
   units: {
     L1: { name: 'Lecture 1 · Intro & neuroanatomy', released: true },
@@ -39,7 +39,7 @@ window.COGNEURDLE = {
   /* ---------------------------- LECTURE 1 ---------------------------- */
   { id:'phrenology', answer:'Phrenology', aliases:[], cat:'history', unit:'L1', source:'Lecture 1 study guide',
     clues:[
-      'Its founder, Franz Joseph Gall, called it "organology"; the name everyone remembers was popularized by his collaborator Spurzheim.',
+      'Flourens\'s ablation experiments on pigeons in the 1820s were designed specifically to refute it, and for the next forty years his "aggregate field" view was taken to have won.',
       'Its practitioners assumed the skull faithfully followed the shape of the organ beneath it, so the surface of the head could be read like a map.',
       'It proposed some 27 or more mental "faculties," from amativeness to veneration, each with a fixed location in the brain.',
       'It was wrong about the skull and wrong about the faculties, but its core intuition, that different brain regions do different things, survives as localization of function.',
@@ -57,7 +57,7 @@ window.COGNEURDLE = {
 
   { id:'cajal', answer:'Santiago Ramón y Cajal', aliases:['Cajal','Ramon y Cajal','Santiago Cajal','Ramon Cajal'], cat:'history', unit:'L1', source:'Lecture 1 study guide',
     clues:[
-      'He wanted to be an artist as a boy; his father, an anatomy professor, steered him to medicine. His drawings now hang in art museums.',
+      'He published his early findings in a journal he founded and paid for himself, the Revista Trimestral de Histología Normal y Patológica, because almost nobody outside Spain read Spanish.',
       'He shared the 1906 Nobel Prize with the man whose technique he used, though the two disagreed bitterly, in their Nobel lectures, about what the technique showed.',
       'He refined a silver staining method so that only a few cells at a time were blackened in their entirety, which let him see single cells clearly.',
       'Where Golgi saw a continuous net (a reticulum), he saw separate cells that touched without fusing.',
@@ -66,7 +66,7 @@ window.COGNEURDLE = {
 
   { id:'neuron_doctrine', answer:'Neuron doctrine', aliases:['neuron theory','the neuron doctrine'], cat:'history', unit:'L1', source:'Lecture 1 study guide',
     clues:[
-      'Wilhelm Waldeyer coined the word "neuron" in an 1891 review that gave this idea its name.',
+      'His\'s embryological observation that nerve fibers grow out from single cells, and Forel\'s degeneration studies, were its two main lines of evidence before the decisive histology arrived.',
       'One of its tenets, the law of dynamic polarization, says signals flow one way through a cell: dendrites in, axon out.',
       'Its rival, reticular theory, held that nerve cells fuse into one continuous network.',
       'Electron microscopy in the 1950s finally settled it by showing a gap of a few tens of nanometers where cells meet.',
@@ -84,7 +84,7 @@ window.COGNEURDLE = {
 
   { id:'axon', answer:'Axon', aliases:['axons','nerve fiber'], cat:'neuron', unit:'L1', source:'Lecture 1 study guide', lab:'Action_Potential_Explorer.html',
     clues:[
-      'The giant version in squid, up to a millimeter wide, is what let Hodgkin and Huxley put an electrode inside a nerve fiber.',
+      'Its initial segment is marked by a dense ankyrin-G scaffold that clusters voltage-gated sodium channels at up to fifty times the density of the surrounding membrane.',
       'A neuron has exactly one of these (though it may branch), and it emerges from a cone-shaped region called the hillock.',
       'In many neurons it is wrapped in myelin, with small gaps (nodes of Ranvier) where the signal is regenerated.',
       'Dendrites carry signals toward the cell body; this carries the signal away from it.',
@@ -93,7 +93,7 @@ window.COGNEURDLE = {
 
   { id:'dendrite', answer:'Dendrite', aliases:['dendrites'], cat:'neuron', unit:'L1', source:'Lecture 1 study guide', lab:'Action_Potential_Explorer.html',
     clues:[
-      'The name comes from the Greek for "tree," and the branching pattern (the arbor) is one of the main ways neurons are classified.',
+      'Rall\'s cable theory of the 1960s showed how to collapse its entire branching tree into a single equivalent cylinder, provided the branch diameters obey a 3/2-power rule at every fork.',
       'Its membrane is studded with receptors and, in many cortical neurons, with thousands of tiny protrusions.',
       'A single cortical pyramidal neuron may carry several millimeters of these in total, all packed within a fraction of a cubic millimeter.',
       'The axon is a neuron\'s single output; these are its many inputs.',
@@ -138,7 +138,7 @@ window.COGNEURDLE = {
 
   { id:'neurotransmitter', answer:'Neurotransmitter', aliases:['neurotransmitters','transmitter'], cat:'neuron', unit:'L1', source:'Lecture 1 study guide', lab:'Action_Potential_Explorer.html',
     clues:[
-      'Otto Loewi\'s 1921 experiment, which he said came to him in a dream, showed that a frog heart\'s vagus nerve releases a chemical (later identified as acetylcholine) that slows a second heart.',
+      'Dale\'s principle, as restated by Eccles, held that a neuron releases the same one of these at every terminal; the discovery of peptide co-release in the 1980s forced the rewrite.',
       'Glutamate and GABA account for most fast signaling in the cortex; dopamine, serotonin and acetylcholine act more like volume knobs.',
       'After release it is cleared from the cleft by reuptake transporters or enzymes; many drugs act by blocking that clearance.',
       'The action potential carries the signal along the axon; this carries it across the synapse.',
@@ -156,7 +156,7 @@ window.COGNEURDLE = {
 
   { id:'pns', answer:'Peripheral nervous system', aliases:['PNS'], cat:'anatomy', unit:'L1', source:'Lecture 1 study guide',
     clues:[
-      'Its axons are myelinated by Schwann cells rather than oligodendrocytes, which is one reason it can regenerate after injury while the CNS mostly cannot.',
+      'Its myelin uses protein zero (P0) rather than proteolipid protein as the main structural protein, and its Wallerian degeneration clears debris in days rather than years.',
       'It includes 12 pairs of cranial nerves and 31 pairs of spinal nerves.',
       'It is divided into a somatic branch and an autonomic branch.',
       'Everything encased in skull and spine is the central nervous system; this is everything else.',
@@ -183,7 +183,7 @@ window.COGNEURDLE = {
 
   { id:'dorsal', answer:'Dorsal', aliases:[], cat:'orientation', unit:'L1', source:'Lecture 1 study guide', lab:'MRI_Explorer.html',
     clues:[
-      'From the Latin dorsum, "back"; the fin on a shark\'s back and this direction share a name.',
+      'In the developing neural tube it is the side patterned by BMP signals from the roof plate; the opposite side receives Sonic hedgehog from the floor plate.',
       'In the spinal cord it is unambiguous: it points toward the back. In the human brain the axis bends by about 90 degrees.',
       'Because the human neuraxis bends, in the brain this direction means the same as "superior."',
       'Ventral is toward the belly; this is its opposite.',
@@ -192,7 +192,7 @@ window.COGNEURDLE = {
 
   { id:'ventral', answer:'Ventral', aliases:[], cat:'orientation', unit:'L1', source:'Lecture 1 study guide', lab:'MRI_Explorer.html',
     clues:[
-      'From the Latin venter, "belly"; the same root gives "ventricle," a belly-like cavity.',
+      'In the embryo it is the side of the neural tube nearest the notochord, whose Sonic hedgehog signal induces motor neurons there.',
       'In the human brain this direction coincides with "inferior," toward the base of the skull.',
       'The visual pathway named for this direction runs from occipital cortex into the temporal lobe and handles object identity ("what").',
       'Dorsal is toward the back; this is its opposite.',
@@ -201,7 +201,7 @@ window.COGNEURDLE = {
 
   { id:'lateral', answer:'Lateral', aliases:[], cat:'orientation', unit:'L1', source:'Lecture 1 study guide', lab:'MRI_Explorer.html',
     clues:[
-      'The lateral geniculate nucleus and the lateral ventricles carry this word because of where they sit relative to the midline.',
+      'Of the six standard anatomical directions, it is the one Penfield\'s homunculus moves toward as the map runs from the leg representation to the face.',
       '"Ipsilateral" and "contralateral" describe whether two things are on the same or opposite sides; this word on its own describes distance from the midline.',
       'The temporal lobes are the most extreme example of this direction in the cerebral cortex.',
       'Medial is toward the midline; this is away from it.',
@@ -210,7 +210,7 @@ window.COGNEURDLE = {
 
   { id:'medial', answer:'Medial', aliases:[], cat:'orientation', unit:'L1', source:'Lecture 1 study guide', lab:'MRI_Explorer.html',
     clues:[
-      'The medial temporal lobe and the medial prefrontal cortex are named with this word because they face the midline, largely hidden inside the interhemispheric fissure.',
+      'It is the direction in which the homunculus\'s leg and foot representations lie, tucked onto the paracentral lobule inside the interhemispheric fissure.',
       'Structures with this label are best seen on a sagittal slice through the middle of the brain.',
       'The corpus callosum is the most obvious structure in this position in the brain.',
       'Lateral is away from the midline; this is toward it.',
@@ -219,7 +219,7 @@ window.COGNEURDLE = {
 
   { id:'anterior', answer:'Anterior', aliases:['rostral'], cat:'orientation', unit:'L1', source:'Lecture 1 study guide', lab:'MRI_Explorer.html',
     clues:[
-      'In brain anatomy it is a synonym of "rostral," from the Latin for "beak."',
+      'The commissure that carries this name is a small bundle linking the two temporal lobes, and it is usually spared in a callosotomy.',
       'The commissure with this name is a small bundle of fibers connecting the two temporal lobes, far smaller than the corpus callosum.',
       'The frontal lobe is the most extreme example of this direction in the brain.',
       'Posterior is toward the back of the head; this is toward the face.',
@@ -228,7 +228,7 @@ window.COGNEURDLE = {
 
   { id:'posterior', answer:'Posterior', aliases:['caudal'], cat:'orientation', unit:'L1', source:'Lecture 1 study guide', lab:'MRI_Explorer.html',
     clues:[
-      'In brain anatomy it is a synonym of "caudal," from the Latin for "tail."',
+      'The cingulate region that carries this name is the highest-metabolism node of the default mode network at rest.',
       'Combined with "parietal" it names the cortex most implicated in spatial attention and in reaching for what you see.',
       'The occipital lobe is the most extreme example of this direction in the brain.',
       'Anterior is toward the face; this is toward the back of the head.',
@@ -237,7 +237,7 @@ window.COGNEURDLE = {
 
   { id:'coronal', answer:'Coronal', aliases:['coronal plane','coronal slice','coronal section','frontal plane','coronal view'], cat:'orientation', unit:'L1', source:'Lecture 1 study guide', lab:'MRI_Explorer.html',
     clues:[
-      'Named after the corona, a crown, because the plane runs along the line of a crown worn across the head from ear to ear.',
+      'The cranial suture that shares this name joins the frontal bone to the two parietal bones; its premature fusion produces brachycephaly.',
       'In the skull, the suture with this name joins the frontal bone to the two parietal bones.',
       'It is the plane in which you see both hemispheres and both temporal lobes at once, like a slice of bread cut from a loaf.',
       'A sagittal slice separates left from right; this plane separates front from back.',
@@ -246,7 +246,7 @@ window.COGNEURDLE = {
 
   { id:'sagittal', answer:'Sagittal', aliases:['sagittal plane','sagittal slice','sagittal section','midsagittal','sagittal view'], cat:'orientation', unit:'L1', source:'Lecture 1 study guide', lab:'MRI_Explorer.html',
     clues:[
-      'Named after a skull suture that is in turn named for an arrow (Latin sagitta), because of its straight line.',
+      'The superior venous sinus that carries this name runs the length of the falx cerebri and is where most cerebrospinal fluid drains back into the blood through arachnoid granulations.',
       'The "mid-" version passes exactly through the interhemispheric fissure and shows the corpus callosum in its full arch.',
       'On this slice you see one hemisphere in profile, with the frontal lobe at one edge and the occipital lobe at the other.',
       'A coronal slice separates front from back; this plane separates left from right.',
@@ -255,7 +255,7 @@ window.COGNEURDLE = {
 
   { id:'axial', answer:'Axial', aliases:['horizontal','transverse','axial plane','axial slice','horizontal plane','transverse plane','horizontal slice','transverse slice','axial view','axial section'], cat:'orientation', unit:'L1', source:'Lecture 1 study guide', lab:'MRI_Explorer.html',
     clues:[
-      'Because the human neuraxis bends, this plane is called "horizontal" in the brain but "transverse" in the spinal cord.',
+      'Talairach\'s stereotaxic atlas defines its reference version as the plane through the anterior and posterior commissures.',
       'It is the native slice plane of CT scanners and of most clinical MRI, so it is the view radiologists read first.',
       'Its most common name refers to the long axis of the body: the plane cuts across that axis.',
       'Coronal and sagittal slices are both vertical; this is the one that is horizontal.',
@@ -264,7 +264,7 @@ window.COGNEURDLE = {
 
   { id:'frontal_lobe', answer:'Frontal lobe', aliases:['frontal','frontal cortex','frontal lobes'], cat:'anatomy', unit:'L1', source:'Lecture 1 study guide', lab:'Cortex_Explorer.html',
     clues:[
-      'It makes up about a third of the cortical surface in humans, and its most anterior part is still maturing well into the third decade of life.',
+      'Its area 4 is the only cortical region containing Betz cells, giant layer V pyramidal neurons whose axons run all the way to spinal motor neurons.',
       'Its posterior boundary is the central sulcus; its inferior boundary is the lateral (Sylvian) fissure.',
       'The strip along its back edge is primary motor cortex, the motor half of Penfield\'s map.',
       'The parietal lobe sits just behind the central sulcus; this lobe sits just in front of it.',
@@ -273,7 +273,7 @@ window.COGNEURDLE = {
 
   { id:'parietal_lobe', answer:'Parietal lobe', aliases:['parietal','parietal cortex','parietal lobes'], cat:'anatomy', unit:'L1', source:'Lecture 1 study guide', lab:'Cortex_Explorer.html',
     clues:[
-      'Its name comes from the Latin paries, "wall," because the bone over it forms the side walls of the skull.',
+      'Bálint\'s syndrome, with its optic ataxia and simultanagnosia, follows bilateral damage to it.',
       'Its anterior strip, just behind the central sulcus, is primary somatosensory cortex.',
       'Damage to its right side can cause hemispatial neglect, in which patients ignore the left half of space.',
       'The occipital lobe processes what you see; this lobe helps you know where it is and how to reach for it.',
@@ -282,7 +282,7 @@ window.COGNEURDLE = {
 
   { id:'temporal_lobe', answer:'Temporal lobe', aliases:['temporal','temporal cortex','temporal lobes'], cat:'anatomy', unit:'L1', source:'Lecture 1 study guide', lab:'Cortex_Explorer.html',
     clues:[
-      'Its name comes from the Latin tempus, "time," reportedly because hair first goes gray at the temples.',
+      'Klüver–Bucy syndrome, seen in monkeys after bilateral removal of it, combines hyperorality, loss of fear and "psychic blindness."',
       'Its inner (medial) surface folds around to become the hippocampus.',
       'Heschl\'s gyrus, buried on its upper surface, is primary auditory cortex.',
       'The frontal lobe sits above the lateral (Sylvian) fissure; this lobe sits below it.',
@@ -291,7 +291,7 @@ window.COGNEURDLE = {
 
   { id:'occipital_lobe', answer:'Occipital lobe', aliases:['occipital','occipital cortex','occipital lobes'], cat:'anatomy', unit:'L1', source:'Lecture 1 study guide', lab:'Cortex_Explorer.html',
     clues:[
-      'Its name is from the Latin ob + caput, "against the head": the back of the head.',
+      'Anton syndrome, in which cortically blind patients insist they can see, follows bilateral damage to it.',
       'Its boundary with the parietal lobe is a clear sulcus on the medial surface and an arbitrary line on the lateral surface.',
       'Primary visual cortex lies along a sulcus on its medial surface (the calcarine sulcus), and each half sees the opposite visual field.',
       'The temporal lobe handles hearing; this lobe handles vision.',
@@ -300,7 +300,7 @@ window.COGNEURDLE = {
 
   { id:'gray_matter', answer:'Gray matter', aliases:['grey matter'], cat:'anatomy', unit:'L1', source:'Lecture 1 study guide', lab:'MRI_Explorer.html',
     clues:[
-      'It is not actually gray in a living brain: the gray color appears only after fixation drains the blood.',
+      'Its volume peaks in late childhood and then declines through adolescence, a thinning attributed mostly to synaptic pruning rather than cell death.',
       'Its darker color comes from the absence of the fatty insulation that makes the other tissue type pale.',
       'In the cerebrum it forms a sheet a few millimeters thick on the outside, plus clusters (nuclei) deep inside.',
       'White matter is the wiring; this is where the cell bodies, dendrites and synapses are.',
@@ -309,7 +309,7 @@ window.COGNEURDLE = {
 
   { id:'white_matter', answer:'White matter', aliases:[], cat:'anatomy', unit:'L1', source:'Lecture 1 study guide', lab:'MRI_Explorer.html',
     clues:[
-      'The substance that gives it its color is about 70–80% lipid by dry weight and is produced by oligodendrocytes.',
+      'On a T1-weighted scan it appears bright because the lipids of myelin shorten the relaxation time of nearby water protons.',
       'In humans it occupies nearly half the volume of the cerebrum, a far larger share than in small-brained mammals.',
       'DTI images it by following the direction in which water diffuses most easily.',
       'Gray matter does the computing; this is the cabling that connects one gray region to another.',
@@ -318,7 +318,7 @@ window.COGNEURDLE = {
 
   { id:'sulcus', answer:'Sulcus', aliases:['sulci'], cat:'anatomy', unit:'L1', source:'Lecture 1 study guide', lab:'Cortex_Explorer.html',
     clues:[
-      'The plural is sulci; the Latin word originally meant a furrow left by a plow.',
+      'Van Essen\'s tension-based theory holds that these form where axonal pulling draws strongly connected areas together, leaving weakly connected areas at the bottom of the fold.',
       'About two-thirds of the human cortical surface is hidden inside these.',
       'Cortical folding is thought to arise because the outer layers of cortex expand faster than the layers beneath them.',
       'A gyrus is the ridge of cortex that sticks out; this is the groove between ridges.',
@@ -327,7 +327,7 @@ window.COGNEURDLE = {
 
   { id:'gyrus', answer:'Gyrus', aliases:['gyri'], cat:'anatomy', unit:'L1', source:'Lecture 1 study guide', lab:'Cortex_Explorer.html',
     clues:[
-      'From the Greek for "ring" or "circle"; the same root gives "gyrate" and "gyroscope."',
+      'Heschl\'s, the transverse one on the superior temporal plane, is often doubled on the left and holds the tonotopic maps of primary auditory cortex.',
       'The precentral and postcentral ones are the primary motor and somatosensory strips, respectively.',
       'Many are named by position on a lobe: superior, middle and inferior temporal, for instance.',
       'A sulcus is the groove; this is the ridge between grooves.',
@@ -345,7 +345,7 @@ window.COGNEURDLE = {
 
   { id:'central_sulcus', answer:'Central sulcus', aliases:['rolandic fissure','fissure of rolando','rolandic sulcus','sulcus of rolando','central fissure'], cat:'anatomy', unit:'L1', source:'Lecture 1 (lobes)', lab:'Cortex_Explorer.html',
     clues:[
-      'It is also called the fissure of Rolando, after the Italian anatomist Luigi Rolando, who described it in the 1820s.',
+      'On axial T2-weighted MRI, the cortex of its anterior bank is visibly thicker and darker than that of its posterior bank, one of the radiologist\'s tricks for identifying it.',
       'A distinctive hook-shaped "omega" in it marks the hand area of motor cortex on an axial MRI.',
       'Primary motor cortex lies on its anterior bank; primary somatosensory cortex lies on its posterior bank.',
       'The lateral fissure separates the temporal lobe from the frontal lobe; this groove separates the frontal lobe from the parietal lobe.',
@@ -363,7 +363,7 @@ window.COGNEURDLE = {
 
   { id:'homunculus', answer:'Homunculus', aliases:['motor homunculus','sensory homunculus','somatosensory homunculus','cortical homunculus','the homunculus'], cat:'anatomy', unit:'L1', source:'Lecture 1 (Penfield)', lab:'Cortex_Explorer.html',
     clues:[
-      'The famous cartoon was drawn by a medical illustrator, Hortense Cantlie, for Penfield and Rasmussen\'s 1950 book.',
+      'The famous cartoon was drawn by medical illustrator Hortense Cantlie for a 1950 book on the cerebral cortex of man.',
       'Its proportions are distorted: the lips, tongue and hands are enormous and the trunk is tiny.',
       'There are two of them, roughly mirror images, on the front and back banks of the central sulcus.',
       'Retinotopy is the visual map; this is the name for the body map along motor and somatosensory cortex.',
@@ -372,7 +372,7 @@ window.COGNEURDLE = {
 
   { id:'cortex', answer:'Cerebral cortex', aliases:['cortex','neocortex','the cortex'], cat:'anatomy', unit:'L1', source:'Lecture 1 (gross anatomy)', lab:'Cortex_Explorer.html',
     clues:[
-      'The word is Latin for "bark," as on a tree; in humans it is 2–4 mm thick and would cover roughly a quarter of a square meter if unfolded.',
+      'Its layer IV is nearly absent in area 4 and thickest in area 17, where it is itself divided into sublayers a, b and c.',
       'Most of it has six layers, and layer 4 is where input from the thalamus arrives.',
       'It holds only about 16 billion of the brain\'s 86 billion neurons; the cerebellum, tucked beneath it, has far more.',
       'The cerebellum has more neurons, but this structure is where sensation, language and planning are computed.',
@@ -382,7 +382,7 @@ window.COGNEURDLE = {
   /* ---------------------------- LECTURE 2 ---------------------------- */
   { id:'ischemic', answer:'Ischemic stroke', aliases:['ischemia','ischemic','ischaemic stroke'], cat:'lesion', unit:'L2', source:'Lecture 2 study guide',
     clues:[
-      'The clot-dissolving drug tPA works only for this kind of stroke, and only within a few hours, which is why an emergency scan precedes treatment.',
+      'Its core and penumbra are told apart on diffusion–perfusion mismatch imaging, and its thrombolysis window is 4.5 hours.',
       'It accounts for roughly 85% of all strokes.',
       'The dead tissue is called an infarct, and the surrounding at-risk zone the penumbra.',
       'A hemorrhagic stroke is a vessel bursting; this is a vessel being blocked.',
@@ -391,7 +391,7 @@ window.COGNEURDLE = {
 
   { id:'hemorrhagic', answer:'Hemorrhagic stroke', aliases:['hemorrhage','haemorrhagic stroke','brain hemorrhage','hemorrhagic','bleed'], cat:'lesion', unit:'L2', source:'Lecture 2 study guide',
     clues:[
-      'Giving the clot-buster tPA to a patient with this kind of stroke would be disastrous, which is why stroke type is determined by imaging first.',
+      'Its subarachnoid form classically announces itself with a "thunderclap" headache and is most often caused by a ruptured berry aneurysm on the circle of Willis.',
       'Its two main subtypes are named by where the blood goes: into the brain tissue itself or into the space beneath the arachnoid membrane.',
       'Its damage comes as much from the pressure and toxicity of pooled blood as from lost supply downstream.',
       'An ischemic stroke is a blocked vessel; this is a ruptured one.',
@@ -400,7 +400,7 @@ window.COGNEURDLE = {
 
   { id:'lesion', answer:'Lesion', aliases:['lesions','lesion method','lesion studies','lesion study','brain lesion','brain damage'], cat:'lesion', unit:'L2', source:'Lecture 2 (methods)',
     clues:[
-      'Paul Broca\'s 1861 patient "Tan" is the classic case: a damaged region, an inferred function, and an area that now carries Broca\'s name.',
+      'Muscimol and lidocaine produce reversible versions of it; ibotenic acid produces the permanent kind while sparing fibers of passage.',
       'In animals it can be made deliberately with heat, chemicals or surgery; in humans it comes from stroke, tumor, injury or surgery for epilepsy.',
       'Its logic is the closest cognitive neuroscience gets to a true test of necessity: remove the region and see what fails.',
       'fMRI can show a region is active during a task; only this approach (or TMS) can show the region is necessary for it.',
@@ -409,7 +409,7 @@ window.COGNEURDLE = {
 
   { id:'single_dissociation', answer:'Single dissociation', aliases:['single dissociations','dissociation'], cat:'lesion', unit:'L2', source:'Lecture 2 study guide',
     clues:[
-      'Teuber gave the classic warning about it in 1955: it can be explained by one task simply being harder than the other.',
+      'Shallice\'s "resource artifact" is the standard objection to it: one damaged resource, drawn on unequally by two tasks, can mimic a selective deficit.',
       'It has the form "patient A is impaired on task X but performs normally on task Y."',
       'It shows two abilities can come apart, but not that they depend on different brain systems.',
       'A double dissociation needs a second patient with the reverse pattern; this needs only one pattern.',
@@ -418,7 +418,7 @@ window.COGNEURDLE = {
 
   { id:'double_dissociation', answer:'Double dissociation', aliases:['double dissociations'], cat:'lesion', unit:'L2', source:'Lecture 2 study guide',
     clues:[
-      'Teuber\'s 1955 formulation is usually cited as its origin; Shallice later argued it is the strongest evidence neuropsychology can offer for separable modules.',
+      'Dunn and Kirsner argued in 1988 and again in 2003 that even this cannot logically guarantee two separate systems, since a single nonlinear system can produce crossover patterns.',
       'Prosopagnosia versus object agnosia is a textbook example: some patients cannot recognize faces but can recognize objects, and others show the reverse.',
       'It rules out the "one task is just harder" explanation, because each task is the harder one for somebody.',
       'A single dissociation is one patient with one pattern; this requires two patients (or groups) with opposite patterns of sparing and impairment.',
@@ -445,7 +445,7 @@ window.COGNEURDLE = {
 
   { id:'erp', answer:'ERP', aliases:['event related potential','event-related potential','evoked potential','event related potentials','evoked potentials','erps'], cat:'methods', unit:'L2', source:'Lecture 2 study guide',
     clues:[
-      'Its early components were once called "evoked potentials"; the name changed as researchers realized responses could be locked to internal events, not just stimuli.',
+      'Its N400 component, discovered by Kutas and Hillyard in 1980 with sentences ending in semantic anomalies, has been used more than any other measure to study meaning in the brain.',
       'Components are named by polarity and latency (N170, P300) or by function (mismatch negativity).',
       'It is invisible in a single trial; it emerges only after averaging tens or hundreds of trials aligned to the event.',
       'Raw EEG is a continuous wiggle; this is the piece of it that is time-locked to a specific stimulus or response.',
@@ -472,7 +472,7 @@ window.COGNEURDLE = {
 
   { id:'pet', answer:'PET', aliases:['positron emission tomography','pet scan','pet scanning'], cat:'methods', unit:'L2', source:'Lecture 2 study guide',
     clues:[
-      'Its physics depends on antimatter: a positron meets an electron and the pair annihilates into two gamma rays flying in opposite directions.',
+      'Its workhorse tracer is a glucose analog that is trapped after phosphorylation by hexokinase, so it accumulates in proportion to metabolic demand.',
       'Its tracers decay so quickly (fluorine-18 has a half-life of about 110 minutes) that a cyclotron usually has to be nearby.',
       'It can image specific molecules, such as dopamine receptors or amyloid plaques, which MRI cannot.',
       'fMRI infers activity from blood oxygenation without injecting anything; this method requires a radioactive tracer.',
@@ -481,7 +481,7 @@ window.COGNEURDLE = {
 
   { id:'mri', answer:'MRI', aliases:['magnetic resonance imaging','structural MRI','structural mri scan','mri scan'], cat:'methods', unit:'L2', source:'Lecture 2 & 3 study guides', lab:'MRI_Explorer.html',
     clues:[
-      'Its original name, nuclear magnetic resonance imaging, lost its first word because "nuclear" alarmed patients.',
+      'Lauterbur\'s 1973 Nature paper produced its first image, two tubes of water, by superimposing a gradient on the main field so that resonance frequency encoded position.',
       'It excites hydrogen nuclei with a radio-frequency pulse and listens to the signal they emit as they relax back into alignment.',
       'A typical research scanner\'s magnet is 3 tesla, about 60,000 times the strength of Earth\'s magnetic field.',
       'CT uses X-rays and shows bone well; this method uses magnets and radio waves and shows soft tissue in fine detail.',
@@ -508,7 +508,7 @@ window.COGNEURDLE = {
 
   { id:'dti', answer:'DTI', aliases:['diffusion tensor imaging','diffusion mri','diffusion imaging','tractography','diffusion weighted imaging','DWI'], cat:'methods', unit:'L2', source:'Lecture 2 study guide',
     clues:[
-      'It estimates a 3×3 matrix (a tensor) in every voxel, whose principal eigenvector gives the dominant direction of water motion.',
+      'Basser, Mattiello and Le Bihan introduced it in 1994, replacing the scalar apparent diffusion coefficient with a full 3×3 matrix estimated from at least six gradient directions.',
       'Its key summary number, fractional anisotropy, is near zero in cerebrospinal fluid and high in tightly bundled fibers.',
       'Water diffuses more freely along axons than across them, and the method exploits that asymmetry.',
       'fMRI maps where gray matter is active; this method maps the white-matter pathways that connect those regions.',
@@ -536,7 +536,7 @@ window.COGNEURDLE = {
   /* ---------------------------- LECTURE 3 ---------------------------- */
   { id:'voxel', answer:'Voxel', aliases:['voxels'], cat:'decoding', unit:'L3', source:'Lecture 3 study guide', lab:'MRI_Explorer.html',
     clues:[
-      'The word was coined by analogy with "pixel," with "vo-" standing for volume, and appears in the literature in the 1970s with early CT.',
+      'Partial-volume effects arise because a single one can straddle gray matter, white matter and cerebrospinal fluid, its signal being an average of all three.',
       'In a typical fMRI scan it is 2–3 mm on a side and there are about 100,000 of them covering the brain.',
       'One measuring 3 mm on a side contains something on the order of a million neurons and billions of synapses.',
       'A pixel is a square element of a 2-D picture; this is the 3-D equivalent.',
@@ -545,7 +545,7 @@ window.COGNEURDLE = {
 
   { id:'subtraction', answer:'Subtraction logic', aliases:['subtraction','subtraction method','cognitive subtraction','subtraction design','subtraction analysis','the subtraction method'], cat:'decoding', unit:'L3', source:'Lecture 3 study guide', lab:'Decoder_Playground.html',
     clues:[
-      'It descends from Franciscus Donders\'s 1868 "subtractive method," which timed simple versus choice reactions to isolate mental stages.',
+      'Its founding assumption, pure insertion, was named by Sternberg in 1969 in the same paper that introduced the additive-factors method as a way around it.',
       'Its hidden assumption is "pure insertion": adding one process to a task leaves all the other processes unchanged.',
       'Its output is a statistical map of where one condition produced more activation than another.',
       'Decoding asks whether the pattern of activity predicts the condition; this asks whether a region is more active in one condition than in a control.',
@@ -572,7 +572,7 @@ window.COGNEURDLE = {
 
   { id:'forward_inference', answer:'Forward inference', aliases:['forward inferences'], cat:'decoding', unit:'L3', source:'Lecture 3 study guide',
     clues:[
-      'Poldrack\'s 2006 paper drew the distinction sharply, formalizing the two directions with Bayes\' rule.',
+      'Poldrack\'s 2006 critique treated it as neuroimaging\'s default logic: the direction in which an experiment actually estimates a conditional probability.',
       'Its form is "if mental process X is engaged, then brain region Y is active."',
       'It is what a standard subtraction experiment delivers when it works.',
       'Reverse inference reads mind from brain; this reads brain from mind.',
@@ -618,7 +618,7 @@ window.COGNEURDLE = {
   { id:'cross_validation', answer:'Cross-validation', aliases:['cross validation','crossvalidation','k-fold cross-validation','k fold','leave one out','train test split','train/test split'], cat:'decoding', unit:'L3', source:'Lecture 3 (decoding)', lab:'Decoder_Playground.html',
     clues:[
       'Its "leave-one-run-out" form is standard in fMRI because trials within a run share slow drifts that would otherwise leak into the test set.',
-      'With k folds, each fold takes one turn as the test set and the k accuracies are averaged.',
+      'With k partitions of the data, each partition takes one turn as the held-out set and the k accuracies are averaged.',
       'Without it, a classifier can score 100% on data it has already seen, even when the labels are random.',
       'A single train/test split throws away test data for training; this rotates the split so every trial is tested exactly once.',
       'Training a decoder on some trials and testing it on held-out trials, repeated so that accuracy is measured only on data the decoder never saw.'],
@@ -626,7 +626,7 @@ window.COGNEURDLE = {
 
   { id:'classifier', answer:'Classifier', aliases:['decoder','support vector machine','svm','pattern classifier','linear classifier','classifiers'], cat:'decoding', unit:'L3', source:'Lecture 3 (decoding)', lab:'Decoder_Playground.html',
     clues:[
-      'The support vector machine version was developed by Vapnik and colleagues in the 1990s and became the fMRI default because it copes with many voxels and few trials.',
+      'Vapnik\'s version, built on the principle of structural risk minimization, became the fMRI default in the 2000s because it copes with many voxels and few trials.',
       'Linear ones compute a weighted sum of voxel values and compare it with a threshold.',
       'Its accuracy is compared with chance, 50% for two conditions, usually with a permutation test.',
       'A subtraction map shows where activation differs; this is the algorithm that turns a pattern of activity into a prediction.',
