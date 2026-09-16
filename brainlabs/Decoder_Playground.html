@@ -1,0 +1,922 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Decoder Playground</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  html{-webkit-text-size-adjust:100%; text-size-adjust:100%;}
+  :root{
+    --bg:#0a101c; --panel:#0e1626; --panel2:#101a2e; --line:#22314d; --line-soft:#1a2740;
+    --ink:#eaf1fc; --muted:#8fa0bc; --faint:#5f7093;
+    --btn:#131f36; --btn-hover:#1a2a48; --btn-line:#2a3c5e;
+    --a:#f2b134; --b:#9b7bff; --ok:#3fbf7f; --bad:#e5484d; --accent:#ff7a4f;
+    --pos:239,90,60; --neg:47,111,228; --cell0:38,50,76;
+    --shadow:0 10px 30px rgba(0,0,0,.35);
+  }
+  :root.theme-light{
+    --bg:#e7ebf3; --panel:#f4f6fb; --panel2:#eef2f9; --line:#d3dbe8; --line-soft:#dee5f0;
+    --ink:#16202f; --muted:#5b6b85; --faint:#8b99b3;
+    --btn:#ffffff; --btn-hover:#eef3fb; --btn-line:#c9d4e6;
+    --a:#d18f0a; --b:#6f4de0; --ok:#1f9a5f; --bad:#c9353a; --accent:#d9552b;
+    --cell0:222,228,240;
+    --shadow:0 10px 24px rgba(30,45,80,.12);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+    -webkit-font-smoothing:antialiased; touch-action:manipulation;
+  }
+  .mono{font-family:"IBM Plex Mono",ui-monospace,monospace;}
+  #app{min-height:100vh; display:grid; grid-template-rows:auto 1fr auto; padding:10px 12px 12px; gap:10px;}
+
+  /* header */
+  header{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;}
+  .brand{display:flex; align-items:baseline; gap:12px; min-width:0;}
+  .brand h1{font-size:clamp(16px,1.6vw,21px); font-weight:700; margin:0; white-space:nowrap;}
+  .eyebrow{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:10.5px; letter-spacing:.14em; color:var(--muted); white-space:nowrap;}
+  .hdr-controls{display:flex; align-items:center; gap:6px;}
+  .chip{
+    display:inline-flex; align-items:center; gap:7px; border:1px solid var(--btn-line); background:var(--btn);
+    color:var(--muted); border-radius:999px; padding:5px 11px; font-size:12.5px; font-weight:500; cursor:pointer; font-family:inherit;
+  }
+  .chip:hover{background:var(--btn-hover); color:var(--ink);}
+
+  /* stepper */
+  #stepper{display:flex; gap:4px; align-items:center; flex-wrap:wrap;}
+  .step{
+    display:flex; align-items:center; gap:7px; background:transparent; border:1px solid transparent; color:var(--faint);
+    border-radius:999px; padding:5px 10px 5px 6px; cursor:pointer; font-family:inherit; font-size:12.5px; font-weight:500;
+  }
+  .step .n{width:20px; height:20px; border-radius:50%; border:1px solid var(--btn-line); display:grid; place-items:center;
+    font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:10.5px;}
+  .step:hover{color:var(--ink);}
+  .step[data-done="true"] .n{background:var(--ok); border-color:var(--ok); color:#fff;}
+  .step[aria-current="step"]{color:var(--ink); border-color:var(--btn-line); background:var(--btn);}
+  .step[aria-current="step"] .n{background:var(--accent); border-color:var(--accent); color:#fff;}
+  .step .arrow{color:var(--line); font-size:12px;}
+
+  /* main */
+  main{display:grid; grid-template-columns:262px 1fr; gap:10px; min-height:0; align-items:start;}
+  #rail{display:flex; flex-direction:column; gap:12px; min-width:0;}
+  .rail-sec{display:flex; flex-direction:column; gap:6px;}
+  .rail-label{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:10px; letter-spacing:.16em; color:var(--faint); padding:0 2px; user-select:none;}
+  .btn{
+    display:flex; align-items:center; gap:10px; text-align:left; width:100%;
+    background:var(--btn); border:1px solid var(--btn-line); color:var(--ink);
+    border-radius:10px; padding:8px 11px; cursor:pointer; font-family:inherit; font-size:13px; font-weight:500;
+    transition:background .12s, border-color .12s, transform .05s;
+  }
+  .btn:hover{background:var(--btn-hover);} .btn:active{transform:translateY(1px);}
+  .btn:disabled{opacity:.45; cursor:default;}
+  .btn.primary{background:var(--accent); border-color:var(--accent); color:#fff; justify-content:center;}
+  .btn.primary:hover{filter:brightness(1.08);}
+  .btn small{color:var(--muted); font-weight:400; font-size:11px;}
+  .btn .sub{margin-left:auto; color:var(--faint); font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:10.5px;}
+  .seg{display:flex; border:1px solid var(--btn-line); border-radius:10px; overflow:hidden; background:var(--btn);}
+  .seg button{flex:1; background:transparent; border:0; color:var(--muted); font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:12px; padding:8px 0; cursor:pointer;}
+  .seg button[aria-pressed="true"]{background:var(--btn-hover); color:var(--ink); font-weight:600;}
+  .row2{display:flex; gap:6px;}
+  .slider{display:flex; flex-direction:column; gap:3px; padding:2px 2px;}
+  .slider .lbl{display:flex; justify-content:space-between; font-size:12.5px; color:var(--muted);}
+  .slider .lbl b{color:var(--ink); font-family:"IBM Plex Mono",ui-monospace,monospace; font-weight:500; font-size:12px;}
+  input[type=range]{width:100%; accent-color:var(--accent); margin:0;}
+  input[type=text]{background:var(--btn); border:1px solid var(--btn-line); color:var(--ink); border-radius:8px; padding:6px 8px; font-family:inherit; font-size:13px; width:100%;}
+  .toggle{display:flex; align-items:center; gap:9px; font-size:12.5px; color:var(--muted); cursor:pointer; padding:4px 2px;}
+  .toggle input{accent-color:var(--accent);}
+  .toggle.warn{color:var(--bad);}
+  .note{font-size:12px; color:var(--muted); line-height:1.5; padding:0 2px;}
+  .swatch{width:14px; height:14px; border-radius:4px; border:1px solid var(--line); flex:none;}
+
+  /* stage */
+  #stage{display:flex; flex-direction:column; gap:10px; min-width:0;}
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px 16px;}
+  .panel h3{margin:0 0 8px; font-size:12px; letter-spacing:.12em; font-family:"IBM Plex Mono",ui-monospace,monospace; color:var(--faint); font-weight:500; text-transform:uppercase;}
+  .panel h3 span{color:var(--muted); letter-spacing:0; text-transform:none; font-family:"IBM Plex Sans",sans-serif; font-size:12px; margin-left:8px;}
+  .explain{background:var(--panel2); border:1px solid var(--line-soft); border-radius:12px; padding:12px 14px; font-size:13.5px; line-height:1.55; color:var(--muted);}
+  .explain b{color:var(--ink); font-weight:600;}
+  .explain .lead{color:var(--ink); font-weight:600;}
+  .kpi{display:flex; gap:16px; flex-wrap:wrap;}
+  .kpi .k{display:flex; flex-direction:column; gap:2px;}
+  .kpi .k .v{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:22px; font-weight:600;}
+  .kpi .k .l{font-size:11px; color:var(--muted);}
+  .A{color:var(--a);} .B{color:var(--b);} .OK{color:var(--ok);} .BAD{color:var(--bad);}
+
+  /* templates */
+  .tpl-row{display:flex; gap:22px; flex-wrap:wrap; align-items:flex-start; justify-content:center;}
+  .tpl{display:flex; flex-direction:column; align-items:center; gap:8px;}
+  .tpl .name{font-weight:600; font-size:14px; display:flex; align-items:center; gap:8px;}
+  .tpl .dot{width:10px; height:10px; border-radius:50%;}
+  .grid{display:grid; gap:3px; touch-action:none; user-select:none; border-radius:8px; padding:4px; background:var(--panel2); border:1px solid var(--line);}
+  .grid .cell{border-radius:4px; cursor:crosshair; transition:transform .06s;}
+  .grid .cell:hover{transform:scale(1.06); outline:1px solid var(--ink);}
+  .tpl .mean{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:12px; color:var(--muted);}
+  .tpl .mean b{color:var(--ink); font-weight:500;}
+  .samples{display:flex; gap:6px; align-items:center;}
+  .samples .cap{font-size:10.5px; color:var(--faint); font-family:"IBM Plex Mono",ui-monospace,monospace; letter-spacing:.08em;}
+  .diff-wrap{display:flex; flex-direction:column; align-items:center; gap:6px; align-self:center;}
+  .diff-wrap .cap{font-size:10.5px; color:var(--faint); font-family:"IBM Plex Mono",ui-monospace,monospace; letter-spacing:.08em; text-align:center;}
+  .legend{display:flex; align-items:center; gap:8px; font-size:11px; color:var(--muted); font-family:"IBM Plex Mono",ui-monospace,monospace;}
+  .legend .bar{width:120px; height:10px; border-radius:5px; background:linear-gradient(90deg, rgb(var(--neg)), rgb(var(--cell0)), rgb(var(--pos)));}
+
+  /* trial cards */
+  .cards{display:flex; flex-wrap:wrap; gap:6px; align-content:flex-start; min-height:60px;}
+  .card{
+    position:relative; display:flex; flex-direction:column; align-items:center; gap:2px; padding:3px 3px 2px;
+    background:var(--panel2); border:1px solid var(--line-soft); border-radius:8px; border-top:3px solid var(--line);
+    animation:pop .25s ease both;
+  }
+  .card.cA{border-top-color:var(--a);} .card.cB{border-top-color:var(--b);}
+  .card.hide{border-top-color:var(--faint);}
+  .card canvas{border-radius:4px; display:block;}
+  .card .lab{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:9px; color:var(--muted); letter-spacing:.04em; max-width:44px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .card.hide .lab{color:var(--faint);}
+  .card .res{position:absolute; top:-6px; right:-6px; width:15px; height:15px; border-radius:50%; display:grid; place-items:center; font-size:10px; font-weight:700; color:#fff;}
+  .card .res.ok{background:var(--ok);} .card .res.bad{background:var(--bad);}
+  .card.dim{opacity:.35;}
+  .card.cur{outline:2px solid var(--ink); outline-offset:1px;}
+  .card.sv{box-shadow:0 0 0 2px var(--accent);}
+  @keyframes pop{from{opacity:0; transform:scale(.6);} to{opacity:1; transform:none;}}
+  .bins{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .bin{background:var(--panel2); border:1px dashed var(--line); border-radius:12px; padding:10px; min-height:120px;}
+  .bin h4{margin:0 0 8px; font-size:12px; font-family:"IBM Plex Mono",ui-monospace,monospace; letter-spacing:.1em; color:var(--muted); font-weight:500; display:flex; justify-content:space-between;}
+  .bin.test{border-color:var(--faint);}
+  .bin.fold{min-height:0;}
+  .bin.fold.held{border-color:var(--accent); border-style:solid;}
+  .folds{display:flex; flex-direction:column; gap:8px;}
+  .moving{transition:transform .5s cubic-bezier(.2,.7,.2,1);}
+
+  /* training views */
+  .train-grid{display:grid; grid-template-columns:auto 1fr; gap:14px; align-items:start;}
+  .maps{display:flex; gap:14px; flex-wrap:wrap; justify-content:center;}
+  .map{display:flex; flex-direction:column; align-items:center; gap:6px;}
+  .map .cap{font-size:10.5px; color:var(--faint); font-family:"IBM Plex Mono",ui-monospace,monospace; letter-spacing:.08em; text-align:center;}
+  svg text{font-family:"IBM Plex Mono",ui-monospace,monospace; fill:var(--muted); font-size:10.5px;}
+  svg .axis{stroke:var(--line); stroke-width:1;}
+  .curve{width:100%; max-width:420px; height:auto; display:block;}
+  .progress{height:6px; background:var(--line-soft); border-radius:3px; overflow:hidden;}
+  .progress i{display:block; height:100%; background:var(--accent); width:0; transition:width .1s linear;}
+  .foldlist{display:flex; gap:6px; flex-wrap:wrap;}
+  .foldlist .f{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:11px; padding:4px 8px; border-radius:6px; border:1px solid var(--line); color:var(--muted); background:transparent; cursor:pointer;}
+  .foldlist .f.cur{border-color:var(--accent); color:var(--ink);}
+  .foldlist .f.done{color:var(--ink);}
+  .confusion{display:grid; grid-template-columns:auto auto auto; gap:4px; font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:12px; align-items:center;}
+  .confusion .c{padding:8px 12px; border-radius:8px; background:var(--panel2); border:1px solid var(--line-soft); text-align:center; min-width:52px;}
+  .confusion .h{color:var(--faint); font-size:10.5px; text-align:center; padding:2px 6px;}
+  .confusion .c.diag{border-color:var(--ok);}
+  .compare{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .compare .box{background:var(--panel2); border:1px solid var(--line-soft); border-radius:12px; padding:12px 14px;}
+  .compare .box h4{margin:0 0 6px; font-size:11px; letter-spacing:.12em; font-family:"IBM Plex Mono",ui-monospace,monospace; color:var(--faint); font-weight:500; text-transform:uppercase;}
+  .compare .box .big{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:24px; font-weight:600;}
+  .compare .box p{margin:6px 0 0; font-size:12.5px; color:var(--muted); line-height:1.45;}
+  .verdict{margin-top:4px; font-size:12.5px; font-weight:600;}
+
+  /* footer */
+  footer{display:flex; align-items:center; justify-content:space-between; gap:10px; border-top:1px solid var(--line-soft); padding-top:10px; flex-wrap:wrap;}
+  footer .btn{width:auto;}
+  footer .mid{display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted);}
+  footer .seg{width:170px;}
+
+  /* modal */
+  #helpModal{position:fixed; inset:0; background:rgba(4,8,18,.6); display:grid; place-items:center; z-index:50; padding:16px;}
+  #helpModal[hidden]{display:none;}
+  .modal{background:var(--panel); border:1px solid var(--line); border-radius:16px; max-width:720px; width:100%; max-height:88vh; overflow:auto; padding:22px 24px; box-shadow:var(--shadow);}
+  .modal h2{margin:0 0 10px; font-size:18px;}
+  .modal h3{margin:16px 0 6px; font-size:11px; letter-spacing:.14em; font-family:"IBM Plex Mono",ui-monospace,monospace; color:var(--faint); font-weight:500;}
+  .modal p, .modal li{font-size:13.5px; line-height:1.55; color:var(--muted);}
+  .modal b{color:var(--ink);}
+  .modal ol, .modal ul{padding-left:20px; margin:4px 0;}
+  .modal .close{float:right;}
+
+  @media (max-width:820px){
+    main{grid-template-columns:1fr;}
+    #rail{flex-direction:row; flex-wrap:wrap;}
+    #rail .rail-sec{flex:1 1 220px;}
+    .train-grid{grid-template-columns:1fr;}
+    .compare, .bins{grid-template-columns:1fr;}
+    .brand h1{font-size:18px;}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="brand"><span class="eyebrow">PSY 4480 · BRAIN LABS</span><h1>Decoder Playground</h1></div>
+    <nav id="stepper" aria-label="Pipeline steps"></nav>
+    <div class="hdr-controls">
+      <button class="chip" id="helpBtn">? How it works</button>
+      <button class="chip" id="themeBtn">◐ Theme</button>
+    </div>
+  </header>
+  <main>
+    <aside id="rail"></aside>
+    <section id="stage"></section>
+  </main>
+  <footer>
+    <button class="btn" id="backBtn">← Back</button>
+    <div class="mid"><span>Animation</span><div class="seg" id="speedSeg">
+      <button data-v="1" aria-pressed="true">1×</button><button data-v="3" aria-pressed="false">3×</button><button data-v="0" aria-pressed="false">instant</button>
+    </div></div>
+    <button class="btn primary" id="nextBtn">Next →</button>
+  </footer>
+</div>
+
+<div id="helpModal" hidden>
+  <div class="modal">
+    <button class="chip close" id="helpClose">✕ close</button>
+    <h2>Decoder Playground</h2>
+    <p>This lab lets you build a tiny fMRI decoding experiment from scratch and watch every step of <b>multivariate pattern analysis (MVPA)</b> happen: you design the true activation patterns for two conditions in a small region of interest, generate noisy trials, split them into training and test sets, train a <b>support vector machine (SVM)</b>, and test how well it can read out the condition from brain activity it has never seen.</p>
+    <h3>THE PIPELINE</h3>
+    <ol>
+      <li><b>Patterns.</b> Pick the size of the ROI (a square grid of voxels) and paint the <i>true</i> activation pattern for each condition. Real trials will be noisy copies of these templates.</li>
+      <li><b>Dataset.</b> Generate trials. Each trial is one noisy sample of a pattern, with its condition label. Compare the <i>mean</i> activation of the ROI between conditions: that is what a subtraction (univariate) analysis sees.</li>
+      <li><b>Split.</b> Set aside test trials whose labels the classifier never sees. Or use cross-validation, where every trial takes a turn in the test set.</li>
+      <li><b>Train.</b> The SVM finds a weighted sum of the voxels (a hyperplane) that separates the two conditions in the training set with the widest possible margin. The weight map shows which voxels it relies on.</li>
+      <li><b>Test.</b> Apply the trained classifier to the held-out trials and count how often it is right. Run a permutation test to see what accuracy looks like when the labels are meaningless.</li>
+    </ol>
+    <h3>GLOSSARY</h3>
+    <ul>
+      <li><b>Voxel</b>: a small cube of brain (often 2–3 mm) whose BOLD signal is one number per time point. A 3 mm voxel contains on the order of a million neurons.</li>
+      <li><b>ROI</b>: region of interest, the set of voxels the analysis looks at.</li>
+      <li><b>Univariate / subtraction</b>: compare the average activation of a region between conditions. It asks <i>how much</i> a region responds.</li>
+      <li><b>Multivariate / decoding</b>: use the whole pattern across voxels to predict the condition. It asks whether the region carries <i>information</i> about the condition, even when the average response is identical.</li>
+      <li><b>SVM</b>: a classifier that learns a weight for each voxel plus an offset; a trial is classified by the sign of the weighted sum. Among all separating hyperplanes it picks the one with the largest margin to the nearest trials (the <i>support vectors</i>).</li>
+      <li><b>Train / test split</b>: accuracy must be measured on trials the classifier did not learn from, otherwise it can simply memorize noise.</li>
+      <li><b>Cross-validation</b>: repeat the split so that each fold serves as the test set once, then average the accuracies.</li>
+      <li><b>Permutation test</b>: shuffle the labels and re-run the whole analysis many times to see the distribution of accuracies you get by chance. Real accuracy is meaningful only if it is unusual under that distribution.</li>
+      <li><b>Forward vs. reverse inference</b>: subtraction designs run forward (manipulate a mental state, observe brain activity). Decoding runs in reverse (observe brain activity, infer the mental state).</li>
+    </ul>
+    <h3>CHALLENGES</h3>
+    <ol>
+      <li>Make two patterns with <b>identical mean activation</b> that the decoder still classifies at 90% or better. (Hint: the preset "Same mean, different pattern".)</li>
+      <li>Make the decoder <b>fail</b>. What has to be true of the two patterns for accuracy to sit at 50%?</li>
+      <li>At noise 1.0, find the smallest number of trials that still decodes reliably. What happens to the permutation distribution as trials get scarce?</li>
+      <li>Turn on "test on the training trials" with two <b>identical</b> patterns. Why does accuracy climb above chance when there is no information at all?</li>
+      <li>Compare the learned weight map with the true difference between templates. When does the SVM recover it, and when does noise dominate?</li>
+    </ol>
+    <p class="mono" style="font-size:11px;margin-top:14px;">Linear SVM solved by dual coordinate descent. Trials = template + Gaussian noise. Everything runs in your browser.</p>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ---------------- utils ---------------- */
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const fmt = (v,d=2) => (Math.round(v*10**d)/10**d).toFixed(d);
+const pct = v => Math.round(v*100) + '%';
+function el(tag, attrs={}, ...kids){
+  const e = tag==='svg' ? document.createElementNS('http://www.w3.org/2000/svg','svg') : document.createElement(tag);
+  for (const [k,v] of Object.entries(attrs)){
+    if (k==='class') e.setAttribute('class', v);
+    else if (k==='html') e.innerHTML = v;
+    else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+    else if (v!==null && v!==undefined) e.setAttribute(k, v);
+  }
+  for (const k of kids.flat()) if (k!==null && k!==undefined) e.append(k.nodeType ? k : document.createTextNode(String(k)));
+  return e;
+}
+function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+function gaussFactory(rng){ return ()=>{ let u=0,v=0; while(u===0)u=rng(); while(v===0)v=rng(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }; }
+function shuffled(arr, rng){ const a=arr.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(rng()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+/* colormap for activation values (−1..+1) */
+function cssRGB(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim().split(',').map(Number); }
+let COL = {pos:[239,90,60], neg:[47,111,228], zero:[38,50,76]};
+function refreshColors(){ COL = {pos:cssRGB('--pos'), neg:cssRGB('--neg'), zero:cssRGB('--cell0')}; }
+function actColor(v){
+  v = clamp(v, -1, 1); const t = Math.abs(v); const c = v>=0 ? COL.pos : COL.neg;
+  const r = COL.zero.map((z,i)=>Math.round(z + (c[i]-z)*t));
+  return `rgb(${r[0]},${r[1]},${r[2]})`;
+}
+/* draw a rows×cols grid of values into a canvas */
+function drawGrid(cv, vals, rows, cols, cell, gap=1){
+  const dpr = window.devicePixelRatio || 1;
+  const W = cols*cell + (cols-1)*gap, H = rows*cell + (rows-1)*gap;
+  if (cv.width !== Math.round(W*dpr)) { cv.width = Math.round(W*dpr); cv.height = Math.round(H*dpr); cv.style.width = W+'px'; cv.style.height = H+'px'; }
+  const g = cv.getContext('2d'); g.setTransform(dpr,0,0,dpr,0,0); g.clearRect(0,0,W,H);
+  for (let r=0;r<rows;r++) for (let c=0;c<cols;c++){ g.fillStyle = actColor(vals[r*cols+c]); g.fillRect(c*(cell+gap), r*(cell+gap), cell, cell); }
+}
+
+/* ---------------- state ---------------- */
+const SIZES = [{k:'1×2',rows:1,cols:2},{k:'2×2',rows:2,cols:2},{k:'3×3',rows:3,cols:3},{k:'4×4',rows:4,cols:4},{k:'6×6',rows:6,cols:6},{k:'8×8',rows:8,cols:8}];
+const S = {
+  size: 2, rows: 3, cols: 3,
+  names: ['Faces', 'Houses'],
+  tA: null, tB: null,
+  brush: 1, noise: 0.6, nPer: 30, seed: 1,
+  scheme: 'holdout', trainFrac: 0.7, k: 5, cheat: false,
+  C: 1,
+  step: 0, speed: 1,
+  data: null, split: null, train: null, test: null, perm: null,
+};
+const D = () => S.rows*S.cols;
+function newTemplates(){ S.tA = new Float64Array(D()); S.tB = new Float64Array(D()); }
+function invalidate(from){ // from: 'data' | 'split' | 'train'
+  if (from==='data'){ S.data=null; S.split=null; S.train=null; S.test=null; S.perm=null; }
+  if (from==='split'){ S.split=null; S.train=null; S.test=null; S.perm=null; }
+  if (from==='train'){ S.train=null; S.test=null; S.perm=null; }
+  renderStepper();
+}
+
+/* presets: functions that fill tA/tB for the current grid */
+const PRESETS = [
+  {k:'blobs', name:'Two blobs', sub:'A on one side, B on the other', fn(){
+    const {rows,cols}=S; newTemplates();
+    for (let r=0;r<rows;r++) for (let c=0;c<cols;c++){
+      const i=r*cols+c;
+      const dA = Math.hypot(r-(rows-1)*0.25, c-(cols-1)*0.25), dB = Math.hypot(r-(rows-1)*0.75, c-(cols-1)*0.75);
+      const rad = Math.max(1, Math.min(rows,cols)*0.45);
+      S.tA[i] = clamp(1 - dA/rad, 0, 1); S.tB[i] = clamp(1 - dB/rad, 0, 1);
+    }
+    if (rows*cols===2){ S.tA[0]=1; S.tA[1]=0; S.tB[0]=0; S.tB[1]=1; }
+  }},
+  {k:'samemean', name:'Same mean, different pattern', sub:'subtraction sees nothing', fn(){
+    const {rows,cols}=S; newTemplates(); const rng = mulberry32(7);
+    for (let i=0;i<rows*cols;i++){ const v = (i%2===0) ? 0.8 : -0.8; S.tA[i]=v; S.tB[i]=-v; }
+    if (rows*cols===2){ S.tA[0]=0.8; S.tA[1]=-0.8; S.tB[0]=-0.8; S.tB[1]=0.8; }
+    void rng;
+  }},
+  {k:'onevoxel', name:'One voxel differs', sub:'a needle in the ROI', fn(){
+    newTemplates(); const n=D(); for (let i=0;i<n;i++){ S.tA[i]=0.3; S.tB[i]=0.3; } const j=Math.floor(n/2); S.tA[j]=1; S.tB[j]=-0.4;
+  }},
+  {k:'identical', name:'Identical patterns', sub:'no information at all', fn(){
+    newTemplates(); const rng=mulberry32(11); for (let i=0;i<D();i++){ const v = Math.round((rng()*1.6-0.8)*10)/10; S.tA[i]=v; S.tB[i]=v; }
+  }},
+  {k:'random', name:'Random patterns', sub:'independent A and B', fn(){
+    newTemplates(); const rng=mulberry32(Math.floor(Math.random()*1e9)); for (let i=0;i<D();i++){ S.tA[i]=Math.round((rng()*2-1)*10)/10; S.tB[i]=Math.round((rng()*2-1)*10)/10; }
+  }},
+];
+
+/* ---------------- math ---------------- */
+function genTrials(){
+  const rng = mulberry32(S.seed*7919 + 13), g = gaussFactory(rng), n = D();
+  const X=[], y=[];
+  for (let c=0;c<2;c++){
+    const t = c===0 ? S.tA : S.tB;
+    for (let i=0;i<S.nPer;i++){ const x=new Float64Array(n); for (let j=0;j<n;j++) x[j]=t[j]+S.noise*g(); X.push(x); y.push(c===0?-1:1); }
+  }
+  // interleave order for display
+  const order = shuffled(X.map((_,i)=>i), rng);
+  S.data = { X: order.map(i=>X[i]), y: order.map(i=>y[i]) };
+  // univariate stats: mean activation per trial
+  const m = S.data.X.map(x=>x.reduce((a,b)=>a+b,0)/n);
+  const a = m.filter((_,i)=>S.data.y[i]<0), b = m.filter((_,i)=>S.data.y[i]>0);
+  S.data.uni = welch(a,b);
+}
+function meanSd(a){ const m=a.reduce((p,q)=>p+q,0)/a.length; const v=a.reduce((p,q)=>p+(q-m)**2,0)/Math.max(1,a.length-1); return {m, sd:Math.sqrt(v), se:Math.sqrt(v/a.length), n:a.length}; }
+function welch(a,b){
+  const A=meanSd(a), B=meanSd(b); const se=Math.sqrt(A.se**2+B.se**2); const t = se>0 ? (A.m-B.m)/se : 0;
+  const df = se>0 ? (A.se**2+B.se**2)**2/((A.se**4)/(A.n-1)+(B.se**4)/(B.n-1)) : 1;
+  const p = 2*(1-tcdf(Math.abs(t), df));
+  return {A, B, t, df, p};
+}
+/* regularized incomplete beta via Lentz continued fraction */
+function betacf(a,b,x){ const MAXIT=200, EPS=3e-12, FPMIN=1e-300; let qab=a+b, qap=a+1, qam=a-1, c=1, d=1-qab*x/qap; if(Math.abs(d)<FPMIN)d=FPMIN; d=1/d; let h=d;
+  for(let m=1;m<=MAXIT;m++){ const m2=2*m; let aa=m*(b-m)*x/((qam+m2)*(a+m2)); d=1+aa*d; if(Math.abs(d)<FPMIN)d=FPMIN; c=1+aa/c; if(Math.abs(c)<FPMIN)c=FPMIN; d=1/d; h*=d*c;
+    aa=-(a+m)*(qab+m)*x/((a+m2)*(qap+m2)); d=1+aa*d; if(Math.abs(d)<FPMIN)d=FPMIN; c=1+aa/c; if(Math.abs(c)<FPMIN)c=FPMIN; d=1/d; const del=d*c; h*=del; if(Math.abs(del-1)<EPS)break; } return h; }
+function lgamma(z){ const g=7, C=[0.99999999999980993,676.5203681218851,-1259.1392167224028,771.32342877765313,-176.61502916214059,12.507343278686905,-0.13857109526572012,9.9843695780195716e-6,1.5056327351493116e-7]; if(z<0.5) return Math.log(Math.PI/Math.sin(Math.PI*z))-lgamma(1-z); z-=1; let x=C[0]; for(let i=1;i<g+2;i++) x+=C[i]/(z+i); const t=z+g+0.5; return 0.5*Math.log(2*Math.PI)+(z+0.5)*Math.log(t)-t+Math.log(x); }
+function betainc(a,b,x){ if(x<=0)return 0; if(x>=1)return 1; const bt=Math.exp(lgamma(a+b)-lgamma(a)-lgamma(b)+a*Math.log(x)+b*Math.log(1-x)); return x<(a+1)/(a+b+2) ? bt*betacf(a,b,x)/a : 1-bt*betacf(b,a,1-x)/b; }
+function tcdf(t, df){ const x = df/(df+t*t); const p = 0.5*betainc(df/2, 0.5, x); return t>=0 ? 1-p : p; }
+function binomPAtLeast(k, n, p=0.5){ // P(X >= k)
+  let s=0; for(let i=k;i<=n;i++){ s+=Math.exp(lgamma(n+1)-lgamma(i+1)-lgamma(n-i+1)+i*Math.log(p)+(n-i)*Math.log(1-p)); } return Math.min(1,s);
+}
+
+function makeSplit(){
+  const {X,y} = S.data; const n=X.length; const rng = mulberry32(S.seed*31+S.k+Math.round(S.trainFrac*100));
+  const idxA = shuffled(y.map((v,i)=>v<0?i:-1).filter(i=>i>=0), rng), idxB = shuffled(y.map((v,i)=>v>0?i:-1).filter(i=>i>=0), rng);
+  let folds=[]; // each fold: {train:[idx], test:[idx]}
+  if (S.scheme==='holdout'){
+    const trA = Math.round(idxA.length*S.trainFrac), trB = Math.round(idxB.length*S.trainFrac);
+    const train = idxA.slice(0,trA).concat(idxB.slice(0,trB)), test = idxA.slice(trA).concat(idxB.slice(trB));
+    if (S.cheat) folds=[{train: train.concat(test), test: train.concat(test)}]; else folds=[{train, test}];
+  } else {
+    const k = S.scheme==='loo' ? n : Math.min(S.k, Math.min(idxA.length, idxB.length));
+    const fold = new Array(n);
+    idxA.forEach((ix,j)=>fold[ix]=j%k); idxB.forEach((ix,j)=>fold[ix]=(j + (S.scheme==='loo'?idxA.length:0))%k);
+    for (let f=0;f<k;f++){ const test=[], train=[]; for(let i=0;i<n;i++) (fold[i]===f?test:train).push(i); folds.push({train,test}); }
+    S.split = {folds, foldOf: fold}; return;
+  }
+  S.split = {folds, foldOf: null};
+}
+
+/* Linear SVM by dual coordinate descent (Hsieh et al. 2008), bias as extra feature */
+function svmTrain(X, y, C, opts={}){
+  const n=X.length, d=X[0].length+1; const Xa = X.map(x=>{ const z=new Float64Array(d); z.set(x); z[d-1]=1; return z; });
+  const Q = Xa.map(z=>z.reduce((a,b)=>a+b*b,0)); const alpha=new Float64Array(n); const w=new Float64Array(d);
+  const rng = mulberry32(42); const snaps=[]; const wantSnaps = !!opts.snaps; let updates=0;
+  const snapEvery = Math.max(1, Math.ceil(n/8));
+  const push = ()=>{ snaps.push({w: w.slice(0,d-1), b: w[d-1]}); };
+  if (wantSnaps) push();
+  let epochs=0;
+  for (let ep=0; ep<200; ep++){
+    epochs=ep+1; let maxD=0; const order=shuffled(Array.from({length:n},(_,i)=>i), rng);
+    for (const i of order){
+      const z=Xa[i]; let dot=0; for(let j=0;j<d;j++) dot+=w[j]*z[j];
+      const G = y[i]*dot-1; let PG=G;
+      if (alpha[i]===0) PG=Math.min(G,0); else if (alpha[i]===C) PG=Math.max(G,0);
+      if (Math.abs(PG)>1e-12){
+        const old=alpha[i]; alpha[i]=Math.min(Math.max(old-G/Q[i],0),C); const da=(alpha[i]-old)*y[i];
+        for(let j=0;j<d;j++) w[j]+=da*z[j]; maxD=Math.max(maxD, Math.abs(alpha[i]-old));
+        updates++; if (wantSnaps && ep<3 && updates%snapEvery===0) push();
+      }
+    }
+    if (wantSnaps && ep>=3 && snaps.length<90) push();
+    if (maxD<1e-5) break;
+  }
+  if (wantSnaps) push();
+  return { w: w.slice(0,d-1), b: w[d-1], alpha, snaps, epochs };
+}
+const dotv = (w,x) => { let s=0; for(let j=0;j<w.length;j++) s+=w[j]*x[j]; return s; };
+const decision = (m, x) => dotv(m.w, x) + m.b;
+
+function runFold(f, withSnaps){
+  const {X,y}=S.data; const model = svmTrain(f.train.map(i=>X[i]), f.train.map(i=>y[i]), S.C, {snaps: withSnaps});
+  const preds = f.test.map(i => decision(model,X[i])>=0 ? 1 : -1);
+  const correct = preds.map((p,j)=>p===y[f.test[j]]);
+  const acc = correct.filter(Boolean).length/Math.max(1,correct.length);
+  const trainAcc = f.train.map(i=>(decision(model,X[i])>=0?1:-1)===y[i]).filter(Boolean).length/f.train.length;
+  return {model, preds, correct, acc, trainAcc};
+}
+function accuracyWithLabels(yPerm){ // full pipeline with alternative labels, no snapshots
+  const {X}=S.data; let hit=0, tot=0;
+  for (const f of S.split.folds){
+    const m = svmTrain(f.train.map(i=>X[i]), f.train.map(i=>yPerm[i]), S.C);
+    for (const i of f.test){ tot++; if ((decision(m,X[i])>=0?1:-1)===yPerm[i]) hit++; }
+  }
+  return hit/tot;
+}
+function computeAll(withSnaps){
+  if (!S.data) genTrials();
+  if (!S.split) makeSplit();
+  const res = S.split.folds.map(f=>runFold(f, withSnaps));
+  const nTest = res.reduce((a,r)=>a+r.correct.length,0), nHit = res.reduce((a,r)=>a+r.correct.filter(Boolean).length,0);
+  const acc = nHit/nTest, meanAcc = res.reduce((a,r)=>a+r.acc,0)/res.length;
+  const conf=[[0,0],[0,0]]; // [true][pred] 0=A 1=B
+  res.forEach((r,fi)=>r.preds.forEach((p,j)=>{ const t=S.data.y[S.split.folds[fi].test[j]]; conf[t<0?0:1][p<0?0:1]++; }));
+  S.train = {res}; S.test = {acc, meanAcc, nTest, nHit, conf, p: binomPAtLeast(nHit, nTest)};
+}
+
+/* ---------------- navigation ---------------- */
+const STEPS = ['Patterns','Dataset','Split','Train','Test'];
+let animToken = 0;
+const spd = ms => S.speed===0 ? 0 : ms/S.speed;
+const wait = async (ms) => { if (S.speed===0) return; await sleep(ms/S.speed); };
+const doneFlags = () => [true, !!S.data, !!S.split, !!S.train, !!S.test];
+
+function renderStepper(){
+  const nav=$('#stepper'); nav.innerHTML=''; const d=doneFlags();
+  STEPS.forEach((name,i)=>{
+    if (i>0) nav.append(el('span',{class:'arrow'},'›'));
+    nav.append(el('button',{class:'step', 'data-done': String(d[i] && i!==S.step), 'aria-current': i===S.step?'step':null, onclick:()=>go(i)},
+      el('span',{class:'n'}, d[i]&&i!==S.step ? '✓' : String(i+1)), name));
+  });
+  $('#backBtn').disabled = S.step===0;
+  const labels = ['Generate trials →','Split trials →','Train the SVM →','Test it →','Start over ↺'];
+  $('#nextBtn').textContent = labels[S.step];
+}
+function go(i){
+  animToken++;
+  S.step = clamp(i,0,4);
+  // ensure prerequisites silently
+  if (S.step>=2 && !S.data) genTrials();
+  if (S.step>=3 && !S.split) makeSplit();
+  if (S.step>=4 && !S.train) computeAll(true);
+  renderStepper(); renderRail(); renderStage();
+  window.scrollTo({top:0});
+}
+$('#backBtn').addEventListener('click', ()=>go(S.step-1));
+$('#nextBtn').addEventListener('click', ()=>{ if (S.step===4) go(0); else go(S.step+1); });
+$$('#speedSeg button').forEach(b=>b.addEventListener('click',()=>{ S.speed=Number(b.dataset.v); $$('#speedSeg button').forEach(x=>x.setAttribute('aria-pressed', x===b)); }));
+
+/* ---------------- rail builders ---------------- */
+function slider(label, min, max, step, val, fmtv, onInput){
+  const out = el('b',{}, fmtv(val));
+  const inp = el('input',{type:'range', min, max, step, value:val, oninput:(e)=>{ const v=Number(e.target.value); out.textContent=fmtv(v); onInput(v); }});
+  return el('div',{class:'slider'}, el('div',{class:'lbl'}, el('span',{},label), out), inp);
+}
+function seg(options, cur, onPick){
+  const s = el('div',{class:'seg'});
+  options.forEach(o=>s.append(el('button',{'aria-pressed':String(o.v===cur), onclick:(e)=>{ $$('button',s).forEach(b=>b.setAttribute('aria-pressed','false')); e.currentTarget.setAttribute('aria-pressed','true'); onPick(o.v); }}, o.k)));
+  return s;
+}
+function sec(label, ...kids){ return el('div',{class:'rail-sec'}, label?el('div',{class:'rail-label'},label):null, ...kids); }
+
+function renderRail(){
+  const rail=$('#rail'); rail.innerHTML='';
+  const st=S.step;
+  if (st===0){
+    rail.append(sec('ROI SIZE (VOXELS)', seg(SIZES.map((s,i)=>({k:s.k,v:i})), S.size, v=>{ S.size=v; S.rows=SIZES[v].rows; S.cols=SIZES[v].cols; PRESETS[0].fn(); invalidate('data'); renderStage(); })));
+    const nameA = el('input',{type:'text', value:S.names[0], maxlength:12, oninput:e=>{ S.names[0]=e.target.value||'A'; updateNames(); }});
+    const nameB = el('input',{type:'text', value:S.names[1], maxlength:12, oninput:e=>{ S.names[1]=e.target.value||'B'; updateNames(); }});
+    rail.append(sec('CONDITIONS', el('div',{class:'row2'}, el('span',{class:'swatch',style:'background:var(--a);align-self:center'}), nameA), el('div',{class:'row2'}, el('span',{class:'swatch',style:'background:var(--b);align-self:center'}), nameB)));
+    const sw = el('span',{class:'swatch', id:'brushSw', style:`background:${actColor(S.brush)}`});
+    const bs = slider('Brush value', -1, 1, 0.1, S.brush, v=>fmt(v,1), v=>{ S.brush=v; sw.style.background=actColor(v); });
+    rail.append(sec('PAINT', bs, el('div',{class:'row2'}, sw,
+      ...[-1,-0.5,0,0.5,1].map(v=>el('button',{class:'btn',style:'padding:5px 0;justify-content:center;font-size:11.5px', onclick:()=>{ S.brush=v; $('input',bs).value=v; $('b',bs).textContent=fmt(v,1); sw.style.background=actColor(v); }}, fmt(v,1)))),
+      el('div',{class:'note'},'Tap or drag across voxels to paint the brush value into a pattern.')));
+    rail.append(sec('PRESETS', ...PRESETS.map(p=>el('button',{class:'btn', onclick:()=>{ p.fn(); invalidate('data'); renderStage(); }}, el('span',{}, p.name, el('br'), el('small',{},p.sub))))));
+    rail.append(sec('EDIT', el('div',{class:'row2'},
+      el('button',{class:'btn',onclick:()=>{ S.tB=S.tA.slice(); invalidate('data'); renderStage(); }},'Copy A → B'),
+      el('button',{class:'btn',onclick:()=>{ [S.tA,S.tB]=[S.tB,S.tA]; invalidate('data'); renderStage(); }},'Swap')),
+      el('button',{class:'btn',onclick:()=>{ newTemplates(); invalidate('data'); renderStage(); }},'Clear both')));
+    rail.append(sec('TRIALS',
+      slider('Noise (σ)', 0, 2, 0.05, S.noise, v=>fmt(v,2), v=>{ S.noise=v; invalidate('data'); updateSamples(); }),
+      slider('Trials per condition', 8, 100, 2, S.nPer, v=>String(v), v=>{ S.nPer=v; invalidate('data'); }),
+      el('div',{class:'note'},'Each trial = template + Gaussian noise in every voxel. Noise is the reason decoding is hard.')));
+  }
+  if (st===1){
+    rail.append(sec('TRIALS',
+      slider('Noise (σ)', 0, 2, 0.05, S.noise, v=>fmt(v,2), v=>{ S.noise=v; invalidate('data'); genTrials(); renderStage(); }),
+      slider('Trials per condition', 8, 100, 2, S.nPer, v=>String(v), v=>{ S.nPer=v; invalidate('data'); genTrials(); renderStage(); }),
+      el('button',{class:'btn', onclick:()=>{ S.seed=Math.floor(Math.random()*1e6); invalidate('data'); genTrials(); renderStage(); }},'⟳ Resample trials', el('span',{class:'sub'},'new noise'))));
+    rail.append(sec('', el('div',{class:'note'},'Every card is one trial: the ROI pattern measured during one presentation of a face or a house. The colored bar is its true label.')));
+  }
+  if (st===2){
+    rail.append(sec('SCHEME', seg([{k:'Hold-out',v:'holdout'},{k:'k-fold',v:'kfold'},{k:'Leave-1-out',v:'loo'}], S.scheme, v=>{ S.scheme=v; invalidate('split'); renderRail(); renderStage(); })));
+    if (S.scheme==='holdout') rail.append(sec('HOLD-OUT', slider('Training fraction', 0.5, 0.9, 0.1, S.trainFrac, v=>pct(v), v=>{ S.trainFrac=v; invalidate('split'); renderStage(); })));
+    if (S.scheme==='kfold') rail.append(sec('FOLDS', seg([{k:'3',v:3},{k:'5',v:5},{k:'10',v:10}], S.k, v=>{ S.k=v; invalidate('split'); renderStage(); })));
+    if (S.scheme==='holdout') rail.append(sec('DON’T DO THIS', el('label',{class:'toggle warn'}, el('input',{type:'checkbox', checked:S.cheat?'':null, onchange:e=>{ S.cheat=e.target.checked; invalidate('split'); renderStage(); }}), 'Test on the training trials'),
+      el('div',{class:'note'},'Skips the split entirely: the classifier is graded on the same trials it learned from.')));
+    rail.append(sec('', el('div',{class:'note'}, S.scheme==='holdout' ? 'Test trials are set aside with their labels hidden. The classifier never sees them during training.' : S.scheme==='kfold' ? 'Trials are dealt into folds. Each fold takes one turn as the test set while the others train the classifier; accuracies are averaged.' : 'Every trial gets its own turn as a one-trial test set, so the classifier is trained once per trial.')));
+  }
+  if (st===3){
+    rail.append(sec('SVM', slider('Regularization C (log)', -2, 2, 0.25, Math.log10(S.C), v=>fmt(10**v,2), v=>{ S.C=10**v; invalidate('train'); }),
+      el('div',{class:'note'},'Small C: prefer a wide margin, tolerate some misclassified training trials. Large C: fit the training trials as hard as possible.'),
+      el('button',{class:'btn primary', onclick:()=>{ computeAll(true); renderStepper(); renderStage(); }},'▶ Retrain')));
+    rail.append(sec('', el('div',{class:'note'},'The SVM learns one weight per voxel. A trial is classified by the sign of (weights · voxels + offset). Training moves the weights until the two classes sit on opposite sides with the widest margin.')));
+  }
+  if (st===4){
+    rail.append(sec('IS IT ABOVE CHANCE?', el('button',{class:'btn primary', id:'permBtn', onclick:()=>runPermutation()},'Run permutation test'),
+      el('div',{class:'note'},'Shuffle the labels 200 times, re-run the whole split-train-test pipeline each time, and see what accuracies come out when the labels mean nothing.')));
+    rail.append(sec('TRY AGAIN', el('button',{class:'btn', onclick:()=>{ S.seed=Math.floor(Math.random()*1e6); invalidate('data'); genTrials(); makeSplit(); computeAll(true); renderStepper(); renderStage(); }},'⟳ Resample trials & rerun', el('span',{class:'sub'},'same design')),
+      el('button',{class:'btn', onclick:()=>{ computeAll(true); renderStage(); }},'▶ Replay test animation')));
+  }
+}
+function updateNames(){ $$('.nmA').forEach(e=>e.textContent=S.names[0]); $$('.nmB').forEach(e=>e.textContent=S.names[1]); }
+
+/* ---------------- stage: patterns ---------------- */
+function templateGrid(t, editable){
+  const cell = S.cols<=2 ? 64 : S.cols<=4 ? 44 : S.cols<=6 ? 30 : 24;
+  const g = el('div',{class:'grid', style:`grid-template-columns:repeat(${S.cols},${cell}px)`});
+  const cells=[];
+  for (let i=0;i<D();i++){ const c=el('div',{class:'cell', style:`width:${cell}px;height:${cell}px;background:${actColor(t[i])}`, title:fmt(t[i],1)}); cells.push(c); g.append(c); }
+  if (editable){
+    let painting=false;
+    const paint = (e)=>{ const c=document.elementFromPoint(e.clientX,e.clientY); const i=cells.indexOf(c); if(i<0)return; if (t[i]!==S.brush){ t[i]=S.brush; c.style.background=actColor(S.brush); c.title=fmt(S.brush,1); invalidate('data'); updateMeans(); updateSamples(); } };
+    g.addEventListener('pointerdown', e=>{ painting=true; g.setPointerCapture(e.pointerId); paint(e); });
+    g.addEventListener('pointermove', e=>{ if(painting) paint(e); });
+    g.addEventListener('pointerup', ()=>painting=false); g.addEventListener('pointercancel', ()=>painting=false);
+  }
+  return g;
+}
+function meanOf(t){ let s=0; for(const v of t)s+=v; return s/t.length; }
+function updateMeans(){ $$('.meanA').forEach(e=>e.textContent=fmt(meanOf(S.tA))); $$('.meanB').forEach(e=>e.textContent=fmt(meanOf(S.tB)));
+  const dc=$('#diffCv'); if (dc) drawGrid(dc, S.tB.map((v,i)=>v-S.tA[i]), S.rows, S.cols, S.cols<=2?28:S.cols<=4?20:S.cols<=6?14:11, 1); }
+function updateSamples(){
+  const rng=mulberry32(99), g=gaussFactory(rng), cell = S.cols<=2?14:S.cols<=4?9:S.cols<=6?6:5;
+  $$('.sampleCv').forEach(cv=>{ const t = cv.dataset.c==='A'?S.tA:S.tB; const x=t.map(v=>v+S.noise*g()); drawGrid(cv, x, S.rows, S.cols, cell, 1); });
+}
+function stagePatterns(){
+  const stage=$('#stage'); stage.innerHTML='';
+  const mk = (which)=>{
+    const t = which==='A'?S.tA:S.tB;
+    const samples = el('div',{class:'samples'}, el('span',{class:'cap'},'e.g. trials'), ...[0,1,2].map(()=>el('canvas',{class:'sampleCv','data-c':which})));
+    return el('div',{class:'tpl'}, el('div',{class:'name'}, el('span',{class:'dot', style:`background:var(--${which.toLowerCase()})`}), el('span',{class:'nm'+which}, S.names[which==='A'?0:1])),
+      templateGrid(t, true), el('div',{class:'mean'},'mean activation ', el('b',{class:'mean'+which}, fmt(meanOf(t)))), samples);
+  };
+  const diff = el('div',{class:'diff-wrap'}, el('span',{class:'cap'},'B − A'), el('canvas',{id:'diffCv'}), el('span',{class:'cap'},'true difference'));
+  stage.append(el('div',{class:'panel'}, el('h3',{},'True activation patterns', el('span',{},`${S.rows}×${S.cols} voxel ROI`)),
+    el('div',{class:'tpl-row'}, mk('A'), diff, mk('B')),
+    el('div',{style:'display:flex;justify-content:center;margin-top:10px'}, el('div',{class:'legend'},'−1', el('span',{class:'bar'}),'+1 activation (relative to baseline)'))));
+  stage.append(el('div',{class:'explain', html:`<span class="lead">What you are designing.</span> Imagine a small region of interest in the ventral visual stream. Each square is one voxel. The two grids are the <b>true</b> average response of every voxel to each condition. In a real experiment you would never see these directly: you only get noisy trials, and the question is whether a classifier can tell the conditions apart from those trials. Notice the <b>mean activation</b> under each grid: that single number is all a subtraction analysis would compare.`}));
+  updateMeans(); updateSamples();
+}
+
+/* ---------------- stage: dataset ---------------- */
+function trialCard(i, opts={}){
+  const {X,y}=S.data; const cell = S.cols<=2?12:S.cols<=4?8:S.cols<=6?5:4;
+  const cv=el('canvas'); drawGrid(cv, X[i], S.rows, S.cols, cell, 1);
+  const lab = y[i]<0?S.names[0]:S.names[1];
+  const c = el('div',{class:'card '+(y[i]<0?'cA':'cB')+(opts.hide?' hide':''), 'data-i':i, style: opts.delay!==undefined?`animation-delay:${opts.delay}ms`:null}, cv, el('span',{class:'lab'}, opts.hide?'?':lab));
+  return c;
+}
+function uniPanel(){
+  const u=S.data.uni; const W=320,H=120, pad=30; const svg=el('svg',{viewBox:`0 0 ${W} ${H}`, style:'width:100%;max-width:340px;height:auto'});
+  const lo=Math.min(u.A.m-2*u.A.se, u.B.m-2*u.B.se, -0.2), hi=Math.max(u.A.m+2*u.A.se, u.B.m+2*u.B.se, 0.2);
+  const yv=v=>H-pad-(v-lo)/(hi-lo)*(H-2*pad);
+  svg.innerHTML = `<line class="axis" x1="${pad}" y1="${yv(0)}" x2="${W-10}" y2="${yv(0)}"/><text x="${pad-4}" y="${yv(0)+3}" text-anchor="end">0</text>`;
+  [[u.A,'var(--a)',S.names[0],110],[u.B,'var(--b)',S.names[1],210]].forEach(([m,col,nm,x])=>{
+    const y0=yv(0), y1=yv(m.m); svg.innerHTML += `<rect x="${x-28}" y="${Math.min(y0,y1)}" width="56" height="${Math.abs(y0-y1)}" fill="${col}" opacity=".7" rx="3"/>
+      <line x1="${x}" y1="${yv(m.m-m.se)}" x2="${x}" y2="${yv(m.m+m.se)}" stroke="var(--ink)" stroke-width="1.5"/><text x="${x}" y="${H-8}" text-anchor="middle">${nm}</text>
+      <text x="${x}" y="${yv(Math.max(m.m,0))-6}" text-anchor="middle" fill="var(--ink)">${fmt(m.m)}</text>`;
+  });
+  const sig = u.p<0.05;
+  return el('div',{class:'box'}, el('h4',{},'Subtraction (univariate)'), svg,
+    el('p',{html:`Mean ROI activation, ±1 SEM. Difference = <b>${fmt(u.A.m-u.B.m)}</b>, t(${fmt(u.df,0)}) = ${fmt(u.t)}, p = ${u.p<0.001?'<0.001':fmt(u.p,3)}.`}),
+    el('div',{class:'verdict '+(sig?'OK':'BAD')}, sig ? 'The region responds more to one condition.' : 'No difference in overall activation.'));
+}
+async function stageDataset(){
+  const stage=$('#stage'); stage.innerHTML=''; const tok=++animToken;
+  if (!S.data) genTrials();
+  const n=S.data.X.length;
+  const cards=el('div',{class:'cards', id:'cards'});
+  stage.append(el('div',{class:'panel'}, el('h3',{},'Dataset', el('span',{},`${n} trials · ${S.nPer} per condition · noise σ = ${fmt(S.noise)}`)), cards));
+  const cmp = el('div',{class:'compare'}, uniPanel(), el('div',{class:'box'}, el('h4',{},'Decoding (multivariate)'), el('div',{class:'big',style:'color:var(--faint)'},'?'), el('p',{},'Can the pattern across voxels predict the condition of a trial? That is what the next three steps find out.')));
+  stage.append(el('div',{class:'panel'}, el('h3',{},'What a subtraction analysis sees'), cmp));
+  stage.append(el('div',{class:'explain', html:`<span class="lead">What just happened.</span> The scanner measured the ROI once per trial. Each trial is the true pattern for its condition plus independent noise in every voxel, so no two trials look alike, and with enough noise you cannot tell the conditions apart by eye. The bar chart collapses each trial to one number (its mean across voxels) and compares conditions the way a <b>subtraction</b> design would. Decoding will instead use all ${D()} voxels at once.`}));
+  const per = Math.min(40, 1500/n);
+  for (let i=0;i<n;i++){ if (tok!==animToken) return; cards.append(trialCard(i,{delay: S.speed===0?0:i*per/S.speed})); }
+}
+
+/* ---------------- stage: split ---------------- */
+async function stageSplit(){
+  const stage=$('#stage'); stage.innerHTML=''; const tok=++animToken;
+  if (!S.data) genTrials(); if (!S.split) makeSplit();
+  const {folds, foldOf}=S.split; const n=S.data.X.length;
+  const pool = el('div',{class:'cards', id:'pool'});
+  for (let i=0;i<n;i++) pool.append(trialCard(i));
+  const poolPanel = el('div',{class:'panel'}, el('h3',{},'All trials'), pool);
+  stage.append(poolPanel);
+  let target;
+  if (S.scheme==='holdout'){
+    const f=folds[0];
+    const trainBin=el('div',{class:'bin'}, el('h4',{}, el('span',{},'TRAINING SET'), el('span',{},`${f.train.length} trials · labels visible`)), el('div',{class:'cards'}));
+    const testBin=el('div',{class:'bin test'}, el('h4',{}, el('span',{},S.cheat?'TEST SET = TRAINING SET':'TEST SET'), el('span',{},`${f.test.length} trials · labels hidden`)), el('div',{class:'cards'}));
+    target = el('div',{class:'panel'}, el('h3',{},'Split', el('span',{},S.cheat?'cheating: the same trials are used for both':`${pct(S.trainFrac)} train / ${pct(1-S.trainFrac)} test, stratified by condition`)), el('div',{class:'bins'}, trainBin, testBin));
+    stage.append(target);
+    stage.append(el('div',{class:'explain', html: S.cheat ? `<span class="lead">Why this is cheating.</span> The classifier will be graded on trials it already studied. With enough voxels it can fit the <b>noise</b> in those trials, so accuracy will look impressive even when the two patterns carry no information at all. Watch what happens in the Test step.` : `<span class="lead">Why split?</span> If we measured accuracy on the same trials the SVM trained on, it could score well by memorizing noise. So a random, stratified subset is sealed off as the <b>test set</b>. Its labels are hidden from the classifier and only revealed at grading time. Whatever accuracy we get on those trials is an honest estimate of how well the pattern generalizes to new data.`}));
+    await wait(400); if (tok!==animToken) return;
+    // move cards
+    const all = f.train.map(i=>({i,bin:trainBin})).concat(f.test.map(i=>({i,bin:testBin})));
+    if (S.cheat){ for (const i of f.train) $('.cards',trainBin).append(trialCard(i)); for (const i of f.test) $('.cards',testBin).append(trialCard(i,{hide:true})); poolPanel.remove(); return; }
+    await moveCards(all, tok, (i,bin)=>bin===testBin);
+    poolPanel.remove();
+  } else {
+    const k=folds.length; const wrap=el('div',{class:'folds'});
+    const bins=folds.map((f,j)=>{ const b=el('div',{class:'bin fold'}, el('h4',{}, el('span',{},`FOLD ${j+1}`), el('span',{},`${f.test.length} trials`)), el('div',{class:'cards'})); return b; });
+    if (S.scheme==='loo'){
+      target = el('div',{class:'panel'}, el('h3',{},'Split', el('span',{},`leave-one-out: ${n} folds of one trial each`)), el('div',{class:'note'},`With leave-one-out, every trial is its own fold. The classifier will be trained ${n} times, each time on ${n-1} trials, and tested on the one left out. Below, the pool of trials stays as it is; the Train and Test steps will cycle through them.`));
+      stage.append(target);
+      stage.append(el('div',{class:'explain', html:`<span class="lead">Cross-validation.</span> Instead of sacrificing a chunk of the data as a fixed test set, cross-validation lets every trial be a test trial exactly once. Accuracy is the fraction of trials correctly classified across all folds. Leave-one-out is the extreme case: maximal training data for each fold, but many classifiers to train.`}));
+      return;
+    }
+    bins.forEach(b=>wrap.append(b));
+    target = el('div',{class:'panel'}, el('h3',{},'Split', el('span',{},`${k}-fold cross-validation, stratified by condition`)), wrap);
+    stage.append(target);
+    stage.append(el('div',{class:'explain', html:`<span class="lead">Cross-validation.</span> The trials are dealt into ${k} folds. In the Train and Test steps, each fold takes a turn as the test set while the other ${k-1} folds train the classifier, so every trial is tested exactly once and no trial is ever tested by a classifier that saw its label. The reported accuracy is the average across folds.`}));
+    await wait(400); if (tok!==animToken) return;
+    const all=[]; for (let i=0;i<n;i++) all.push({i, bin:bins[foldOf[i]]});
+    await moveCards(all, tok, ()=>false);
+    poolPanel.remove();
+  }
+}
+async function moveCards(items, tok, hideFn){
+  const pool=$('#pool'); if (!pool) return;
+  const per = Math.min(60, 2400/items.length);
+  for (let j=0;j<items.length;j++){
+    if (tok!==animToken) return;
+    const {i,bin}=items[j]; const src=$(`.card[data-i="${i}"]`, pool); if (!src) continue;
+    const hide=hideFn(i,bin);
+    if (S.speed===0){ src.remove(); $('.cards',bin).append(trialCard(i,{hide})); continue; }
+    const r0=src.getBoundingClientRect();
+    const dst=trialCard(i,{hide}); dst.style.animation='none'; dst.style.visibility='hidden'; $('.cards',bin).append(dst);
+    const r1=dst.getBoundingClientRect();
+    const ghost=src.cloneNode(true); ghost.style.animation='none'; ghost.style.position='fixed'; ghost.style.left=r0.left+'px'; ghost.style.top=r0.top+'px'; ghost.style.margin='0'; ghost.style.zIndex=20; ghost.classList.add('moving');
+    document.body.append(ghost); src.style.visibility='hidden';
+    requestAnimationFrame(()=>{ ghost.style.transform=`translate(${r1.left-r0.left}px,${r1.top-r0.top}px)`; });
+    setTimeout(()=>{ ghost.remove(); dst.style.visibility=''; src.remove(); }, spd(500));
+    await wait(per);
+  }
+  await wait(500);
+}
+
+/* ---------------- shared views: decision axis, scatter, maps ---------------- */
+function makeAxis(){
+  const W=640,H=176; const svg=el('svg',{viewBox:`0 0 ${W} ${H}`, style:'width:100%;height:auto;display:block'});
+  const ns='http://www.w3.org/2000/svg'; const sv=(t,a)=>{ const e=document.createElementNS(ns,t); for(const[k,v]of Object.entries(a)) e.setAttribute(k,v); return e; };
+  const gBand=sv('g',{}), gTrain=sv('g',{}), gTest=sv('g',{}), gLab=sv('g',{});
+  svg.append(gBand,gTrain,gTest,gLab);
+  let range=1.6; const x=v=>W/2+clamp(v,-range*1.15,range*1.15)/range*(W/2-30);
+  function frame(){
+    gBand.innerHTML=''; gLab.innerHTML='';
+    gBand.append(sv('rect',{x:x(-1),y:34,width:x(1)-x(-1),height:110,fill:'var(--accent)',opacity:.08,rx:4}));
+    gBand.append(sv('line',{x1:20,y1:92,x2:W-20,y2:92,class:'axis'}));
+    gBand.append(sv('line',{x1:x(0),y1:30,x2:x(0),y2:150,stroke:'var(--ink)','stroke-width':1.2,'stroke-dasharray':'3 3'}));
+    [-1,1].forEach(v=>gBand.append(sv('line',{x1:x(v),y1:40,x2:x(v),y2:140,stroke:'var(--accent)','stroke-width':1,opacity:.5})));
+    const t=(s,xx,yy,anchor,fill)=>{ const e=sv('text',{x:xx,y:yy,'text-anchor':anchor}); if(fill)e.setAttribute('fill',fill); e.textContent=s; gLab.append(e); };
+    t('← predicts '+S.names[0],x(0)-8,22,'end','var(--a)'); t('predicts '+S.names[1]+' →',x(0)+8,22,'start','var(--b)');
+    t('0',x(0),165,'middle'); t('−1',x(-1),165,'middle'); t('+1',x(1),165,'middle'); t('margin',x(0),152,'middle');
+    t('training trials',24,52,'start'); t('test trials',24,110,'start');
+  }
+  return {
+    svg,
+    setRange(vals){ range=Math.max(1.6, ...vals.map(v=>Math.abs(v)))*1.05; frame(); },
+    setTrain(dvs, ys, svFlags){
+      gTrain.innerHTML='';
+      dvs.forEach((d,i)=>{ const c=sv('circle',{cx:x(d),cy:66+(i%5)*5,r:4,fill:ys[i]<0?'var(--a)':'var(--b)',opacity:.85}); if(svFlags&&svFlags[i]){ c.setAttribute('stroke','var(--ink)'); c.setAttribute('stroke-width',1.5); } gTrain.append(c); });
+    },
+    fadeTrain(){ gTrain.setAttribute('opacity','.35'); },
+    clearTest(){ gTest.innerHTML=''; },
+    addTest(d, y, ok, k){
+      const g=sv('g',{}); const c=sv('circle',{cx:x(d),cy:120+(k%4)*6,r:5,fill:y<0?'var(--a)':'var(--b)',stroke:ok?'var(--ok)':'var(--bad)','stroke-width':2.5});
+      g.append(c); gTest.append(g);
+      if (S.speed!==0){ c.style.transformOrigin=`${x(d)}px ${120+(k%4)*6}px`; c.animate([{transform:'translateY(-40px) scale(.5)',opacity:0},{transform:'none',opacity:1}],{duration:spd(350),easing:'cubic-bezier(.2,.7,.2,1)'}); }
+    },
+    frame
+  };
+}
+function makeScatter(){
+  const W=300,H=300,lim=2.6; const ns='http://www.w3.org/2000/svg'; const sv=(t,a)=>{ const e=document.createElementNS(ns,t); for(const[k,v]of Object.entries(a)) e.setAttribute(k,v); return e; };
+  const svg=el('svg',{viewBox:`0 0 ${W} ${H}`, style:'width:300px;max-width:100%;height:auto;display:block;background:var(--panel2);border-radius:10px;border:1px solid var(--line-soft)'});
+  const px=v=>W/2+v/lim*(W/2-14), py=v=>H/2-v/lim*(H/2-14);
+  const gLines=sv('g',{}), gPts=sv('g',{}), gTest=sv('g',{});
+  svg.append(sv('line',{x1:px(-lim),y1:py(0),x2:px(lim),y2:py(0),class:'axis'}), sv('line',{x1:px(0),y1:py(-lim),x2:px(0),y2:py(lim),class:'axis'}), gLines, gPts, gTest);
+  const tx=sv('text',{x:W-6,y:py(0)-4,'text-anchor':'end'}); tx.textContent='voxel 1'; const ty=sv('text',{x:px(0)+4,y:12,'text-anchor':'start'}); ty.textContent='voxel 2'; svg.append(tx,ty);
+  function lineFor(w,b,c){ // w1 x + w2 y + b = c
+    const [w1,w2]=w; if (Math.abs(w1)<1e-9&&Math.abs(w2)<1e-9) return null;
+    if (Math.abs(w2)>=Math.abs(w1)){ const f=x=>(c-b-w1*x)/w2; return [[-lim,f(-lim)],[lim,f(lim)]]; }
+    const f=y=>(c-b-w2*y)/w1; return [[f(-lim),-lim],[f(lim),lim]];
+  }
+  return { svg,
+    setModel(w,b){ gLines.innerHTML=''; [[0,'var(--ink)',1.6,''],[-1,'var(--accent)',1,'4 3'],[1,'var(--accent)',1,'4 3']].forEach(([c,col,sw,da])=>{ const L=lineFor(w,b,c); if(!L)return; gLines.append(sv('line',{x1:px(L[0][0]),y1:py(L[0][1]),x2:px(L[1][0]),y2:py(L[1][1]),stroke:col,'stroke-width':sw,'stroke-dasharray':da})); }); },
+    setPoints(X, ys, svFlags){ gPts.innerHTML=''; X.forEach((p,i)=>{ const c=sv('circle',{cx:px(p[0]),cy:py(p[1]),r:4,fill:ys[i]<0?'var(--a)':'var(--b)',opacity:.85}); if(svFlags&&svFlags[i]){c.setAttribute('stroke','var(--ink)');c.setAttribute('stroke-width',1.5);} gPts.append(c); }); },
+    fade(){ gPts.setAttribute('opacity','.35'); }, clearTest(){ gTest.innerHTML=''; },
+    addTest(p,y,ok){ gTest.append(sv('circle',{cx:px(p[0]),cy:py(p[1]),r:5.5,fill:y<0?'var(--a)':'var(--b)',stroke:ok?'var(--ok)':'var(--bad)','stroke-width':2.5})); }
+  };
+}
+function normMap(v){ const m=Math.max(1e-9,...Array.from(v).map(Math.abs)); return Array.from(v).map(x=>x/m); }
+function mapCanvas(){ return el('canvas'); }
+const mapCell = () => S.cols<=2?56:S.cols<=4?36:S.cols<=6?24:18;
+function curveSVG(vals, color, ymin=0.4, ymax=1){
+  const W=320,H=110,p=34; const svg=el('svg',{class:'curve', viewBox:`0 0 ${W} ${H}`});
+  const xs=i=>p+(vals.length<=1?0:i/(vals.length-1))*(W-p-8), ys=v=>H-p-(clamp(v,ymin,ymax)-ymin)/(ymax-ymin)*(H-p-10);
+  let d=''; vals.forEach((v,i)=>{ d+=(i?'L':'M')+xs(i).toFixed(1)+' '+ys(v).toFixed(1)+' '; });
+  svg.innerHTML=`<line class="axis" x1="${p}" y1="${ys(ymax)}" x2="${p}" y2="${ys(ymin)}"/><line class="axis" x1="${p}" y1="${H-p}" x2="${W-8}" y2="${H-p}"/>
+    <line x1="${p}" y1="${ys(0.5)}" x2="${W-8}" y2="${ys(0.5)}" stroke="var(--faint)" stroke-dasharray="3 3"/>
+    <text x="${p-3}" y="${ys(ymax)+4}" text-anchor="end">100%</text><text x="${p-3}" y="${ys(0.5)+4}" text-anchor="end">50%</text>
+    <path d="${d}" fill="none" stroke="${color}" stroke-width="2"/>`;
+  return svg;
+}
+
+/* ---------------- stage: train ---------------- */
+let trainFoldShown = 0;
+async function stageTrain(){
+  const stage=$('#stage'); stage.innerHTML=''; const tok=++animToken;
+  if (!S.train) computeAll(true);
+  const folds=S.split.folds, k=folds.length; if (trainFoldShown>=k) trainFoldShown=0;
+  const fi=trainFoldShown, f=folds[fi], r=S.train.res[fi], {X,y}=S.data; const two=D()===2;
+  const wmap=mapCanvas(), dmap=mapCanvas();
+  drawGrid(dmap, normMap(S.tB.map((v,i)=>v-S.tA[i])), S.rows, S.cols, mapCell(), 2);
+  const maps=el('div',{class:'maps'}, el('div',{class:'map'}, wmap, el('span',{class:'cap'},'SVM WEIGHTS',el('br'),'what it learned')), el('div',{class:'map'}, dmap, el('span',{class:'cap'},'TRUE B − A',el('br'),'what it should find')));
+  const axis=makeAxis(); const scat=two?makeScatter():null;
+  const iterLbl=el('span',{class:'mono'},'—'); const prog=el('div',{class:'progress'}, el('i'));
+  const kpi=el('div',{class:'kpi'},
+    el('div',{class:'k'}, el('span',{class:'v',id:'kTrainAcc'},'—'), el('span',{class:'l'},'training accuracy')),
+    el('div',{class:'k'}, el('span',{class:'v',id:'kSV'},'—'), el('span',{class:'l'},'support vectors')),
+    el('div',{class:'k'}, el('span',{class:'v',id:'kIter'},'—'), el('span',{class:'l'},'training steps')));
+  const curveWrap=el('div',{});
+  let foldBar=null;
+  if (k>1){ foldBar=el('div',{class:'foldlist'}); const shown=Math.min(k,12);
+    for (let j=0;j<shown;j++) foldBar.append(el('button',{class:'f'+(j===fi?' cur':''), onclick:()=>{ trainFoldShown=j; stageTrain(); }}, `fold ${j+1}`));
+    if (k>shown) foldBar.append(el('span',{class:'f'},`… ${k} folds`)); }
+  const right=el('div',{}, two?el('div',{style:'display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start;margin-bottom:8px'}, scat.svg, el('div',{style:'flex:1;min-width:200px'}, el('div',{class:'note',style:'margin-bottom:6px'},'With two voxels the whole feature space fits on a plot: each trial is a point, the SVM boundary is a line, dashed lines mark the margin, ringed points are the support vectors.'), curveWrap)):null,
+    axis.svg, two?null:curveWrap);
+  stage.append(el('div',{class:'panel'}, el('h3',{},'Training the SVM', el('span',{}, k>1?`fold ${fi+1} of ${k} · ${f.train.length} training trials`:`${f.train.length} training trials · C = ${fmt(S.C,2)}`)),
+    foldBar, el('div',{class:'train-grid',style:'margin-top:8px'}, el('div',{}, maps, el('div',{style:'margin-top:12px'}, kpi), el('div',{style:'margin-top:10px'}, prog), el('div',{class:'note',style:'margin-top:4px'}, 'iteration ', iterLbl)), right)));
+  stage.append(el('div',{class:'explain', html:`<span class="lead">What the animation shows.</span> The SVM starts with all weights at zero, so every training trial sits on the boundary. Each update nudges the weights toward trials that are misclassified or inside the margin. On the axis, every training trial is placed at its <b>decision value</b> (weights · voxels + offset); the goal is to push <span class="A">${S.names[0]}</span> trials left of −1 and <span class="B">${S.names[1]}</span> trials right of +1. When it converges, the trials touching or inside the margin are the <b>support vectors</b>: they alone determine the boundary. Compare the weight map with the true difference between the patterns.`}));
+  // animate through snapshots
+  const snaps=r.model.snaps; const trainX=f.train.map(i=>X[i]), trainY=f.train.map(i=>y[i]);
+  const dvAll = snaps.map(s=>trainX.map(x=>dotv(s.w,x)+s.b));
+  axis.setRange(dvAll[dvAll.length-1]); if (two){ scat.setPoints(trainX, trainY); }
+  const accs=[]; const total=snaps.length;
+  const finalSV = Array.from(r.model.alpha).map(a=>a>1e-9);
+  for (let s=0;s<total;s++){
+    if (tok!==animToken) return;
+    const snap=snaps[s]; const last=s===total-1;
+    drawGrid(wmap, normMap(snap.w), S.rows, S.cols, mapCell(), 2);
+    const dvs=dvAll[s]; const acc=dvs.filter((d,i)=>(d>=0?1:-1)===trainY[i]).length/dvs.length; accs.push(acc);
+    axis.setTrain(dvs, trainY, last?finalSV:null); if (two) { scat.setModel(snap.w, snap.b); if (last) scat.setPoints(trainX, trainY, finalSV); }
+    $('#kTrainAcc').textContent=pct(acc); $('#kIter').textContent=String(s); iterLbl.textContent=`${s} / ${total-1}`;
+    $('i',prog).style.width=(s/(total-1)*100)+'%';
+    curveWrap.innerHTML=''; curveWrap.append(curveSVG(accs,'var(--accent)'), el('div',{class:'note',style:'text-align:center'},'training accuracy over updates'));
+    if (last){ $('#kSV').textContent=String(finalSV.filter(Boolean).length)+' / '+trainY.length; $('#kTrainAcc').textContent=pct(r.trainAcc); }
+    await wait(Math.max(35, 2600/total));
+  }
+}
+
+/* ---------------- stage: test ---------------- */
+async function stageTest(){
+  const stage=$('#stage'); stage.innerHTML=''; const tok=++animToken;
+  if (!S.test) computeAll(true);
+  const folds=S.split.folds, k=folds.length, {X,y}=S.data, two=D()===2;
+  const axis=makeAxis(); const scat=two?makeScatter():null;
+  const testCards=el('div',{class:'cards'});
+  const foldBar=k>1?el('div',{class:'foldlist'}):null; const shown=Math.min(k,12);
+  if (foldBar){ for (let j=0;j<shown;j++) foldBar.append(el('span',{class:'f','data-f':j},`fold ${j+1}`)); if (k>shown) foldBar.append(el('span',{class:'f',id:'foldMore'},`… of ${k}`)); }
+  const kpi=el('div',{class:'kpi'},
+    el('div',{class:'k'}, el('span',{class:'v',id:'kAcc'},'—'), el('span',{class:'l'},'test accuracy so far')),
+    el('div',{class:'k'}, el('span',{class:'v',id:'kN'},'0'), el('span',{class:'l'},'trials graded')),
+    el('div',{class:'k'}, el('span',{class:'v',style:'color:var(--faint)'},'50%'), el('span',{class:'l'},'chance')));
+  stage.append(el('div',{class:'panel'}, el('h3',{},'Testing', el('span',{}, k>1?`${k} folds · every trial tested once`:`${folds[0].test.length} held-out trials`)), foldBar,
+    el('div',{class:'train-grid',style:'margin-top:8px'}, el('div',{style:'min-width:220px;max-width:340px'}, el('div',{class:'note',style:'margin-bottom:6px'},'Test trials (labels revealed as they are graded)'), testCards, el('div',{style:'margin-top:12px'},kpi)),
+      el('div',{}, two?el('div',{style:'margin-bottom:8px'},scat.svg):null, axis.svg))));
+  const summary=el('div',{class:'panel',id:'summary'}); stage.append(summary);
+  stage.append(el('div',{class:'explain', html:`<span class="lead">Grading.</span> Each held-out trial is pushed through the trained classifier: its decision value is computed from the weights, its predicted label is the sign, and only then is the true label revealed. Green ring = correct, red ring = wrong. Test accuracy is the honest measure of whether the ROI's pattern carries information about the condition.`}));
+  let hit=0, tot=0, count=0;
+  const perTrial=Math.min(160, 5000/S.test.nTest);
+  for (let fi=0; fi<k; fi++){
+    if (tok!==animToken) return;
+    const f=folds[fi], r=S.train.res[fi];
+    if (foldBar){ $$('.f',foldBar).forEach(e=>e.classList.remove('cur')); const c=$(`.f[data-f="${fi}"]`,foldBar); if(c)c.classList.add('cur'); else $('#foldMore').textContent=`fold ${fi+1} of ${k}`; }
+    const trainDv=f.train.map(i=>decision(r.model,X[i])), testDv=f.test.map(i=>decision(r.model,X[i]));
+    axis.setRange(trainDv.concat(testDv)); axis.setTrain(trainDv, f.train.map(i=>y[i])); axis.fadeTrain(); axis.clearTest();
+    if (two){ scat.setModel(r.model.w, r.model.b); scat.setPoints(f.train.map(i=>X[i]), f.train.map(i=>y[i])); scat.fade(); scat.clearTest(); }
+    if (k<=12 || fi===0) { testCards.innerHTML=''; }
+    if (k>12) testCards.innerHTML='';
+    const cards=f.test.map(i=>{ const c=trialCard(i,{hide:true}); testCards.append(c); return c; });
+    if (k===1) await wait(300);
+    for (let j=0;j<f.test.length;j++){
+      if (tok!==animToken) return;
+      const i=f.test[j], ok=r.correct[j]; tot++; if(ok)hit++;
+      const c=cards[j]; c.classList.remove('hide'); $('.lab',c).textContent=y[i]<0?S.names[0]:S.names[1]; c.append(el('span',{class:'res '+(ok?'ok':'bad')}, ok?'✓':'✕'));
+      axis.addTest(testDv[j], y[i], ok, count++); if (two) scat.addTest(X[i], y[i], ok);
+      $('#kAcc').textContent=pct(hit/tot); $('#kN').textContent=String(tot);
+      await wait(k>12 ? Math.min(perTrial, 40) : perTrial);
+    }
+    if (foldBar){ const c=$(`.f[data-f="${fi}"]`,foldBar); if(c){ c.classList.add('done'); c.textContent=`fold ${fi+1}: ${pct(r.acc)}`; } }
+    if (k>1 && k<=12) await wait(500);
+  }
+  renderSummary(summary);
+}
+function renderSummary(summary){
+  const T=S.test, u=S.data.uni; summary.innerHTML='';
+  const conf=T.conf; const sig=T.p<0.05, usig=u.p<0.05;
+  const cm=el('div',{class:'confusion'}, el('span'), el('span',{class:'h'},'pred '+S.names[0]), el('span',{class:'h'},'pred '+S.names[1]),
+    el('span',{class:'h'},'true '+S.names[0]), el('span',{class:'c diag'},conf[0][0]), el('span',{class:'c'},conf[0][1]),
+    el('span',{class:'h'},'true '+S.names[1]), el('span',{class:'c'},conf[1][0]), el('span',{class:'c diag'},conf[1][1]));
+  const decodeBox=el('div',{class:'box'}, el('h4',{},'Decoding (multivariate)'), el('div',{class:'big '+(sig?'OK':'')}, pct(T.acc)),
+    el('p',{html:`${T.nHit} of ${T.nTest} test trials correct${S.split.folds.length>1?` (mean of ${S.split.folds.length} folds: ${pct(T.meanAcc)})`:''}. Binomial test vs. 50%: p ${T.p<0.001?'< 0.001':'= '+fmt(T.p,3)}.`}),
+    el('div',{class:'verdict '+(sig?'OK':'BAD')}, sig?'The pattern carries information about the condition.':'Not distinguishable from guessing.'));
+  const uniBox=el('div',{class:'box'}, el('h4',{},'Subtraction (univariate)'), el('div',{class:'big '+(usig?'OK':'')}, fmt(u.A.m-u.B.m)),
+    el('p',{html:`Difference in mean ROI activation, t(${fmt(u.df,0)}) = ${fmt(u.t)}, p ${u.p<0.001?'< 0.001':'= '+fmt(u.p,3)}.`}),
+    el('div',{class:'verdict '+(usig?'OK':'BAD')}, usig?'The region responds more to one condition.':'No difference in overall activation.'));
+  let lesson='';
+  if (sig && !usig) lesson=`<b>Information without activation.</b> The region's overall response is the same for both conditions, yet the pattern across voxels tells them apart. A subtraction design would have concluded this region does not care about ${S.names[0]} vs. ${S.names[1]}. This is the central reason decoding methods were adopted.`;
+  else if (sig && usig) lesson=`<b>Both methods agree.</b> Here the region responds more overall to one condition, so subtraction and decoding both detect it. Decoding still adds something: it can tell you how well a single trial's condition can be read out.`;
+  else if (!sig && usig) lesson=`<b>Activation without reliable decoding.</b> The mean differs, but trial-by-trial the patterns are too noisy for this classifier to read out the condition from single trials. More trials, less noise, or more informative voxels would help.`;
+  else lesson=`<b>Nothing to see.</b> Neither method finds a difference. Either the patterns really are the same, or the noise is too large for this many trials. Check the permutation test: with no information, real accuracy should sit inside the chance distribution.`;
+  if (S.cheat) lesson+=` <b>But you tested on the training trials</b>, so this accuracy is not an estimate of anything. Run the permutation test: even shuffled labels will score well, because the classifier is fitting noise it is then graded on.`;
+  summary.append(el('h3',{},'Result'), el('div',{class:'compare'}, decodeBox, uniBox),
+    el('div',{style:'display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start;margin-top:12px'}, el('div',{}, el('div',{class:'note',style:'margin-bottom:6px'},'Confusion matrix'), cm), el('div',{class:'explain',style:'flex:1;min-width:240px',html:lesson})),
+    el('div',{id:'permArea',style:'margin-top:12px'}));
+  if (S.perm) drawPerm();
+}
+async function runPermutation(){
+  const btn=$('#permBtn'); if (btn){ btn.disabled=true; btn.textContent='Permuting…'; }
+  const nP=200; const rng=mulberry32(S.seed*17+3); const accs=[]; S.perm={accs, n:nP, done:false};
+  const area=$('#permArea'); if (!area){ if(btn){btn.disabled=false; btn.textContent='Run permutation test';} return; }
+  for (let p=0;p<nP;p++){
+    const yP=shuffled(S.data.y, rng); accs.push(accuracyWithLabels(yP));
+    if (p%5===4 || p===nP-1){ drawPerm(); await sleep(S.speed===0?0:10); }
+  }
+  S.perm.done=true; drawPerm();
+  if (btn){ btn.disabled=false; btn.textContent='Run again (new shuffles)'; }
+  S.seed = S.seed; // keep
+}
+function drawPerm(){
+  const area=$('#permArea'); if (!area) return; area.innerHTML='';
+  const accs=S.perm.accs, real=S.test.acc; const bins=new Array(21).fill(0); accs.forEach(a=>bins[Math.round(a*20)]++);
+  const W=520,H=150,p=28; const maxc=Math.max(1,...bins); const svg=el('svg',{viewBox:`0 0 ${W} ${H}`, style:'width:100%;max-width:560px;height:auto;display:block'});
+  const xs=v=>p+v*(W-p-10), bw=(W-p-10)/21;
+  let s=`<line class="axis" x1="${p}" y1="${H-p}" x2="${W-8}" y2="${H-p}"/>`;
+  bins.forEach((c,i)=>{ const h=c/maxc*(H-p-24); s+=`<rect x="${xs(i/20)-bw/2+1}" y="${H-p-h}" width="${bw-2}" height="${h}" fill="var(--faint)" rx="2"/>`; });
+  [0,0.25,0.5,0.75,1].forEach(v=>{ s+=`<text x="${xs(v)}" y="${H-p+14}" text-anchor="middle">${pct(v)}</text>`; });
+  s+=`<line x1="${xs(real)}" y1="14" x2="${xs(real)}" y2="${H-p}" stroke="var(--accent)" stroke-width="2.5"/><text x="${xs(real)}" y="10" text-anchor="middle" fill="var(--accent)">real: ${pct(real)}</text>`;
+  svg.innerHTML=s;
+  const ge=accs.filter(a=>a>=real-1e-9).length; const pv=(ge+1)/(accs.length+1);
+  const msg = S.perm.done ? `Out of ${accs.length} label shuffles, ${ge} scored at least as high as the real accuracy: permutation p = ${fmt(pv,3)}. ` + (pv<0.05 ? 'The real accuracy is unusual under chance.' : 'The real accuracy is not unusual under chance.') + (S.cheat ? ' Notice the chance distribution itself sits far above 50%: training and testing on the same trials inflates accuracy even for meaningless labels.' : ' Notice that chance is not exactly 50% on any single run: with few test trials, the chance distribution is wide.') : `Shuffling labels… ${accs.length} / ${S.perm.n}`;
+  area.append(el('div',{class:'note',style:'margin-bottom:4px'},'Permutation test: accuracy when the labels are shuffled'), svg, el('div',{class:'note'}, msg));
+}
+
+/* ---------------- stage dispatch, theme, help, init ---------------- */
+function renderStage(){ [stagePatterns, stageDataset, stageSplit, stageTrain, stageTest][S.step](); }
+function setTheme(light){ document.documentElement.classList.toggle('theme-light', light); refreshColors(); try{ localStorage.setItem('dp-theme', light?'light':'dark'); }catch(e){} }
+$('#themeBtn').addEventListener('click', ()=>{ setTheme(!document.documentElement.classList.contains('theme-light')); go(S.step); });
+$('#helpBtn').addEventListener('click', ()=>{ $('#helpModal').hidden=false; });
+$('#helpClose').addEventListener('click', ()=>{ $('#helpModal').hidden=true; });
+$('#helpModal').addEventListener('click', e=>{ if (e.target.id==='helpModal') $('#helpModal').hidden=true; });
+(function init(){
+  let light=false; try{ light = localStorage.getItem('dp-theme')==='light'; }catch(e){}
+  if (light) document.documentElement.classList.add('theme-light');
+  refreshColors(); PRESETS[0].fn(); go(0);
+})();
+
+</script>
+</body>
+</html>

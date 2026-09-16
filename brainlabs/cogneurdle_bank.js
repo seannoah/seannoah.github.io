@@ -13,18 +13,25 @@
      are ignored automatically; small typos are tolerated). Don't list
      the answer itself.
    - `cat` must be a key of `categories`; `unit` a key of `units`.
-   - To release a new unit for the daily puzzle, set `released: true`.
+   - To put a new unit in play, set `released: true` (it is then in the
+     endless pool and the unit filter immediately) and give it a
+     `dailyFrom: 'YYYY-MM-DD'` date: from that day the daily puzzle cycles
+     through the new unit's terms first, then everything released. Days
+     before that date keep the schedule they already had, so never change
+     `dailyFrom` once a unit is live. (Units with no `dailyFrom` count as
+     live since the epoch.)
    - `id` must be unique and never change once students have played
      (it is what the daily schedule and local stats key on).
    - `lab` (optional) links the learn card to a Brain Lab page.
    ===================================================================== */
 window.COGNEURDLE = {
-  version: 2,
+  version: 3,
   epoch: '2026-09-04',            // date of CogNeurdle #1 (local time)
   units: {
     L1: { name: 'Lecture 1 · Intro & neuroanatomy', released: true },
     L2: { name: 'Lecture 2 · Methods',              released: true },
     L3: { name: 'Lecture 3 · Neural decoding',      released: true },
+    L4: { name: 'Lecture 4 · Attention',            released: true, dailyFrom: '2026-09-17' },
   },
   categories: {
     history:     'People & history',
@@ -34,6 +41,7 @@ window.COGNEURDLE = {
     lesion:      'Brain damage & dissociations',
     methods:     'Methods',
     decoding:    'fMRI & decoding',
+    attention:   'Attention',
   },
   terms: [
   /* ---------------------------- LECTURE 1 ---------------------------- */
@@ -632,5 +640,213 @@ window.COGNEURDLE = {
       'A subtraction map shows where activation differs; this is the algorithm that turns a pattern of activity into a prediction.',
       'In decoding, the algorithm trained to predict the experimental condition from a pattern of brain activity.'],
     learn:'An algorithm (e.g. a linear support vector machine) trained to predict a category label from a pattern of brain activity. In MVPA, its accuracy on held-out trials, compared with chance, measures how much information the pattern carries.' },
+
+  /* ---------------------------- LECTURE 4 ---------------------------- */
+  { id:'selective_attention', answer:'Selective attention', aliases:['selection','attentional selection','attention'], cat:'attention', unit:'L4', source:'Lecture 4 study guide',
+    clues:[
+      'Cherry\'s 1953 dichotic-listening experiments, in which people shadowed one ear and noticed almost nothing about the other, launched the "cocktail party" literature that Broadbent\'s filter theory tried to explain five years later.',
+      'It has been called the flexible control of limited computational resources: the brain cannot process everything that reaches its receptors, so some inputs must win over others.',
+      'Its effects show up at every level of measurement: faster reaction times, larger sensory ERPs, higher firing rates and stronger BOLD responses for the attended input, with weaker responses for the ignored one.',
+      'Non-selective attention is a matter of overall alertness or arousal; this is the choosing of some inputs, locations or features over others.',
+      'The gating of perception so that some of the information arriving at the senses is processed preferentially while the rest is suppressed; James called it "withdrawal from some things in order to deal effectively with others."'],
+    learn:'The prioritization of some sensory inputs, locations, objects or features over others, because the brain\'s processing capacity is limited. Defining properties: it is selective (some things win, others lose), capacity-limited, and can be deployed voluntarily (endogenous) or captured by stimuli (exogenous), overtly (with receptor orienting) or covertly (without). It enhances behavioral performance and neural responses for attended inputs and suppresses the unattended.' },
+
+  { id:'william_james', answer:'William James', aliases:['James'], cat:'history', unit:'L4', source:'Lecture 4 (definition of attention)',
+    clues:[
+      'He took twelve years to write his two-volume magnum opus, which Henry Holt had contracted for two, and his younger brother Henry became the more famous writer in the family.',
+      'He taught the first psychology course in the United States, at Harvard, and later remarked that the first lecture on the subject he ever heard was his own.',
+      'His 1890 textbook opens its chapter on our topic with the line "Everyone knows what attention is."',
+      'Helmholtz demonstrated covert attention with a physics experiment; this American philosopher gave the classic verbal definition of attention.',
+      'The author of Principles of Psychology (1890), who described attention as "the taking possession of the mind, in clear and vivid form, of one out of what seem several simultaneously possible objects or trains of thought."'],
+    learn:'American psychologist and philosopher (1842–1910), author of Principles of Psychology (1890). His definition of attention as "focalization, concentration of consciousness" that "implies withdrawal from some things in order to deal effectively with others" captures the two core properties of selective attention: enhancement of the selected and suppression of the rest.' },
+
+  { id:'helmholtz', answer:'Hermann von Helmholtz', aliases:['Helmholtz','von Helmholtz','Herman von Helmholtz'], cat:'history', unit:'L4', source:'Lecture 4 (covert attention)',
+    clues:[
+      'He invented the ophthalmoscope in 1851, formulated the law of conservation of energy, and measured the speed of nerve conduction in a frog, all before turning to the psychology of perception.',
+      'In his famous demonstration he used a brief electric spark to illuminate a screen of letters in a dark room, too briefly for the eyes to move.',
+      'He found he could choose in advance which part of the screen he would read, without moving his eyes, and that the letters there were perceived while the rest were not.',
+      'Posner measured covert attention with reaction times; this 19th-century physicist and physiologist first demonstrated it on himself.',
+      'The German scientist who showed in the 1890s that one can "concentrate attention on the sensation from a particular part" of the visual field "without eye movements," the first clear demonstration of covert spatial attention.'],
+    learn:'German physicist and physiologist (1821–1894). In a self-experiment using a spark-illuminated array of letters, he showed that attention could be directed to a peripheral region of the visual field without moving the eyes, and that letters in the attended region were perceived while others were not. This is the classic early demonstration of covert visual-spatial attention.' },
+
+  { id:'overt_attention', answer:'Overt attention', aliases:['overt','overt orienting','overt selective attention'], cat:'attention', unit:'L4', source:'Lecture 4 study guide',
+    clues:[
+      'The premotor theory of attention (Rizzolatti, 1987) holds that a covert shift is really a saccade that was planned but not executed, tying this form of attention to its hidden twin at the level of the motor system.',
+      'In vision it is typically accomplished about three times a second, by saccades that bring a target onto the fovea.',
+      'Its telltale signs, eye movements and head turns, mean it can be measured directly with an eye tracker.',
+      'Covert attention leaves the sensory receptors where they are; this kind moves them.',
+      'Attention that can be observed externally because it involves orienting the sense organs (eyes, head, ears) toward the selected input.'],
+    learn:'Attention accompanied by orienting of the receptors, most obviously eye movements that bring the attended location onto the fovea, or turning the head toward a sound. Observable from the outside, and in vision it is measured with eye tracking. Contrast with covert attention.' },
+
+  { id:'covert_attention', answer:'Covert attention', aliases:['covert','covert orienting','covert selective attention','covert spatial attention','covert visual-spatial attention','covert visuospatial attention'], cat:'attention', unit:'L4', source:'Lecture 4 study guide',
+    clues:[
+      'Its usual metaphor, a "spotlight" that can be moved without moving the eyes, was popularized by Posner in 1980, and the rival "zoom lens" model (Eriksen and St. James, 1986) added that its size can change too.',
+      'Every experiment on it must control for eye position, typically by requiring fixation on a central cross and monitoring the eyes.',
+      'It is the kind of attention the lecture focused on: the visual receptors stay put, yet processing at the attended location improves.',
+      'Overt attention turns the eyes toward the target; this shifts processing priority without any change in the receptors.',
+      'Attention directed to a location or object without orienting the sense organs, so it cannot be observed from the outside; Helmholtz demonstrated it with a spark and a screen of letters.'],
+    learn:'Attention deployed without moving the eyes or other receptors, so that it is not externally observable. Demonstrated by Helmholtz and measured with Posner cuing: the same physical stimulus is processed faster and more accurately, and evokes larger neural responses, when it appears at the covertly attended location. The main focus of the lecture was voluntary covert visual-spatial attention.' },
+
+  { id:'endogenous_attention', answer:'Endogenous attention', aliases:['endogenous','voluntary attention','goal-directed attention','top-down attention','goal directed attention','top down attention','voluntary'], cat:'attention', unit:'L4', source:'Lecture 4 study guide',
+    clues:[
+      'From the Greek endon, "within," and genes, "born": Posner adopted the term to mark orienting that is generated by the observer rather than by the world.',
+      'In cuing studies it is typically driven by a central symbolic cue such as an arrow, and it takes a few hundred milliseconds to reach its full effect.',
+      'The lecture summed it up in four words: voluntary, slow, effortful, interruptible.',
+      'Exogenous attention is captured by a salient stimulus; this form is directed by the observer\'s goals.',
+      'Voluntary, goal-driven attention that you deploy deliberately, associated with the dorsal attention network.'],
+    learn:'Voluntary attention directed according to the observer\'s goals (top-down). Characterized as slow to deploy, effortful, sustainable and interruptible. Studied with central symbolic cues (e.g. an arrow) in Posner cuing tasks, and controlled by the dorsal attention network (intraparietal sulcus and frontal eye fields). Contrast with exogenous (reflexive) attention.' },
+
+  { id:'exogenous_attention', answer:'Exogenous attention', aliases:['exogenous','reflexive attention','stimulus-driven attention','bottom-up attention','stimulus driven attention','bottom up attention','reflexive','attentional capture'], cat:'attention', unit:'L4', source:'Lecture 4 study guide',
+    clues:[
+      'Jonides\'s 1981 chapter showed that a peripheral flash summons it even when observers know the flash is uninformative, which was the first strong evidence that it cannot simply be switched off.',
+      'Its benefit peaks within roughly 100–150 ms of a peripheral cue and then fades, and after about 300 ms it reverses into inhibition of return.',
+      'The lecture summed it up in four words: involuntary, fast, effortless, disruptive.',
+      'Endogenous attention is directed by the observer\'s goals; this form is captured by a salient but task-irrelevant stimulus.',
+      'Reflexive, involuntary attention drawn to a sudden or salient event in the environment, associated with the ventral attention network.'],
+    learn:'Reflexive attention captured by a salient, often task-irrelevant stimulus (bottom-up). Fast, effortless, involuntary and short-lived; the enhanced processing near the cue is followed by inhibition of return. Studied with peripheral cues (a flash near the target location) in reflexive cuing paradigms, and linked to the ventral attention network. Contrast with endogenous (voluntary) attention.' },
+
+  { id:'spatial_attention', answer:'Spatial attention', aliases:['visual-spatial attention','visuospatial attention','visual spatial attention','spatial selective attention','location-based attention','location based attention','attention to location'], cat:'attention', unit:'L4', source:'Lecture 4 (covert visual-spatial attention)',
+    clues:[
+      'Its neural signature in early visual cortex is retinotopically specific: in Silver, Ress and Heeger (2007), the region of V1 representing the attended location showed sustained activity throughout a delay period while a peripheral V1 region did not.',
+      'Its two main features, as the lecture put it, are preparatory attention (voluntary, covert) and selective processing that is visual and tied to a location.',
+      'Because it can be measured with the same physical stimulus attended or ignored, differences in the response can only be due to the observer\'s state.',
+      'Feature-based attention selects a property such as motion or color wherever it occurs; this selects a place in the visual field.',
+      'Attention directed to a particular location in space, the kind of attention measured in Posner cuing experiments and often described as a spotlight.'],
+    learn:'Attention directed to a location in the visual field (or in space generally). Studied with Posner cuing tasks and with sustained-attention designs. Its effects in visual cortex are retinotopically specific: the parts of V1 and extrastriate cortex that represent the attended location show enhanced, sustained activity, even before a target appears. Often described with the spotlight metaphor.' },
+
+  { id:'feature_attention', answer:'Feature-based attention', aliases:['feature based attention','feature attention','attention to features','attention to visual features','feature-based','feature selective attention'], cat:'attention', unit:'L4', source:'Lecture 4 study guide',
+    clues:[
+      'Treue and Martínez-Trujillo\'s 1999 recordings in monkey MT led to the feature-similarity gain model, and Sáenz, Buracas and Boynton (2002) showed in human fMRI that its effect spreads to stimuli at unattended locations.',
+      'Unlike its spatial cousin, it is not tied to a place: it enhances the selected property across the whole visual field.',
+      'In the lecture example, attending to motion modulated the human motion area MT/V5, while attending to color modulated ventral V4, for physically identical stimuli.',
+      'Spatial attention selects where; this selects what property, such as motion or color.',
+      'Attention directed to a particular stimulus attribute (e.g. color, motion, orientation) rather than to a location, which boosts activity in the cortical area specialized for that attribute.'],
+    learn:'Selective attention to a stimulus attribute such as motion or color, rather than to a location. Attending to a feature enhances responses in the visual area specialized for it (attend motion: MT/V5; attend color: V4), as shown with fMRI and MEG using physically identical displays, and the enhancement spreads across the visual field rather than being confined to one location.' },
+
+  { id:'posner_cuing', answer:'Posner cuing', aliases:['Posner cueing','Posner cuing task','Posner cueing task','Posner cuing paradigm','Posner cueing paradigm','Posner task','Posner paradigm','cuing paradigm','cueing paradigm','spatial cuing','spatial cueing','cuing experiment','cueing experiment','Posner'], cat:'attention', unit:'L4', source:'Lecture 4 study guide',
+    clues:[
+      'Michael Posner introduced it in the late 1970s and called the enterprise "mental chronometry": using reaction time to expose mental operations that cannot be seen directly.',
+      'In its endogenous version the cue is valid on about 80% of trials, so it pays to trust it; in its exogenous version the cue is uninformative and still works.',
+      'Its two key numbers are computed against a neutral cue: the benefit on valid trials and the cost on invalid trials.',
+      'An eye tracker measures overt attention; this behavioral method measures covert attention by holding the eyes still and timing responses.',
+      'The reaction-time paradigm in which a cue directs attention to a location before a target appears; targets at the cued location are detected faster than targets elsewhere.'],
+    learn:'The classic behavioral measure of covert attention (Posner et al., 1978; Posner, 1980). The participant fixates centrally; a cue (a central arrow for endogenous, a peripheral flash for exogenous attention) indicates a likely target location; the target then appears at the cued (valid) or uncued (invalid) location. Reaction times are faster on valid than invalid trials. Compared with a neutral cue, valid cues produce benefits and invalid cues produce costs. The eyes never move, so the effect is attentional, not visual.' },
+
+  { id:'ior', answer:'Inhibition of return', aliases:['IOR','inhibition-of-return'], cat:'attention', unit:'L4', source:'Lecture 4 study guide',
+    clues:[
+      'Posner and Cohen described it in 1984, and Klein\'s 2000 review in Trends in Cognitive Sciences argued it evolved as a "foraging facilitator" that keeps search from revisiting old ground.',
+      'It appears only after reflexive (exogenous) cues; a voluntary central cue does not produce it.',
+      'The crossover happens at roughly 300 ms: before that, the cued location is faster; after that, it is slower.',
+      'The immediate effect of a peripheral cue is a benefit at the cued location; this is the later reversal, in which the cued location is disadvantaged.',
+      'The slowing of responses to targets at a previously cued location when more than about 300 ms have passed since an exogenous cue.'],
+    learn:'After an exogenous (reflexive) cue draws attention to a location, the early benefit at that location reverses: from roughly 300 ms onward, targets there are detected more slowly than targets elsewhere. Thought to bias attention toward novel locations and to keep salient but irrelevant events from capturing attention for long, helping keep endogenous and exogenous attention in balance.' },
+
+  { id:'neglect', answer:'Hemispatial neglect', aliases:['neglect','hemineglect','hemi-spatial neglect','unilateral neglect','spatial neglect','visual neglect','hemispatial neglect syndrome','neglect syndrome','left neglect','contralateral neglect'], cat:'lesion', unit:'L4', source:'Lecture 4 study guide',
+    clues:[
+      'Bisiach and Luzzatti (1978) asked two Milanese patients to describe the Piazza del Duomo from memory; each omitted the left side of the square, and when asked to imagine standing at the opposite end, omitted the other side.',
+      'It is not blindness: the visual fields can be intact, yet the patient behaves as if one half of space did not exist, and often denies anything is wrong.',
+      'On the bedside tests it is unmistakable: lines are bisected far to the right, the left-side targets on a cancellation sheet go unmarked, and all twelve numbers of a clock face are crowded onto the right.',
+      'Extinction is the milder cousin, in which the contralesional stimulus is missed only when a competing stimulus appears on the other side; in this syndrome it is missed even on its own.',
+      'The failure to attend to or respond to stimuli on the side of space opposite a brain lesion, typically neglect of the left side after damage to the right hemisphere.'],
+    learn:'A syndrome in which the patient fails to attend to, respond to or orient toward stimuli on the side of space opposite the lesion (contralesional), usually the left side after damage to the right hemisphere (especially right inferior parietal cortex and the temporoparietal junction, the territory of the ventral attention network). Tested with line bisection, line cancellation and clock drawing. It is an attentional deficit rather than a sensory one, and it can extend to imagined scenes (representational neglect, Bisiach and Luzzatti, 1978).' },
+
+  { id:'extinction', answer:'Extinction', aliases:['visual extinction','sensory extinction','double simultaneous stimulation','extinction to double simultaneous stimulation'], cat:'lesion', unit:'L4', source:'Lecture 4 (neglect examination)',
+    clues:[
+      'Morris Bender\'s 1952 monograph established the bedside test still used today and called the phenomenon "extinction to double simultaneous stimulation."',
+      'It can be found in touch and hearing as well as vision, which argues that it is a disorder of attention rather than of any one sense.',
+      'It is checked in the attention section of the mental status exam: the examiner wiggles a finger on the left, then on the right, then both at once.',
+      'Neglect is the failure to notice the left side even when nothing competes with it; this is the failure to notice it only when something appears on the right at the same time.',
+      'A milder form of neglect in which a patient detects a single stimulus on the affected side but misses it when a second stimulus is presented simultaneously on the unaffected side.'],
+    learn:'A sign of attentional impairment after (usually right-hemisphere) damage: a patient can detect a single stimulus on the contralesional (usually left) side, but when stimuli are presented on both sides at once, only the ipsilesional one is reported. It is tested with double simultaneous stimulation during the neurological exam and is considered a mild form of neglect, showing that the deficit is one of competition for attention rather than of sensation.' },
+
+  { id:'line_bisection', answer:'Line bisection', aliases:['line bisection test','line bisection task','bisection','line-bisection'], cat:'lesion', unit:'L4', source:'Lecture 4 (neglect examination)',
+    clues:[
+      'Schenkenberg, Bradford and Ajax standardized it in 1980 with lines of several lengths placed left, center and right on the page, and found errors grow with line length.',
+      'Its companion tests are line cancellation, in which the patient crosses out every line on a cluttered page, and clock drawing.',
+      'The error is a deviation of the mark toward the side of the lesion, away from the neglected side.',
+      'Cancellation tests count how many targets are missed; this test measures how far the patient\'s sense of the midpoint has shifted.',
+      'The bedside test for neglect in which the patient marks the middle of a horizontal line; patients with left neglect mark far to the right of center.'],
+    learn:'A standard clinical test for hemispatial neglect. The patient is asked to mark the midpoint of a horizontal line; a patient with left neglect places the mark well to the right of center, as if the left part of the line were not there. Used alongside line cancellation (crossing out all targets on a page) and clock drawing.' },
+
+  { id:'dan', answer:'Dorsal attention network', aliases:['DAN','dorsal network','dorsal frontoparietal network','dorsal attention system','dorsal fronto-parietal network'], cat:'attention', unit:'L4', source:'Lecture 4 study guide',
+    clues:[
+      'Corbetta and Shulman proposed it in 2002 by noticing that the frontoparietal regions active during cued attention tasks in PET and fMRI were reliably distinct from those active when an unexpected target appeared.',
+      'Its two core nodes are the intraparietal sulcus and the frontal eye fields, and it is organized bilaterally and largely retinotopically.',
+      'Hopfinger, Buonocore and Mangun (2000) caught it in action: cue-related activity in frontal and parietal cortex preceded the modulation of visual cortex before any target appeared.',
+      'The ventral attention network reorients you to something unexpected; this one keeps you focused on what you chose.',
+      'The bilateral frontoparietal system for voluntary, goal-directed (endogenous) attention: focusing and sustaining attention on a chosen location or feature.'],
+    learn:'A bilateral frontoparietal network centered on the intraparietal sulcus (IPS) and frontal eye fields (FEF), proposed by Corbetta and Shulman (2002). It is the source of top-down, endogenous (voluntary) attention: it prepares for and sustains attention on chosen locations and features and sends biasing signals to sensory cortex (the sites of attention). Contrast with the ventral attention network.' },
+
+  { id:'van', answer:'Ventral attention network', aliases:['VAN','ventral network','ventral frontoparietal network','ventral attention system','ventral fronto-parietal network','reorienting network'], cat:'attention', unit:'L4', source:'Lecture 4 study guide',
+    clues:[
+      'Corbetta and Shulman likened it to a "circuit breaker" that interrupts the dorsal network, and its lateralization to the right hemisphere is their explanation for why neglect follows right- but rarely left-sided lesions.',
+      'Its core nodes are the temporoparietal junction and ventral frontal cortex, and unlike its dorsal partner it is not retinotopically organized.',
+      'It responds to salient, unexpected, behaviorally relevant events, especially targets that appear where attention was not directed.',
+      'The dorsal attention network sustains attention where you have aimed it; this one yanks attention to something you did not expect.',
+      'The right-lateralized system for stimulus-driven (exogenous) attention: reorienting attention to salient or unexpected events, and damaged in hemispatial neglect.'],
+    learn:'A right-lateralized network including the temporoparietal junction (TPJ) and ventral frontal cortex (VFC), proposed by Corbetta and Shulman (2002). It supports stimulus-driven, exogenous reorienting of attention to salient and unexpected events, acting as a circuit breaker on the dorsal network. Damage to its right-hemisphere nodes is associated with hemispatial neglect. Contrast with the dorsal attention network.' },
+
+  { id:'lfp', answer:'Local field potential', aliases:['LFP','LFPs','local field potentials','field potential'], cat:'methods', unit:'L4', source:'Lecture 4 (effects of attention on neural activity)',
+    clues:[
+      'Its low-frequency components mostly reflect summed synaptic currents rather than spikes, which is why it can be recorded from the cortical surface with an electrode grid (ECoG) without penetrating the tissue.',
+      'In the study shown in lecture, the 60–80 Hz gamma band of this signal was used as a marker of feedforward processing in visual cortex.',
+      'Attention increased the gamma-band coherence of this signal between V1 and V4 for the neurons representing the attended stimulus, suggesting that attention routes information up the hierarchy by synchronizing areas.',
+      'A single-unit recording captures the spikes of one neuron; this captures the summed electrical activity of the local population, essentially EEG measured on the brain itself.',
+      'The population-level electrical signal recorded from an electrode in or on cortex, whose gamma-band synchrony between visual areas increases with attention.'],
+    learn:'The summed extracellular electrical activity of a local population of neurons, recorded from an electrode in or on the cortex (essentially EEG at the surface of the brain). Its oscillations are analyzed by frequency band; gamma (60–80 Hz) reflects feedforward processing in visual cortex. The lecture\'s example: in monkeys attending to one of two gratings, gamma-band coherence between V1 and V4 increased for the attended stimulus, showing that attention alters effective connectivity to route relevant information.' },
+
+  { id:'v4', answer:'Area V4', aliases:['V4','visual area V4','extrastriate area V4','ventral V4','V4v'], cat:'anatomy', unit:'L4', source:'Lecture 4 (animal model of attention)',
+    clues:[
+      'Zeki first mapped it in the macaque in the early 1970s and argued it was the cortical color center, a claim that has been debated ever since.',
+      'Its receptive fields are large enough to hold two stimuli at once, which is exactly what made the classic 1985 experiment possible.',
+      'Moran and Desimone (1985) found that when a monkey attended to one of two stimuli inside a neuron\'s receptive field, the response to the ignored stimulus was sharply reduced, as if the receptive field had shrunk around the attended one.',
+      'MT/V5 is the extrastriate area modulated by attention to motion; this ventral extrastriate area is modulated by attention to color.',
+      'The extrastriate visual area, downstream of V1 and V2, where Moran and Desimone first showed that attention modulates single neurons\' responses.'],
+    learn:'An extrastriate visual area in the ventral stream, involved in color and shape processing. Moran and Desimone (1985) showed in monkeys that attention modulates its neurons: with two stimuli in a receptive field, the response to the unattended one was suppressed. In humans, ventral V4 is modulated by attention to color, and gamma-band coherence between V1 and V4 increases with attention.' },
+
+  { id:'p1', answer:'P1 component', aliases:['P1','P1 wave','P1 effect','P1 attention effect','the P1','P100','sensory ERP'], cat:'methods', unit:'L4', source:'Lecture 4 (effects of attention on neural activity)',
+    clues:[
+      'Its enhancement by attention was a central finding of Hillyard and Mangun\'s work in the 1980s and 1990s, and its early latency was the main evidence for "early selection" in the ERP literature.',
+      'It peaks at roughly 100 ms after a visual stimulus over lateral occipital electrodes, and it is followed by the N1.',
+      'In the sustained-attention design shown in lecture, the same flash evoked a larger version of it when it appeared at the attended location than when it was ignored.',
+      'Later components index decision and memory processes; this early positive wave indexes sensory processing, which is why its modulation shows attention acting at an early stage.',
+      'The early positive ERP wave over visual cortex whose amplitude is larger for stimuli at attended locations, evidence that attention amplifies sensory processing.'],
+    learn:'A positive ERP component peaking about 100 ms after a visual stimulus over occipital scalp. Its amplitude is larger when the eliciting stimulus appears at an attended location than when the identical stimulus is ignored, showing that spatial attention acts as a sensory gain control at an early stage of visual processing. The negative N1 that follows it shows the same effect.' },
+
+  { id:'preparatory_attention', answer:'Preparatory attention', aliases:['baseline shift','delay period activity','delay-period activity','anticipatory attention','preparatory activity','attentional baseline shift','pretarget activity','pre-target activity','sustained attention'], cat:'attention', unit:'L4', source:'Lecture 4 (Silver et al., 2007; Hopfinger et al., 2000)',
+    clues:[
+      'Kastner and colleagues (1999) called its fMRI signature a "baseline increase" and Luck and colleagues (1997) saw it in the spontaneous firing of V2 and V4 neurons before any stimulus appeared.',
+      'It is strongest in the cortical representation of the attended location and absent from representations of the periphery, even when the target has not yet appeared.',
+      'Silver, Ress and Heeger (2007) had subjects hold attention at a location across a variable delay and found sustained activity in the corresponding region of V1 throughout the wait.',
+      'Target-evoked modulation is attention acting on a stimulus that is present; this is attention acting on visual cortex before the stimulus arrives.',
+      'The sustained, voluntary, covert deployment of attention to a location in advance of a target, visible as elevated activity in retinotopic visual cortex before anything appears there.'],
+    learn:'Attention deployed in advance of a stimulus. In fMRI, holding attention at a location during a delay period produces sustained activity in the retinotopically corresponding regions of visual cortex (including V1) before any target appears, and this activity is spatially specific (attended region yes, peripheral unattended region no). Hopfinger et al. (2000) showed that cue-related frontoparietal activity precedes this visual-cortex modulation. Illustrates the sources (control networks) vs. sites (sensory cortex) distinction.' },
+
+  { id:'eye_tracking', answer:'Eye tracking', aliases:['eyetracking','eye tracker','eye-tracking','eye tracker','eye movement recording','eye movement tracking','oculomotor recording'], cat:'methods', unit:'L4', source:'Lecture 4 (measuring overt attention)',
+    clues:[
+      'Yarbus\'s 1967 recordings with suction-cup contact lenses showed that the same painting is scanned completely differently depending on the question the viewer has been asked.',
+      'Modern video-based systems locate the pupil and the reflection of an infrared light on the cornea, and use the geometry between them to compute gaze direction.',
+      'It reveals a pattern of fixations lasting a few hundred milliseconds each, separated by fast saccades, rather than a smooth sweep.',
+      'Posner cuing measures covert attention while the eyes are held still; this method measures overt attention by recording where the eyes go.',
+      'The method of recording where a person is looking, used to measure overt attention.'],
+    learn:'Recording gaze position over time, usually with a video camera that tracks the pupil and a corneal reflection. Because overt attention involves moving the eyes to the attended location, eye tracking measures it directly, revealing fixations and saccades. In covert-attention experiments it serves the opposite purpose: confirming that the eyes stayed on the fixation point.' },
+
+  { id:'change_blindness', answer:'Change blindness', aliases:['change detection','change-blindness','flicker paradigm'], cat:'attention', unit:'L4', source:'Lecture 4 (how much reaches awareness?)',
+    clues:[
+      'Simons and Levin (1998) had an experimenter ask pedestrians for directions and swapped in a different person while a door was carried between them; about half never noticed.',
+      'It largely disappears if the change occurs without a global disruption, because the local motion signal of the change captures attention by itself.',
+      'In the flicker paradigm, a scene alternates with a changed version, separated by a brief blank, and large changes can go unnoticed for many seconds.',
+      'Inattentional blindness is failing to see an unexpected object in plain view; this is failing to see that something already in view has changed.',
+      'The failure to notice even large changes in a visual scene when the change coincides with a brief interruption, showing how little of what stimulates the retina reaches awareness without attention.'],
+    learn:'The failure to detect changes in a scene when the transient produced by the change is masked (by a blank, an eye movement, a cut or a flicker). Demonstrates that only attended parts of a scene are encoded richly enough to notice a change, and that far less of what stimulates the receptors reaches awareness than it feels like. Used in lecture as an opening demonstration of the need for selective attention.' },
+
+  { id:'visual_search', answer:'Visual search', aliases:['search','searching','visual search task','search task'], cat:'attention', unit:'L4', source:'Lecture 4 (Wolfe & Horowitz, 2017)',
+    clues:[
+      'Treisman and Gelade\'s 1980 feature integration theory divided it into a parallel stage, in which single features pop out, and a serial stage, in which attention is needed to bind features into objects.',
+      'Its efficiency is measured as the slope of reaction time against the number of items in the display, in milliseconds per item.',
+      'Wolfe and Horowitz (2017) listed five factors that guide it: bottom-up salience, top-down feature guidance, scene structure and meaning, the previous history of search, and the relative value of targets and distractors.',
+      'A Posner cuing task tells attention where to go; in this task, attention must find the target on its own among distractors.',
+      'Looking for a target object among distractors, as when hunting for a toothbrush in a cluttered scene; it involves directing attention to candidate objects one after another.'],
+    learn:'The task of finding a target among distractors. Search involves directing attention to objects that might be the target, and its efficiency depends on what guides attention. Wolfe and Horowitz (2017) identified five guiding factors: bottom-up salience, top-down feature guidance, scene structure and meaning, previous history of search, and the relative value of targets and distractors.' },
   ]
 };
