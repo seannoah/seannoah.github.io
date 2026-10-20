@@ -27,7 +27,7 @@
    - `lab` (optional) links the learn card to a Brain Lab page.
    ===================================================================== */
 window.COGNEURDLE = {
-  version: 4,
+  version: 5,
   epoch: '2026-09-04',            // date of CogNeurdle #1 (local time)
   units: {
     L1: { name: 'Lecture 1 · Intro & neuroanatomy', short: 'Anatomy',   released: true },
@@ -36,6 +36,9 @@ window.COGNEURDLE = {
     L4: { name: 'Lecture 4 · Attention',            short: 'Attention', released: true, dailyFrom: '2026-09-17' },
     L5: { name: 'Lecture 5 · Memory',               short: 'Memory',    released: true, dailyFrom: '2026-10-02' },
     L6: { name: 'Lecture 6 · Language',             short: 'Language',  released: true, dailyFrom: '2026-10-02' },
+    L7: { name: 'Lecture 7 · Connectivity',         short: 'Networks',  released: true, dailyFrom: '2026-10-20' },
+    L8: { name: 'Lecture 8 · High-level perception', short: 'Perception', released: true, dailyFrom: '2026-10-20' },
+    L9: { name: 'Lecture 9 · Brain stimulation',    short: 'Brain stim', released: true, dailyFrom: '2026-10-20' },
   },
   categories: {
     history:     'People & history',
@@ -48,6 +51,8 @@ window.COGNEURDLE = {
     attention:   'Attention',
     memory:      'Memory',
     language:    'Language',
+    vision:      'Vision & perception',
+    connectivity:'Connectivity & networks',
   },
   terms: [
   /* ---------------------------- LECTURE 1 ---------------------------- */
@@ -1558,5 +1563,758 @@ window.COGNEURDLE = {
       'A lesion causes lasting aphasia; this is a temporary, reversible halt in talking caused by electrically stimulating the cortex.',
       'The sudden inability to keep talking while a site of language cortex is electrically stimulated during awake brain surgery, used to map areas that must be spared.'],
     learn:'A sudden, temporary inability to continue speaking while a cortical site is electrically stimulated in an awake patient. Mapped systematically by Wilder Penfield and used today in awake neurosurgery (e.g. by Mitch Berger at UCSF) to identify language cortex that must be spared. Sites that produce it are often found in the posterior inferior frontal region (Broca\'s area and ventral premotor cortex), but their locations vary between individuals.' },
+
+  /* ---------------------------- LECTURE 7 ---------------------------- */
+  { id:'receptive_field', answer:'Receptive field', aliases:['receptive fields','RF','RFs','visual receptive field','visual receptive fields'], cat:'vision', unit:'L7', source:'Lecture 7 study guide',
+    clues:[
+      'Sherrington coined the term in 1906 for the patch of skin that triggers a dog\'s scratch reflex; Hartline (1938) carried it over to single optic-nerve fibers of the frog.',
+      'It is smallest for neurons that represent the center of gaze, and it grows toward the periphery and at each step up the visual hierarchy.',
+      'In the lecture\'s first clip, a spot wandered across the screen and one LGN neuron fired only when the spot crossed its own small patch; rotating a bar there made no difference.',
+      'An fMRI voxel\'s patch of the visual field pools many neurons; this patch belongs to a single neuron.',
+      'The region of the visual field (or of the skin) in which a stimulus changes a particular neuron\'s firing.'],
+    learn:'The region of the sensory surface (for vision, the part of the visual field) where a stimulus changes a given neuron\'s firing. LGN neurons have small, circular center-surround receptive fields; V1 simple and complex cells have elongated ones tuned to orientation. Receptive fields are smallest at the center of gaze, grow with eccentricity, and grow at each stage of the visual hierarchy. Neighboring neurons have neighboring receptive fields, which is what produces retinotopic maps.' },
+
+  { id:'center_surround', answer:'Center-surround receptive field', aliases:['center-surround','centre-surround','center-surround organization','center-surround antagonism','on-center off-surround','on-center','off-center','concentric receptive field'], cat:'vision', unit:'L7', source:'Lecture 7 study guide',
+    clues:[
+      'Kuffler described it in 1953 from single ganglion cells in the intact cat eye, and Barlow reported a similar arrangement in the frog the same year.',
+      'It is modeled as a difference of Gaussians, a narrow Gaussian minus a broader, shallower one, so a uniform field of light barely drives the cell.',
+      'The lecture\'s LGN neurons had round fields like this (the clips drew only the middle), which is why the orientation of a bar did not matter to them.',
+      'A simple cell\'s field is elongated and prefers one orientation; this circular field has no preferred orientation.',
+      'The circular field of retinal ganglion cells and LGN neurons, in which light in the middle and light in the ring around it have opposite effects.'],
+    learn:'The receptive field organization of retinal ganglion cells and LGN neurons: a small circular center and a surrounding ring with opposite effects (on-center/off-surround or off-center/on-surround). Such cells respond best to a spot or edge of the right size and poorly to uniform light, and they are insensitive to orientation. Hubel and Wiesel proposed that V1 simple cells get their orientation preference by combining several of these inputs lined up in a row.' },
+
+  { id:'simple_cell', answer:'Simple cell', aliases:['simple cells','V1 simple cell','V1 simple cells','simple-type cell'], cat:'vision', unit:'L7', source:'Lecture 7 study guide',
+    clues:[
+      'Hubel and Wiesel (1962) chose its name because small spots of light divided its field into separate excitatory and inhibitory zones, from which its response to any bar could be predicted.',
+      'To a drifting grating it fires in bursts, one per cycle, as light and dark stripes cross its zones; this modulation is a standard test for it.',
+      'In the lecture\'s model, five LGN neurons in a vertical line were wired to one V1 neuron: only a vertical bar drove all five at once and pushed the summed input past threshold.',
+      'A complex cell responds to its preferred orientation anywhere in its receptive field; this cell responds only when the bar falls in one exact position.',
+      'A V1 neuron with an elongated receptive field, built from LGN inputs arranged in a line, that responds to a bar of one orientation at one position.'],
+    learn:'A type of neuron in primary visual cortex (V1), described by Hubel and Wiesel, with an elongated receptive field divided into excitatory and inhibitory zones. It responds best to a bar or edge of a particular orientation at a particular position. Its orientation preference is thought to come from its wiring: it sums input from several center-surround LGN neurons whose receptive fields lie in a row, so only a bar with that orientation activates enough of them at once to cross threshold. Rewiring the same inputs changes the preferred orientation.' },
+
+  { id:'complex_cell', answer:'Complex cell', aliases:['complex cells','V1 complex cell','V1 complex cells','complex-type cell'], cat:'vision', unit:'L7', source:'Lecture 7 study guide',
+    clues:[
+      'Hubel and Wiesel gave it its name because, unlike its partner type, its response to a moving bar could not be predicted by mapping its field with small spots of light.',
+      'To a drifting grating it gives a steady rise in firing rather than a burst each cycle, a standard test that sets it apart from its partner type.',
+      'In the lecture\'s model it pooled five neurons that each preferred a vertical bar at a different position, so it stayed selective for orientation but tolerated changes in position.',
+      'A simple cell responds to its preferred bar at only one position; this cell responds to it anywhere in its receptive field.',
+      'A V1 neuron that responds to a bar of one orientation regardless of its exact position, thought to pool the outputs of several simple cells.'],
+    learn:'A type of V1 neuron, described by Hubel and Wiesel, that responds to a line or edge of a particular orientation anywhere within its receptive field (position tolerance), often preferring motion in one direction. In their hierarchical model it pools several simple cells with the same preferred orientation at different positions. Convergence builds selectivity; pooling builds tolerance. Convolutional neural networks borrow this two-step design.' },
+
+  { id:'hubel_wiesel', answer:'Hubel and Wiesel', aliases:['Hubel & Wiesel','David Hubel','Torsten Wiesel','Hubel','Wiesel','David Hubel and Torsten Wiesel'], cat:'history', unit:'L7', source:'Lecture 7 (computation is connectivity)',
+    clues:[
+      'Their half of the 1981 Nobel Prize in Physiology or Medicine honored discoveries about information processing in the visual system; Roger Sperry won the other half.',
+      'Their first strongly orientation-selective neuron was found by accident in 1958, when the edge of a glass slide sliding into their projector swept a faint line across the cat\'s retina.',
+      'The lecture credited them with the wiring diagram behind simple and complex cells (1962): line up LGN inputs to get orientation, then pool those cells to get tolerance to position.',
+      'Penfield stimulated human cortex to see what it does; this pair recorded single neurons in the visual cortex of cats and monkeys to see what they respond to.',
+      'The two neurophysiologists who discovered orientation-selective simple and complex cells in primary visual cortex.'],
+    learn:'David Hubel and Torsten Wiesel, neurophysiologists who recorded single neurons in the visual cortex of cats and monkeys from the late 1950s on. They discovered that V1 neurons respond to oriented bars and edges, classified simple and complex cells (1962), proposed that these properties arise from the way inputs are wired (LGN cells in a row make a simple cell; simple cells pooled make a complex cell), and described ocular dominance columns and critical periods in development. They shared the 1981 Nobel Prize with Roger Sperry.' },
+
+  { id:'cnn', answer:'Convolutional neural network', aliases:['CNN','CNNs','convolutional neural networks','convolutional neural net','convolutional network','convolutional networks','convnet','deep convolutional neural network','DCNN'], cat:'connectivity', unit:'L7', source:'Lecture 7 (computation is connectivity)',
+    clues:[
+      'Its ancestor was Kunihiko Fukushima\'s 1980 neocognitron, and the version that won the 2012 ImageNet image-recognition contest (AlexNet) set off the deep-learning boom.',
+      'Each of its filtering layers slides the same small set of learned weights across the image, so a detector for an edge or texture works at every position; pooling layers then add tolerance to shifts.',
+      'The lecture tied it to V1: it alternates layers modeled on simple and complex cells, and training changes its connection weights while the units themselves stay the same.',
+      'Simple and complex cells are neurons in V1; this is an artificial system built by stacking many layers of units modeled on them.',
+      'A deep learning architecture for recognizing images, built from alternating layers that detect local features and pool them, inspired by V1 simple and complex cells.'],
+    learn:'An artificial neural network for vision built from stacked layers. Convolutional layers apply the same small filter at every image position (like many simple cells tuned to the same feature), and pooling layers combine neighboring outputs (like complex cells), giving tolerance to position. Stacking these steps yields units that respond to increasingly complex shapes and objects. Inspired by Hubel and Wiesel through Fukushima\'s neocognitron (1980); learning changes the connection weights, not the units.' },
+
+  { id:'connectome', answer:'Connectome', aliases:['connectomes','connectomics','wiring diagram','complete wiring diagram','synaptic wiring diagram','neural wiring diagram'], cat:'connectivity', unit:'L7', source:'Lecture 7 (fly connectome)',
+    clues:[
+      'The first complete one, for the roundworm C. elegans (302 neurons), was traced by hand from electron micrographs and published by White, Southgate, Thomson and Brenner in 1986.',
+      'Mapping one at synapse resolution takes electron microscopy, because synaptic clefts and the finest branches are only tens of nanometers wide, then AI tracing of every neuron and years of human proofreading.',
+      'The lecture\'s 2026 example covered a male fruit fly\'s whole central nervous system: about 166,000 neurons, 125 million synaptic connections and 11,710 cell types.',
+      'Tractography estimates bundles between millimeter-sized regions; this is the map of which individual neurons connect to which.',
+      'A complete map of the neural connections in a nervous system, ideally down to every synapse.'],
+    learn:'A complete map of the connections in a nervous system. At the finest scale it lists every neuron and synapse, which requires electron microscopy, AI-based reconstruction and extensive human proofreading. Synapse-level maps exist for the worm C. elegans (302 neurons), the adult female fruit fly brain (2024) and, as of 2026, the whole male fruit fly central nervous system (about 166,000 neurons and 125 million connections; Berg et al., 2026). A human connectome at that resolution is far out of reach (86 billion neurons, roughly a zettabyte of data), so human connectivity is studied at the millimeter scale with MRI.' },
+
+  { id:'electron_microscopy', answer:'Electron microscopy', aliases:['EM','electron microscope','electron microscopes','FIB-SEM','focused ion beam scanning electron microscopy','volume electron microscopy','serial section electron microscopy','scanning electron microscopy'], cat:'methods', unit:'L7', source:'Lecture 7 (fly connectome)',
+    clues:[
+      'Ernst Ruska built the first working instrument of this kind with Max Knoll in 1931 and received a Nobel Prize for it 55 years later.',
+      'It forms images with a beam of charged particles instead of light; their far shorter wavelength resolves structures only a few nanometers across.',
+      'For the fly connectome, seven of these instruments imaged the tissue surface while an ion beam shaved off a few nanometers at a time, for 13 months at 8 nm resolution.',
+      'MRI resolves millimeters in a living person; this method resolves individual synapses, but only in dead, fixed tissue.',
+      'The imaging method needed to map synapses, which are too small for light microscopes, and used to build synapse-level connectomes.'],
+    learn:'Imaging with a beam of electrons rather than light, which resolves structures down to a few nanometers: synaptic vesicles, synaptic clefts and the thinnest axons. Volume methods such as FIB-SEM (an ion beam mills away the surface a few nanometers at a time between images) produce 3-D image stacks from which every neuron and synapse can be traced. It requires fixed, stained tissue, so it cannot be used in living people. It is the basis of synapse-level connectomes such as the 2026 fruit fly map.' },
+
+  { id:'structural_connectivity', answer:'Structural connectivity', aliases:['anatomical connectivity','structural connection','structural connections','anatomical connections','structural connectome','white matter connectivity','structural network'], cat:'connectivity', unit:'L7', source:'Lecture 7 (types of connectivity)',
+    clues:[
+      'Before MRI it could be studied in humans only after death, by dissecting fiber bundles; in animals it is still measured most directly by injecting tracers that neurons carry along their axons.',
+      'In living people it is estimated with diffusion MRI and tractography, which infer fiber bundles from the direction water diffuses, and the reconstructions include many tracts that do not exist.',
+      'The lecture defined it as the physical tracts between brain areas, and showed it guiding deep brain stimulation for depression and changing after people learned to juggle.',
+      'Functional connectivity is correlated activity between areas; this is the set of physical pathways that link them.',
+      'Connectivity defined by the physical, anatomical links between brain regions, such as white-matter tracts.'],
+    learn:'The physical, anatomical connections between brain regions: axons and the white-matter tracts they form. In living humans it is estimated with diffusion MRI (DTI and tractography); in animals it can be measured directly with tracer injections; at the finest scale it is a synapse-level connectome. It constrains but does not determine functional connectivity: strongly correlated regions need not be directly connected. Lecture examples: tractography-guided DBS for depression, and white-matter changes after juggling training.' },
+
+  { id:'functional_connectivity', answer:'Functional connectivity', aliases:['FC','functional connection','functional connections','functional coupling','fcMRI','functional connectivity MRI','functional connectome','BOLD correlation'], cat:'connectivity', unit:'L7', source:'Lecture 7 study guide', lab:'Network_Explorer.html',
+    clues:[
+      'The idea came from correlating spike trains recorded with many electrodes; Friston and colleagues (1993) carried it over to whole-brain PET scans.',
+      'It is usually computed as the Pearson correlation between two regions\' BOLD time series: +1 means they rise and fall in step, 0 that they are unrelated, -1 that they move in opposite directions.',
+      'In the lecture\'s real resting scan, one voxel in the posterior cingulate and one in medial prefrontal cortex, 10 cm apart, correlated at r = 0.78.',
+      'Structural connectivity is the physical wiring between regions; this is the statistical relationship between their activity, which can exist without any direct wire.',
+      'Correlation in activity (usually the BOLD signal) between brain regions over time, taken as evidence that they work together.'],
+    learn:'Statistical dependence, usually correlation, between the activity time series of different brain regions, most often measured with fMRI (BOLD) at rest or during a task. Regions whose signals rise and fall together are said to be functionally connected or coupled; a negative correlation suggests opposing activity; zero suggests no coupling. Seed-based maps and connectivity matrices are built from it. Correlation is not causation: a shared input, an indirect route, head motion or breathing can all produce it, and it says nothing about direction.' },
+
+  { id:'brownian_motion', answer:'Brownian motion', aliases:['Brownian movement','Brownian diffusion','pedesis','random thermal motion'], cat:'methods', unit:'L7', source:'Lecture 7 (diffusion tensor imaging)',
+    clues:[
+      'Jan Ingenhousz described it in charcoal dust in 1784 and 1785, four decades before the observer whose name it now carries.',
+      'The average distance a molecule wanders grows only with the square root of time: in the tens of milliseconds of an MRI measurement, water in tissue moves about ten micrometers, the width of several axons.',
+      'The lecture named it after a Scottish botanist who in 1827 watched tiny particles from pollen grains of Clarkia pulchella jitter endlessly in water under his microscope.',
+      'Diffusion tensor imaging measures which way water spreads; this is the random jiggling of individual molecules that makes it spread in the first place.',
+      'The random, jittery movement of particles suspended in a fluid, caused by collisions with its molecules; the physical basis of diffusion MRI.'],
+    learn:'The random motion of small particles or molecules in a fluid, driven by thermal collisions. Jan Ingenhousz saw it in charcoal dust in the 1780s and Robert Brown in particles from pollen grains in 1827; Einstein explained it in 1905, and Perrin\'s measurements of it helped confirm that atoms exist. Water molecules in the brain wander this way, and diffusion MRI measures how far and in which directions they spread: equally in all directions in free fluid (isotropic), mainly along the fibers in white matter (anisotropic).' },
+
+  { id:'isotropic_diffusion', answer:'Isotropic diffusion', aliases:['isotropic','isotropy','isotropic water diffusion','free diffusion','unrestricted diffusion'], cat:'methods', unit:'L7', source:'Lecture 7 study guide',
+    clues:[
+      'Gray matter comes close to it at the scale of an MRI voxel, because its fibers run every which way; crossing fiber bundles in white matter can mimic it too.',
+      'In the tensor model its ellipsoid is a perfect sphere, with all three axes equal, and its FA is 0.',
+      'The lecture\'s animation showed it on the left: a drop of water molecules spreading out as an expanding circle in free fluid such as cerebrospinal fluid.',
+      'In white matter, axon membranes make water spread mainly along the fibers; here nothing stands in the way, so it spreads equally in every direction.',
+      'Movement of water that is equal in all directions, as in cerebrospinal fluid, where there are no barriers.'],
+    learn:'Diffusion that is the same in all directions, so that a drop of labeled water molecules spreads as a sphere. It occurs in free fluid such as cerebrospinal fluid, where there are no barriers, and its fractional anisotropy is 0. Gray matter is nearly isotropic at MRI resolution. Contrast with anisotropic diffusion in white matter, where water moves more easily along axons than across them.' },
+
+  { id:'anisotropic_diffusion', answer:'Anisotropic diffusion', aliases:['anisotropic','anisotropy','diffusion anisotropy','directional diffusion','anisotropic water diffusion'], cat:'methods', unit:'L7', source:'Lecture 7 study guide',
+    clues:[
+      'Beaulieu\'s 2002 review concluded that it comes mainly from the axon membranes themselves: myelin strengthens it, but nerves without myelin show it too.',
+      'Fit with a tensor, it gives an elongated ellipsoid whose long axis points along the local fibers; DTI color maps show that axis as red (left-right), green (front-back) or blue (up-down).',
+      'The lecture\'s animation showed it on the right: water molecules in white matter bounce off the axon walls and spread mainly along the fibers.',
+      'In cerebrospinal fluid water spreads equally in all directions; in white matter it spreads much farther along the axons than across them.',
+      'Movement of water that is greater in one direction than in others, as in white matter, where axons act as barriers.'],
+    learn:'Diffusion that differs by direction. In white matter, axon membranes (and myelin) block water moving across the fibers, so it spreads mainly along them and a drop spreads as an elongated ellipsoid. DTI measures this in each voxel: the direction of the long axis indicates fiber orientation (used for tractography), and the degree of elongation is summarized as fractional anisotropy (FA). Contrast with isotropic diffusion in cerebrospinal fluid.' },
+
+  { id:'fractional_anisotropy', answer:'Fractional anisotropy', aliases:['FA','FA value','fractional anisotropy index'], cat:'methods', unit:'L7', source:'Lecture 7 (learning to juggle changes white matter)',
+    clues:[
+      'Basser and Pierpaoli defined it in the mid-1990s as a rotation-invariant index, so its value does not depend on how the head or the fibers are oriented in the scanner.',
+      'Computed from the tensor\'s three eigenvalues, it is their spread around the mean scaled by their overall size; the corpus callosum has some of the highest values in the brain.',
+      'In the lecture\'s juggling study (Scholz et al., 2009), it rose in white matter beneath the right intraparietal sulcus after six weeks of training and was still raised four weeks after practice stopped.',
+      'The color in a DTI map shows which way fibers run; this single number shows how strongly the spread of water is directional, and is often read as "integrity."',
+      'The DTI measure, from 0 to 1, of how directional water diffusion is in a voxel, often used as an index of white-matter integrity.'],
+    learn:'A number from 0 to 1 computed from the diffusion tensor in each voxel: 0 when water diffuses equally in all directions (isotropic, as in cerebrospinal fluid), approaching 1 when it diffuses along a single axis (as in tightly packed parallel axons). It is often described as white-matter "integrity," though it is also affected by crossing fibers, axon density and myelination. Scholz et al. (2009) found it increased in parietal white matter after juggling training, and the increase did not track how well people juggled.' },
+
+  { id:'seed_based', answer:'Seed-based connectivity', aliases:['seed-based correlation','seed-based analysis','seed-based mapping','seed-based connectivity mapping','seed-based functional connectivity','seed-based correlation analysis','seed map','seed correlation','seed region','seed voxel'], cat:'connectivity', unit:'L7', source:'Lecture 7 study guide',
+    clues:[
+      'Biswal and colleagues (1995) introduced it: from voxels in motor cortex found with a finger-tapping task, they mapped which other resting voxels fluctuated in step.',
+      'Its result depends entirely on the starting point chosen: another starting region in the same network gives a similar map, while one in a different network gives a different map.',
+      'In the lecture\'s real scan, one voxel in the posterior cingulate was correlated with every voxel in the brain (34,418 correlations), and keeping the strong ones revealed the default mode network.',
+      'A connectivity matrix correlates every region with every other region at once; this approach correlates one chosen region with the rest of the brain.',
+      'Mapping connectivity by correlating the time series of one chosen voxel or region with that of every other voxel in the brain.'],
+    learn:'A functional connectivity method: choose a starting voxel or region (the seed), extract its BOLD time series, and correlate it with the time series of every other voxel. Coloring each voxel by its correlation gives a map of the regions that fluctuate with the seed, that is, the seed\'s functional network. Different seeds reveal different networks (default mode, somatomotor, visual). Introduced by Biswal et al. (1995) for resting motor cortex.' },
+
+  { id:'resting_state', answer:'Resting-state fMRI', aliases:['resting state','resting-state','rs-fMRI','rsfMRI','resting-state functional connectivity','RSFC','resting-state functional MRI','rest fMRI','resting-state scan','resting-state networks','intrinsic connectivity'], cat:'connectivity', unit:'L7', source:'Lecture 7 (functional connectivity)', lab:'Network_Explorer.html',
+    clues:[
+      'Analyzing 1,147 of these scans, Tagliazucchi and Laufs (2014) concluded that about a third of participants lose wakefulness within the first three minutes.',
+      'Its correlations come from slow, spontaneous BOLD fluctuations below about 0.1 Hz, so the data are filtered to that band and cleaned of head-motion, white-matter and fluid signals.',
+      'The lecture\'s explainer clips used a 7-minute scan of one person lying still with no task: 210 brain volumes, one every 2 seconds.',
+      'Task fMRI compares activity between the conditions of an experiment; this records spontaneous activity while the person does nothing in particular.',
+      'Brain scanning while a person lies quietly with no task, used to measure functional connectivity from spontaneous fluctuations in activity.'],
+    learn:'Functional MRI recorded while a person lies in the scanner without performing a task (eyes closed or fixating), typically for 5 to 15 minutes. Correlations among the slow, spontaneous BOLD fluctuations reveal reproducible networks such as the default mode, somatomotor and visual networks (Biswal et al., 1995; Yeo et al., 2011). It is easy to collect, even in patients, but "rest" is uncontrolled: people mind-wander, move and often fall asleep.' },
+
+  { id:'dmn', answer:'Default mode network', aliases:['DMN','default network','default mode','task-negative network','default mode system','default system'], cat:'connectivity', unit:'L7', source:'Lecture 7 study guide', lab:'Network_Explorer.html',
+    clues:[
+      'Shulman and colleagues (1997) first noticed it by pooling nine PET studies of visual tasks against passive viewing; Raichle et al. (2001) gave it its name.',
+      'Greicius and colleagues (2003) showed that its regions also fluctuate together at rest, using seeds in the posterior cingulate and ventral anterior cingulate cortex.',
+      'In the lecture, it was active at rest and during mind-wandering and "turned off" during tasks, and its disruption has been linked to ADHD, autism, Alzheimer\'s disease, depression and schizophrenia.',
+      'The dorsal attention network rises when you focus on an external task; this network falls then, and rises when your mind wanders.',
+      'The network of medial prefrontal, posterior cingulate, precuneus and inferior parietal regions that is active at rest and during mind-wandering and deactivates during tasks.'],
+    learn:'A large-scale brain network including medial prefrontal cortex, posterior cingulate cortex and precuneus, inferior parietal lobule, lateral temporal cortex and the hippocampal formation. It is most active at rest and during internally directed thought (mind-wandering, remembering, imagining the future, thinking about others) and decreases during externally focused tasks. It was discovered from task-induced decreases in PET (Shulman et al., 1997; named by Raichle et al., 2001) and confirmed with resting-state functional connectivity (Greicius et al., 2003). It is altered in ADHD, autism, Alzheimer\'s disease, depression and other disorders.' },
+
+  { id:'anticorrelation', answer:'Anticorrelation', aliases:['anticorrelations','anticorrelated','anti-correlation','anti-correlated','negative correlation','negatively correlated','inverse correlation','negative functional connectivity'], cat:'connectivity', unit:'L7', source:'Lecture 7 study guide',
+    clues:[
+      'Fox and colleagues (2005) reported it at rest between the default network and attention regions, after regressing out the whole-brain average signal.',
+      'Murphy and colleagues (2009) showed that global signal regression mathematically guarantees some of these, starting a long debate over which ones are real.',
+      'In the lecture\'s critique of psychedelic studies, added noise weakened these between networks, which made the networks look more connected as the values moved toward zero.',
+      'A correlation of 0 means two regions are unrelated; this means they are related, but move in opposite directions.',
+      'A correlation below zero between two regions\' activity over time: when one goes up, the other goes down.'],
+    learn:'A negative correlation between the activity time series of two regions (r between 0 and -1): when one is above its average, the other tends to be below. In resting-state fMRI the default mode network is often anticorrelated with task-positive networks such as the dorsal attention network, although global signal regression can create or exaggerate such negative values (Murphy et al., 2009). Added noise moves every correlation toward zero, so anticorrelations weaken, which can look like increased connectivity. The SAINT depression treatment targets the prefrontal site most anticorrelated with the subgenual cingulate.' },
+
+  { id:'connectivity_matrix', answer:'Connectivity matrix', aliases:['connectivity matrices','correlation matrix','correlation matrices','functional connectivity matrix','FC matrix','adjacency matrix','connectome matrix'], cat:'connectivity', unit:'L7', source:'Lecture 7 (functional connectivity)',
+    clues:[
+      'Finn and colleagues (2015) showed that one of these, a 268-by-268 table from a single scan session, could pick out which of 126 people it came from.',
+      'It is symmetric: for 100 regions it holds 4,950 unique correlations, each shown twice, one on each side of the diagonal.',
+      'In the lecture\'s scan, sorting its rows and columns by network made blocks appear: regions in the same network correlated 0.38 on average, regions in different networks 0.12.',
+      'A seed map shows one region\'s correlations with the whole brain; this table shows every region\'s correlation with every other region.',
+      'A table (often a heat map) of the correlations between every pair of brain regions, with one row and one column per region.'],
+    learn:'A square table whose rows and columns are brain regions and whose cells hold the connectivity (usually the correlation of BOLD time series) between each pair. It is symmetric, with N(N-1)/2 unique values. Sorting the regions by network reveals blocks of strong within-network correlation, and thresholding it gives a graph of nodes and edges for network analysis. Individual matrices are distinctive enough to identify people (Finn et al., 2015).' },
+
+  { id:'common_input', answer:'Common input', aliases:['common driver','hidden driver','third variable','third-variable problem','common cause','shared input','common-input problem','third-area problem'], cat:'connectivity', unit:'L7', source:'Lecture 7 (the problem with functional connectivity)',
+    clues:[
+      'Adachi and colleagues (2012) combined macaque tract-tracing data with fMRI and found that areas with no direct anatomical link were correlated mainly because they received from, and unexpectedly projected to, the same areas.',
+      'Partial correlation can expose it: regress the suspected source out of both time series, and their correlation drops toward zero.',
+      'In the lecture\'s animation, area C sent its signal to areas A and B: A and B correlated at r = 0.80, and when C\'s connections were cut the correlation fell to 0.00.',
+      'Head motion is a source of shared signal from outside the brain; this is a third brain area that drives both regions.',
+      'The problem that two brain regions can be correlated without being connected, because a third region drives both of them.'],
+    learn:'One reason functional connectivity does not imply a direct connection: if a third region (or any shared source) drives two regions, their activity will be correlated even though neither communicates with the other. This is the third-variable problem of correlation. Correlation also cannot reveal direction (A to B or B to A) or distinguish a direct link from a detour through another area. Testing causation requires intervening, for example by stimulating or inactivating a region.' },
+
+  { id:'head_motion', answer:'Head motion', aliases:['head movement','head movements','motion artifact','motion artifacts','subject motion','in-scanner motion','in-scanner head motion','movement artifact'], cat:'connectivity', unit:'L7', source:'Lecture 7 (the problem with functional connectivity)',
+    clues:[
+      'Power and colleagues (2012) found that it weakens many long-distance correlations and strengthens short-distance ones, forcing them to revise earlier conclusions about how brain networks develop in childhood.',
+      'It is usually summarized as framewise displacement, the shift from one brain image to the next, and images with large values are often discarded ("scrubbing").',
+      'In the lecture\'s simulation, six brief jolts made two unconnected areas correlate at r = 0.40, and in one psychedelic study it was about 1.7 times as large on psilocybin as on placebo.',
+      'Breathing adds a slow, brain-wide drift through blood CO2; this adds sudden jolts to the signal whenever the person moves.',
+      'A source of spurious functional connectivity from outside the brain: the participant moving in the scanner, which can make unconnected regions look correlated.'],
+    learn:'Movement of the participant\'s head during scanning. It shifts which tissue each voxel samples and changes the signal across many regions at once, so it can create false correlations (especially between nearby regions) and weaken real long-distance ones (Power et al., 2012; Van Dijk et al., 2012). Groups that move more, such as children, some patient groups and people on psychedelics, can therefore show connectivity differences that are partly artifact. Analyses regress out motion estimates and remove high-motion images.' },
+
+  { id:'physiological_noise', answer:'Physiological noise', aliases:['physiological artifact','physiological artifacts','breathing artifact','respiratory artifact','respiration artifact','respiratory noise','cardiac noise','cardiac and respiratory noise'], cat:'connectivity', unit:'L7', source:'Lecture 7 (the problem with functional connectivity)',
+    clues:[
+      'Birn and colleagues (2006) showed that natural changes in breathing depth and rate produce BOLD fluctuations in a map that overlaps the default mode network.',
+      'Slower or shallower breaths raise carbon dioxide in the blood, which widens blood vessels and lifts the BOLD signal almost everywhere at once; heartbeats add faster pulsations near large vessels.',
+      'In the lecture\'s animation, a slow wave of blood CO2 added on top of the head movements brightened the whole brain and raised the correlation from 0.40 to 0.60.',
+      'Head motion jolts the signal when the person moves; this comes from the body\'s own rhythms, even when the head is perfectly still.',
+      'Fluctuations in the fMRI signal caused by the body\'s rhythms rather than by neural activity, which can create false functional connectivity.'],
+    learn:'Changes in the BOLD signal caused by the body rather than by neural activity. Breathing alters blood CO2, which dilates or constricts vessels and shifts the signal across the brain, and the cardiac pulse moves tissue and fluid near large vessels. Because these effects are shared by many regions, they can make regions look functionally connected (Birn et al., 2006). Analyses record breathing and heart rate, or regress out signals from white matter and ventricles.' },
+
+  { id:'network_disintegration', answer:'Network disintegration', aliases:['disintegration','loss of network integrity','reduced network integrity','reduced within-network connectivity','decreased within-network connectivity'], cat:'connectivity', unit:'L7', source:'Lecture 7 (psychedelics)',
+    clues:[
+      'Girn and colleagues\' 2026 mega-analysis (11 datasets, 5 drugs, 267 people) found it was mostly small, under 0.1 in correlation units, and consistent mainly in visual and somatomotor networks.',
+      'Carhart-Harris et al. (2016) found it in all 12 resting-state networks they tested, significantly in 10, with drops of roughly 15 to 35%.',
+      'In the lecture\'s LSD study (75 µg, 15 usable scans), a bigger drop in parahippocampal-retrosplenial connectivity went with stronger ego dissolution (r = -0.73).',
+      'Desegregation is the between-network change, some pairs of networks moving together more; this is the within-network change, a network\'s own regions moving together less.',
+      'The reported psychedelic effect in which regions within the same resting-state network become less correlated with one another.'],
+    learn:'A claim from psychedelic fMRI research (Carhart-Harris et al., 2016, LSD): within resting-state networks, the regions\' BOLD signals move together less on the drug. It is paired with "desegregation," in which some pairs of networks become more coupled. Critics note that people move more on psychedelics, and that added noise shrinks within-network correlations and weakens anticorrelations, mimicking the pattern. A 2026 mega-analysis (Girn et al.) found only small, selective drops, consistent mainly in visual and somatomotor networks.' },
+
+
+  /* ---------------------------- LECTURE 8 ---------------------------- */
+  { id:'sensation', answer:'Sensation', aliases:['sensations','sensory transduction','sensing'], cat:'vision', unit:'L8', source:'Lecture 8 (sensation and perception)',
+    clues:[
+      'Gustav Fechner\'s psychophysics (1860) set out to measure its lawful relation to physical stimulus intensity, building on Weber\'s work on just-noticeable differences.',
+      'Its receptors adapt: a steady stimulus, like the pressure of clothing on the skin, soon produces a weaker and weaker signal.',
+      'The lecture\'s primrose, photographed as a bee sees it, showed that what we can take in is limited by our receptors: its ultraviolet markings are invisible to humans.',
+      'Perception is awareness of the input and its link to stored knowledge; this is the earlier step of translating physical energy into neural codes.',
+      'The translation of external information (light, sound, touch, odor) into neural signals by the sense organs.'],
+    learn:'The detection of physical energy (light, sound, chemicals, pressure) by sensory receptors and its translation into neural codes. In the lecture\'s definition, sensation is the input stage and perception is the awareness and interpretation of that input, linked to stored knowledge. Sensation constrains perception (we cannot see the ultraviolet patterns that bees see on flowers), but cognitive factors also shape what we perceive.' },
+
+  { id:'perception', answer:'Perception', aliases:['perceptions','perceiving','perceptual experience','percept','percepts'], cat:'vision', unit:'L8', source:'Lecture 8 (sensation and perception)',
+    clues:[
+      'Helmholtz described it as "unconscious inference": the brain\'s best guess about what in the world caused the pattern on the senses.',
+      'Because the same image on the retina could come from many different scenes, it depends on assumptions and context as well as on the input itself.',
+      'The lecture\'s example was "the dress": one photo looked blue and black to some people and white and gold to others, depending on their implicit assumptions about the lighting.',
+      'Sensation translates physical energy into neural codes; this is the awareness of that input and its link to stored knowledge.',
+      'The awareness and interpretation of sensory input, linked to stored knowledge and shaped by expectations and context.'],
+    learn:'The awareness and interpretation of sensory input, linking it to stored knowledge. Perception is constrained by sensation but also shaped by cognitive factors such as expectations, context and attention, which is why one stimulus can look different to different people (the blue-and-black or white-and-gold dress, explained by different assumptions about the illumination; Witzel et al., 2017). High-level perception includes recognizing objects, faces, places, motion and color, with specialized regions along the visual hierarchy.' },
+
+  { id:'multimodal_area', answer:'Multimodal association cortex', aliases:['multimodal area','multimodal areas','multimodal cortex','multimodal association area','association cortex','association areas','polymodal cortex','multisensory cortex','multisensory area'], cat:'anatomy', unit:'L8', source:'Lecture 8 (how are sensory systems organized?)',
+    clues:[
+      'Examples include the superior temporal sulcus, where some neurons respond to faces and to voices and change their firing when the two are paired, and parts of the intraparietal and prefrontal cortex.',
+      'It fills much of the cortex between the sensory areas, in the parietal, temporal and frontal lobes, and its neurons can fire more to a sight plus a sound than to either alone.',
+      'On the lecture\'s map of how sensory systems are organized, it was the stage beyond the primary and secondary (higher) sensory areas: regions that receive input from several senses.',
+      'Primary and secondary sensory areas each handle one sense; this cortex combines information from several.',
+      'Cortex that receives and integrates input from more than one sensory modality.'],
+    learn:'Regions of cortex that receive input from more than one sensory modality and integrate it. They lie beyond the primary sensory areas (the first cortical stage for each sense) and the secondary or higher sensory areas (still mostly one sense). Examples include parts of the superior temporal sulcus, posterior parietal cortex and prefrontal cortex. Their neurons can respond more strongly to combined inputs, such as a face and a voice, than to either alone.' },
+
+  { id:'retina', answer:'Retina', aliases:['retinas','retinae','retinal','neural retina'], cat:'anatomy', unit:'L8', source:'Lecture 8 study guide',
+    clues:[
+      'Ramón y Cajal\'s drawings of its stacked layers of cells, in animals from fish to mammals, helped him argue that signals flow through neurons in one direction.',
+      'Its output neurons, the ganglion cells, send their axons out through the optic disc, creating the blind spot; about a million of them form each optic nerve.',
+      'In the lecture it was the first stage of the ascending visual pathway, sending input to the LGN and also directly to the superior colliculus for the visuomotor system.',
+      'The LGN is the thalamic relay for vision; this is the sheet of tissue at the back of the eye where light is first turned into neural signals.',
+      'The layer of light-sensitive tissue lining the back of the eye, containing the photoreceptors (rods and cones) and the neurons that send visual signals to the brain.'],
+    learn:'The light-sensitive layer at the back of the eye, actually part of the central nervous system. Photoreceptors (rods and cones) transduce light; bipolar and ganglion cells process it, and ganglion cell axons form the optic nerve. Each retina sees both visual hemifields: its nasal half receives light from the same-side field and its temporal half from the opposite field. Its main targets are the LGN of the thalamus (on the way to V1) and the superior colliculus.' },
+
+  { id:'lgn', answer:'Lateral geniculate nucleus', aliases:['LGN','lateral geniculate','lateral geniculate body','lateral geniculate nuclei','dorsal lateral geniculate nucleus','dLGN'], cat:'anatomy', unit:'L8', source:'Lecture 8 study guide',
+    clues:[
+      'Its name means "knee-shaped," for its bend; in primates its layers divide into magnocellular layers 1 and 2, carrying motion and coarse form, and parvocellular layers 3 to 6, carrying color and fine detail.',
+      'Each of its layers receives input from only one eye, and each one (left or right) represents only the opposite half of the visual field.',
+      'In the lecture its layers alternated between the eyes: the opposite eye feeds layers 1, 4 and 6, and the same-side eye layers 2, 3 and 5.',
+      'The superior colliculus receives retinal input for guiding eye movements; this thalamic nucleus relays retinal input to primary visual cortex.',
+      'The visual relay nucleus of the thalamus, between the retina and primary visual cortex.'],
+    learn:'The thalamic nucleus that relays visual signals from the retina to primary visual cortex (V1), forming the retino-geniculo-striate pathway. Each LGN represents the contralateral visual hemifield. It has six layers, each receiving input from one eye (contralateral eye: layers 1, 4 and 6; ipsilateral eye: 2, 3 and 5); layers 1 and 2 are magnocellular and 3 to 6 parvocellular. Its neurons have center-surround receptive fields like those of retinal ganglion cells, and it receives strong feedback from cortex.' },
+
+  { id:'thalamus', answer:'Thalamus', aliases:['thalami','thalamic','thalamic nuclei','thalamic relay','dorsal thalamus'], cat:'anatomy', unit:'L8', source:'Lecture 8 study guide', lab:'MRI_Explorer.html',
+    clues:[
+      'To stop the shaking of essential tremor, surgeons destroy a tiny spot in it (the ventral intermediate nucleus), today often with focused ultrasound instead of an incision.',
+      'Most senses have their own relay nucleus here: the lateral geniculate for vision, the medial geniculate for hearing, and the ventral posterior nuclei for touch.',
+      'The lecture called it the gateway to the cortex: every sensory input reaches cortex through it except smell.',
+      'The LGN is one of its nuclei, dedicated to vision; this is the whole paired structure that relays nearly all sensory input to cortex.',
+      'The paired structure at the center of the brain that relays sensory signals (all except olfaction) to the cortex.'],
+    learn:'A paired gray-matter structure above the brainstem, made of many nuclei, that relays and regulates information reaching the cortex. Every sensory system except olfaction passes through a thalamic relay nucleus on its way to cortex (vision: LGN; hearing: medial geniculate nucleus; touch: ventral posterior nuclei). It also takes part in motor loops, attention and arousal, and receives massive feedback from cortex. Destroying a small part of it (thalamotomy) relieves tremor.' },
+
+  { id:'superior_colliculus', answer:'Superior colliculus', aliases:['superior colliculi','SC','optic tectum','tectum'], cat:'anatomy', unit:'L8', source:'Lecture 8 (thalamus: gateway to the cortex)',
+    clues:[
+      'In blindsight, where patients with V1 damage can point to objects they say they cannot see, its pathway from the retina is one of the routes thought to carry the information.',
+      'Its layers hold a map of visual space aligned with maps of sound and touch, and stimulating a point in it moves the eyes toward the matching location.',
+      'In the lecture it was the example of retinal input that bypasses the thalamus: the retina projects to it directly, for the visuomotor system.',
+      'The LGN relays visual input to cortex for seeing; this midbrain structure uses visual input to orient the eyes and head.',
+      'The midbrain structure that receives direct input from the retina and controls eye movements toward visual targets.'],
+    learn:'A layered structure on the roof of the midbrain (tectum). It receives direct input from the retina and from cortex, contains aligned maps of visual, auditory and body space, and drives orienting movements of the eyes and head, such as saccades. In the lecture it was the example of a sensory pathway that reaches a subcortical target directly rather than through the thalamus to cortex.' },
+
+  { id:'retinogeniculostriate', answer:'Retino-geniculo-striate pathway', aliases:['retinogeniculostriate pathway','retino-geniculo-striate','geniculostriate pathway','geniculostriate','retinogeniculate pathway','retinogeniculocortical pathway','primary visual pathway','ascending visual pathway'], cat:'vision', unit:'L8', source:'Lecture 8 study guide',
+    clues:[
+      'Damage anywhere along it after the optic chiasm causes loss on the same side of the visual field in both eyes (a homonymous defect), a pattern neurologists use to locate the lesion.',
+      'About 90% of the optic nerve\'s fibers take this route; the rest go to targets such as the superior colliculus.',
+      'In the lecture it was the main route from the eye to cortex, with one relay in the thalamus before the first cortical stage.',
+      'The route from the retina to the superior colliculus serves eye movements; this route through the thalamus serves conscious seeing.',
+      'The main visual pathway from the eye, through the thalamic relay, to primary visual cortex.'],
+    learn:'The main ascending visual pathway. Retinal ganglion cells send axons through the optic nerve, the optic chiasm (where fibers from the nasal half of each retina cross) and the optic tract to the lateral geniculate nucleus (LGN) of the thalamus, whose axons travel in the optic radiations to striate cortex (V1). As a result each hemisphere receives the opposite visual hemifield from both eyes.' },
+
+  { id:'v1', answer:'Primary visual cortex', aliases:['V1','striate cortex','BA17','primary visual area','calcarine cortex','area V1','visual area V1'], cat:'anatomy', unit:'L8', source:'Lecture 8 (retinotopy in primary visual cortex)', lab:'Cortex_Explorer.html',
+    clues:[
+      'Its other name comes from a stripe of myelinated fibers visible to the naked eye in cut tissue, noticed by the medical student Francesco Gennari in 1776.',
+      'It lies on the inner surface of the occipital lobe, wrapped around a deep horizontal fold, with the upper visual field below the fold and the lower field above it.',
+      'Tootell and colleagues (1982) injected a monkey with radioactive deoxyglucose while it viewed a target pattern, then "developed" this area like a photograph and found the pattern laid out on it.',
+      'Extrastriate areas lie beyond it and specialize in features like color and motion; this area is the first cortical stage, receiving its input from the LGN.',
+      'The first cortical stage of visual processing, in the occipital lobe, which receives input from the LGN and holds a retinotopic map of the opposite visual field.'],
+    learn:'The first cortical area for vision (Brodmann area 17, striate cortex), along the calcarine sulcus in the occipital lobe. It receives input from the LGN, contains a precise retinotopic map of the contralateral visual hemifield with a magnified fovea, and has neurons tuned to orientation, spatial frequency, color, binocular disparity and direction of motion (simple and complex cells). Its output goes to extrastriate areas along the dorsal and ventral streams. Damage causes blindness in the corresponding part of the visual field.' },
+
+  { id:'extrastriate', answer:'Extrastriate cortex', aliases:['extrastriate','extrastriate visual cortex','extrastriate areas','extrastriate visual areas','prestriate cortex','visual association cortex','higher visual areas'], cat:'anatomy', unit:'L8', source:'Lecture 8 (multiple visual areas in extrastriate cortex)',
+    clues:[
+      'Felleman and Van Essen\'s classic 1991 diagram arranged its areas in the monkey into a hierarchy many levels deep, linked by hundreds of connections.',
+      'Many of its areas hold their own map of the visual field, with receptive fields that grow larger and maps that grow coarser at each step up from V1.',
+      'The lecture\'s flat map of a macaque\'s right hemisphere showed about 32 visual areas, spread across the occipital, parietal, temporal and even frontal lobes.',
+      'Striate cortex (V1) is the first cortical stage for vision; this term covers the visual areas beyond it, such as V2, V3, V4 and MT.',
+      'The visual areas outside primary visual cortex, including V2, V3, V4 and MT.'],
+    learn:'All the visual cortical areas beyond primary visual cortex (striate cortex, V1): V2, V3, V4, MT and many more, about 30 in the macaque, extending into parietal and temporal cortex. They form a hierarchy along the dorsal and ventral streams, with larger receptive fields and coarser, less retinotopic maps at higher levels, and some specialize in particular features such as color (V4) or motion (MT).' },
+
+  { id:'retinotopy', answer:'Retinotopy', aliases:['retinotopic map','retinotopic maps','retinotopic mapping','retinotopic organization','retinotopic','visuotopy','visuotopic map','visual field map','visual field maps'], cat:'vision', unit:'L8', source:'Lecture 8 (retinotopic mapping)',
+    clues:[
+      'Tatsuji Inouye (1909) and Gordon Holmes (1918) made the first accurate charts of it in humans, from the blind regions of soldiers with bullet wounds to the occipital lobe.',
+      'Mapping it with fMRI uses a slowly moving stimulus, such as a rotating wedge, an expanding ring or a drifting bar, so that the time each voxel responds reveals the part of the visual field it represents.',
+      'In the lecture, recordings from neighboring sites in visual cortex found neighboring receptive fields, and fMRI with a moving bar revealed several such maps side by side: V1, V2 and V3.',
+      'Topographic organization is the general principle of orderly maps (somatotopy, tonotopy); this is the version for vision.',
+      'The orderly mapping of the visual field onto visual cortex, so that neighboring points in the visual field are represented by neighboring neurons.'],
+    learn:'The orderly mapping of the visual field (and thus the retina) onto a visual structure, so that neighboring locations in space are represented by neighboring neurons. V1, V2, V3 and many higher areas each contain a map of the contralateral visual field; maps in neighboring areas are mirror images, and the reversals mark the borders between areas. It is measured in animals with recordings or deoxyglucose (Tootell et al., 1982) and in humans with fMRI using moving bars, wedges and rings (population receptive field mapping). Maps become coarser in higher areas.' },
+
+  { id:'foveal_magnification', answer:'Foveal magnification', aliases:['cortical magnification','cortical magnification factor','magnification factor','foveal magnification factor','foveal overrepresentation','foveal over-representation'], cat:'vision', unit:'L8', source:'Lecture 8 study guide',
+    clues:[
+      'Daniel and Whitteridge (1961) first quantified it in monkey V1 as the millimeters of cortex devoted to each degree of visual angle.',
+      'It follows roughly an inverse relation with distance from the center of gaze: moving twice as far out roughly halves the amount of cortex per degree.',
+      'In the lecture\'s pRF clips, the central 4 degrees of vision filled about as much of V1 as everything from 4 to 8 degrees.',
+      'Receptive fields grow toward the periphery; this is the complementary fact that the center of gaze gets far more cortex per degree of visual field.',
+      'The over-representation of the center of gaze in visual cortex: much more cortex per degree of visual field at the center than in the periphery.'],
+    learn:'The disproportionate amount of visual cortex devoted to the center of gaze (the fovea). In V1 the cortical magnification factor (millimeters of cortex per degree of visual field) is highest at the fovea and falls with eccentricity, so the central few degrees occupy a large fraction of V1. It parallels the dense packing of cones and ganglion cells in the fovea and the small receptive fields there, and it is why vision is sharpest where we look.' },
+
+  { id:'prf', answer:'Population receptive field', aliases:['pRF','pRFs','population receptive fields','pRF mapping','population receptive field mapping','population receptive field model','pRF model'], cat:'vision', unit:'L8', source:'Lecture 8 (mapping visual areas in humans with fMRI)',
+    clues:[
+      'Kay and colleagues (2013) added a compressive exponent to its model, because a voxel\'s response grows less than linearly as the stimulus covers more of its field.',
+      'Dumoulin and Wandell\'s 2008 model predicts a voxel\'s time series from where the stimulus was at every moment, delayed and smoothed by the hemodynamic response, and searches thousands of positions and sizes for the best match.',
+      'In the lecture\'s clips a checkerboard bar swept the screen in eight directions, and each voxel\'s estimate grew larger with distance from the center of gaze and from V1 to V2 to V3.',
+      'A single neuron responds to its own small patch of space; this is the combined patch covered by the hundreds of thousands of neurons in one fMRI voxel.',
+      'The region of the visual field that drives the neurons within one fMRI voxel, estimated by fitting a model to responses to a moving bar.'],
+    learn:'The region of the visual field that drives the population of neurons in one fMRI voxel. Dumoulin and Wandell (2008) model it as a 2-D Gaussian with a center and a size, and estimate it by finding the Gaussian whose predicted response (the stimulus overlap, delayed and smoothed by the hemodynamic response) best matches the voxel\'s measured time series during a moving-bar experiment. Mapping every voxel\'s pRF center gives polar angle and eccentricity maps, and its size shows how receptive fields grow with eccentricity and up the visual hierarchy.' },
+
+  { id:'polar_angle', answer:'Polar angle', aliases:['polar angle map','polar angle maps','polar angle mapping','polar angle reversal','polar angle reversals','angle map','phase reversal','meridian reversal'], cat:'vision', unit:'L8', source:'Lecture 8 study guide',
+    clues:[
+      'Sereno and colleagues (1995) mapped it with a slowly rotating, flickering checkerboard and computed "visual field sign" to draw the borders of several human visual areas for the first time.',
+      'Its full range is 360 degrees around fixation, and the maps in each hemisphere cover only the 180 degrees on the opposite side.',
+      'In the lecture\'s flattened maps, the colors coding it ran in bands that reversed direction, and each reversal marked a border between V1, V2 and V3.',
+      'Eccentricity is distance from the center of gaze; this is the direction around it, like the hands of a clock.',
+      'The direction of a location in the visual field around the center of gaze; reversals in its cortical map mark the borders between visual areas.'],
+    learn:'One of the two coordinates of a retinotopic map: the angle of a location around the fixation point (eccentricity, the distance from fixation, is the other). In fMRI it is mapped with a rotating wedge or a pRF model. On the cortical surface the representation of polar angle reverses at the vertical and horizontal meridians, so neighboring visual areas are mirror images, and the reversals are used to draw the borders between V1, V2 and V3 (Sereno et al., 1995).' },
+
+  { id:'dorsal_stream', answer:'Dorsal stream', aliases:['dorsal pathway','dorsal visual stream','dorsal visual pathway','where pathway','how pathway','where/how pathway','where stream','how stream','occipitoparietal pathway','parietal pathway'], cat:'vision', unit:'L8', source:'Lecture 8 study guide',
+    clues:[
+      'Ungerleider and Mishkin (1982) defined it in monkeys: lesions of posterior parietal cortex impaired a landmark task (choosing the cover nearer a marker) but not object discrimination.',
+      'Neurons along it in posterior parietal cortex fire as an animal prepares to reach, grasp or move its eyes, coding locations relative to the eyes, head or hand.',
+      'In the lecture it carried spatial perception, motion and vision for action from occipital cortex up into the parietal lobe; damage to it causes optic ataxia.',
+      'The ventral stream into the temporal lobe identifies what an object is; this stream into the parietal lobe works out where it is and how to act on it.',
+      'The visual pathway from occipital to parietal cortex specialized for spatial location, motion and guiding actions.'],
+    learn:'The visual pathway running from V1 through occipital cortex into the posterior parietal lobe: the "where" pathway (Ungerleider and Mishkin) or "how" pathway (Goodale and Milner). It processes spatial location, motion (including area MT) and the visual guidance of actions such as reaching and grasping. Damage produces deficits such as optic ataxia, Bálint\'s syndrome and akinetopsia, while object recognition can be spared. Receptive fields grow and retinotopy weakens along it.' },
+
+  { id:'ventral_stream', answer:'Ventral stream', aliases:['ventral pathway','ventral visual stream','ventral visual pathway','what pathway','what stream','what system','occipitotemporal pathway','temporal pathway'], cat:'vision', unit:'L8', source:'Lecture 8 study guide',
+    clues:[
+      'In Ungerleider and Mishkin\'s monkeys, lesions of inferior temporal cortex impaired learning which of two objects hid a reward, but spared the landmark task.',
+      'Its neurons grow more selective and more tolerant at each step, ending in inferotemporal cells that respond to a face or object across changes in position, size and viewpoint.',
+      'In the lecture it carried shape, color, texture, object recognition and categorization, with links to memory, into the temporal lobe; damage to it causes visual agnosia.',
+      'The dorsal stream into the parietal lobe handles where things are and how to act on them; this stream into the temporal lobe identifies what they are.',
+      'The visual pathway from occipital to inferior temporal cortex specialized for recognizing objects, faces, colors and shapes.'],
+    learn:'The visual pathway running from V1 through V2, V4 and lateral occipital cortex into the inferior temporal lobe: the "what" pathway. It supports recognition of shape, color, texture, objects, faces and places, with links to memory, and contains category-selective regions such as the FFA and PPA. Receptive fields grow and selectivity becomes more abstract along it. Damage causes visual agnosia, prosopagnosia or achromatopsia, while visually guided action can be spared.' },
+
+  { id:'mt', answer:'Area MT', aliases:['MT','V5','MT+','hMT+','hMT','MT/V5','V5/MT','area V5','visual area V5','middle temporal area','visual area MT','middle temporal visual area','MT complex'], cat:'anatomy', unit:'L8', source:'Lecture 8 study guide',
+    clues:[
+      'Dubner and Zeki (1971) found that most of its neurons in the macaque prefer one direction of motion, in a patch on the back bank of the superior temporal sulcus.',
+      'Its neurons are tuned to the direction and speed of motion, are largely indifferent to color, and respond strongly even at very low contrast.',
+      'In the lecture\'s localizer, voxels that responded more to moving dots than to the same dots standing still clustered in it, on the lateral surface near the junction of the occipital and temporal lobes.',
+      'V4 in the ventral stream prefers color; this area in the dorsal stream prefers motion.',
+      'The extrastriate visual area specialized for motion, whose damage causes akinetopsia.'],
+    learn:'An extrastriate visual area (also called V5; in humans hMT+ or the MT complex) on the lateral occipito-temporal surface, part of the dorsal stream. Nearly all of its neurons are selective for the direction and speed of motion. In fMRI it responds more to moving than to stationary stimuli (the motion localizer). Bilateral damage causes akinetopsia (motion blindness), and microstimulating its direction-tuned neurons biases monkeys\' motion judgments (Salzman, Britten and Newsome, 1990), so its activity is needed for normal motion perception and can drive it.' },
+
+  { id:'functional_localizer', answer:'Functional localizer', aliases:['localizer','localizers','localiser','functional localiser','functional localizers','localizer scan','localizer task','localizer experiment'], cat:'decoding', unit:'L8', source:'Lecture 8 (functional specialization in human visual cortex)',
+    clues:[
+      'Saxe, Brett and Kanwisher (2006) defended the practice against critics, arguing that defining a region separately in each person beats averaging anatomy across people whose specialized areas lie in different places.',
+      'It is run as separate scans so that the voxels chosen with it are independent of the data later used to test hypotheses, which avoids "double dipping."',
+      'The lecture showed two: color versus grayscale Mondrians to find V4, and moving versus stationary dots to find MT, alternating in 16-second blocks.',
+      'A region of interest is the set of voxels you analyze; this is the separate experiment you run to define it in each person.',
+      'A short, simple fMRI experiment used to find a region defined by its responses (such as the FFA, V4 or MT) in each participant before the main experiment.'],
+    learn:'A simple fMRI contrast run to identify a functional region in each participant: faces vs objects for the FFA, color vs grayscale for V4, moving vs static dots for MT, or a moving bar for retinotopic areas. The voxels it identifies become a region of interest for testing hypotheses with independent data from the main experiment. This avoids circular analysis and allows for differences in where functional areas lie in different brains.' },
+
+  { id:'akinetopsia', answer:'Akinetopsia', aliases:['motion blindness','cerebral akinetopsia','visual motion blindness'], cat:'lesion', unit:'L8', source:'Lecture 8 study guide',
+    clues:[
+      'Zihl, von Cramon and Mai described the classic case in 1983: patient L.M., who after damage to both sides of the brain had trouble pouring tea because the liquid looked frozen, like a glacier.',
+      'Patients see the world as a series of still snapshots, with objects seeming to jump from one place to another, while color, form and acuity can be normal.',
+      'In the lecture it followed bilateral V5 lesions, and "motion" became something the patient had to infer from changes in position.',
+      'Achromatopsia is the loss of color perception after V4 damage; this is the loss of motion perception after damage to MT.',
+      'The loss of motion perception caused by damage to visual area MT/V5.'],
+    learn:'Impaired perception of visual motion caused by cortical damage, classically bilateral lesions of area MT/V5 near the occipito-temporal junction. Patient L.M. (Zihl et al., 1983) saw moving things as a series of static positions: pouring tea looked like a frozen arc, and cars seemed to jump from place to place. Other visual functions such as color and form can be spared, a dissociation that supports MT\'s specialization for motion.' },
+
+  { id:'achromatopsia', answer:'Achromatopsia', aliases:['cerebral achromatopsia','cortical achromatopsia','central achromatopsia','cortical color blindness','cortical colour blindness','hemiachromatopsia'], cat:'lesion', unit:'L8', source:'Lecture 8 study guide',
+    clues:[
+      'Oliver Sacks described a painter, "Mr. I.," who after a car accident found food so lifeless that he turned to black olives, white rice, black coffee and yogurt.',
+      'It follows damage to the lingual and fusiform gyri on the underside of the occipital lobe; damage on one side takes the color out of only the opposite half of the visual field.',
+      'In the lecture, a left V4 lesion drained the color from the right half of the visual field, and drawings by such patients showed that knowledge of shape is spared.',
+      'Ordinary color blindness comes from missing or faulty cone pigments in the eye; this loss of color comes from damage to the cortex.',
+      'Impaired color perception caused by cortical damage (often to V4), so that the world looks gray.'],
+    learn:'Loss of color perception caused by damage to visual cortex, typically the ventral occipito-temporal region including area V4 (lingual and fusiform gyri). The world appears in shades of gray, while form and motion perception can be intact. A one-sided lesion causes hemiachromatopsia, loss of color in the opposite visual hemifield. It differs from common inherited color blindness (missing or altered cone pigments) and from congenital achromatopsia, a rare inherited retinal disorder in which the cones do not work.' },
+
+  { id:'ffa', answer:'Fusiform face area', aliases:['FFA','fusiform face region','face area','face-selective cortex','mFus-faces','pFus-faces'], cat:'anatomy', unit:'L8', source:'Lecture 8 study guide', lab:'Cortex_Explorer.html',
+    clues:[
+      'Kanwisher, McDermott and Chun named it in 1997, after finding a region, usually in the right hemisphere, that responded more to one category of picture than to objects, houses or scrambled versions.',
+      'Its response is at least twice as strong to its preferred category as to other objects, drops somewhat when the pictures are turned upside down, and in most people is larger on the right.',
+      'In the lecture, electrically stimulating it made a patient\'s view of his doctor "metamorphose," while objects and written words stayed the same (Parvizi et al., 2012).',
+      'The parahippocampal place area responds most to scenes and buildings; this region, lateral to it on the underside of the temporal lobe, responds most to faces.',
+      'The region of ventral temporal cortex that responds more to faces than to other objects, known by three letters.'],
+    learn:'A region on the lateral fusiform gyrus of the ventral temporal lobe, usually larger in the right hemisphere, that responds more strongly to faces than to other objects (Kanwisher, McDermott and Chun, 1997). It is identified in each person with a localizer (faces vs objects or houses). Damage near it is associated with prosopagnosia, and electrically stimulating it distorts perceived faces (Parvizi et al., 2012), evidence that it plays a causal role in face perception.' },
+
+  { id:'ppa', answer:'Parahippocampal place area', aliases:['PPA','parahippocampal place region','place area','scene-selective cortex','place-selective cortex'], cat:'anatomy', unit:'L8', source:'Lecture 8 (faces and place: fMRI)', lab:'Cortex_Explorer.html',
+    clues:[
+      'Epstein and Kanwisher (1998) found that it responded strongly even to pictures of empty rooms with no objects in them, but hardly at all to faces.',
+      'It responds to the layout of a scene, the shape of the surrounding space, more than to the objects in it, and is engaged when people recognize landmarks and find their way.',
+      'On the lecture\'s fMRI slide it lay just medial to the face-selective fusiform region and preferred pictures of buildings and landscapes.',
+      'The fusiform face area prefers faces; this region on the medial underside of the temporal lobe prefers scenes and places.',
+      'The region of ventral temporal cortex that responds more to scenes and places than to faces or objects.'],
+    learn:'A region of the posterior parahippocampal gyrus and nearby collateral sulcus that responds more to scenes and places (rooms, buildings, landscapes) than to faces or objects (Epstein and Kanwisher, 1998). It represents the spatial layout of the environment and is involved in recognizing places and in navigation. It lies medial to the fusiform face area in ventral temporal cortex.' },
+
+  { id:'prosopagnosia', answer:'Prosopagnosia', aliases:['face blindness','face-blindness','acquired prosopagnosia','face agnosia','facial agnosia'], cat:'lesion', unit:'L8', source:'Lecture 8 (prosopagnosia and the FFA)',
+    clues:[
+      'Joachim Bodamer coined its name in 1947 from two Greek roots, after examining soldiers with brain wounds from World War II.',
+      'A developmental form with no brain injury affects roughly 2% of people, many of whom do not realize it until adulthood.',
+      'In the lecture, patients with bilateral fusiform lesions could not recognize people by their faces but could the moment they spoke, and a farmer could no longer recognize his cows.',
+      'Visual agnosia impairs recognizing objects in general; this impairs recognizing faces in particular, while voices and objects can still be recognized.',
+      'The inability to recognize familiar faces, despite normal vision and intact recognition of people by their voices.'],
+    learn:'An impairment in recognizing faces, including familiar ones and sometimes one\'s own, despite intact vision, intellect and object recognition. People can still be recognized by voice, gait or clothing. Acquired prosopagnosia follows damage to ventral occipito-temporal cortex, often bilateral fusiform lesions near the FFA; a developmental form occurs without brain injury. Cases such as the farmer who also could not recognize his cows (Assal et al., 1984) raise the question of whether the deficit is truly specific to faces.' },
+
+  { id:'visual_agnosia', answer:'Visual agnosia', aliases:['agnosia','agnosias','visual agnosias','visual object agnosia','object agnosia'], cat:'lesion', unit:'L8', source:'Lecture 8 study guide',
+    clues:[
+      'Sigmund Freud coined its general name in his 1891 book on aphasia; years earlier, Hermann Munk had described "mind blindness" in dogs with occipital lesions.',
+      'The patient can see the object and describe its parts, and can often name it as soon as they touch it or hear it, so the problem is neither blindness nor a naming deficit.',
+      'In the lecture it followed ventral stream lesions and impaired object recognition while sparing visually guided action, the mirror image of optic ataxia.',
+      'Prosopagnosia is a recognition failure limited to faces; this is a failure to recognize objects in general by sight.',
+      'An impairment in recognizing objects by sight that is not explained by problems in elementary vision, language or memory.'],
+    learn:'A failure to recognize objects by sight despite adequate elementary vision (acuity, color, motion), language and general intellect; the same object can often be identified by touch or sound. It follows damage to the ventral visual stream (occipito-temporal cortex), usually on both sides. Lissauer (1890) divided it into apperceptive agnosia (the patient cannot form a coherent percept, and so cannot copy or match shapes) and associative agnosia (the patient can perceive and copy but cannot attach meaning).' },
+
+  { id:'associative_agnosia', answer:'Associative agnosia', aliases:['associative visual agnosia','associative object agnosia'], cat:'lesion', unit:'L8', source:'Lecture 8 study guide',
+    clues:[
+      'Lissauer (1890) described it as the failure of recognition\'s second stage, and Teuber later called it a normal percept "stripped of its meaning."',
+      'Patients\' copies are accurate but slow and slavish, line by line, and the damage usually lies on the underside of the occipito-temporal cortex, often on both sides.',
+      'In the lecture\'s definition, the patient sees the object well enough to draw it but cannot identify it.',
+      'In apperceptive agnosia the patient cannot form a coherent percept, so cannot copy a shape; in this type the percept is formed but cannot be linked to its meaning.',
+      'A visual agnosia in which a patient can perceive and copy an object but cannot recognize it.'],
+    learn:'A form of visual agnosia in which perception is relatively intact (the patient can copy a drawing or match identical objects) but the percept cannot be linked to stored knowledge about what the object is or does. The patient may draw an object accurately yet be unable to name it, while recognizing it by touch. It is associated with occipito-temporal damage, often on both sides or in the left hemisphere. Contrast with apperceptive agnosia, a failure at the perceptual stage.' },
+
+  { id:'apperceptive_agnosia', answer:'Apperceptive agnosia', aliases:['apperceptive visual agnosia','visual form agnosia','form agnosia'], cat:'lesion', unit:'L8', source:'Lecture 8 study guide',
+    clues:[
+      'Patient D.F., who developed it after carbon monoxide poisoning, could not report the orientation of a slot yet could smoothly post a card through it (Goodale and Milner).',
+      'Patients fail even simple shape tests, such as copying a drawing, matching two shapes or telling a square from a rectangle, despite normal acuity and color vision.',
+      'In the lecture\'s definition it is a profound impairment of visual perception: the patient cannot tell an X from an O.',
+      'In associative agnosia the patient can copy an object but not name it; in this type the patient cannot even form a coherent percept to copy.',
+      'A visual agnosia in which basic visual features are seen but cannot be put together into the perception of a whole shape or object.'],
+    learn:'A form of visual agnosia in which the patient cannot integrate elementary visual features into a coherent shape or object, even though acuity, brightness and color perception may be normal. Patients cannot copy drawings, match shapes or distinguish simple forms (an X from an O). It often follows diffuse damage to occipital cortex, as from carbon monoxide poisoning (patient D.F., whose visually guided actions were nonetheless accurate). Contrast with associative agnosia, in which the percept is formed but cannot be linked to meaning.' },
+
+  { id:'optic_ataxia', answer:'Optic ataxia', aliases:['visuomotor ataxia','misreaching','visual ataxia'], cat:'lesion', unit:'L8', source:'Lecture 8 (patient dissociations in support of two-stream hypothesis)',
+    clues:[
+      'Bálint coined its name in 1909 for a patient whose right hand went astray under visual guidance, yet touched named parts of his own body accurately.',
+      'Patients reach to the wrong place and fail to shape the hand to an object\'s size and orientation, usually worse in peripheral vision than at the point of gaze.',
+      'In the lecture it followed dorsal stream lesions: visually guided reaching was impaired even though the patient recognized the objects, a loss of vision for action.',
+      'Visual agnosia impairs recognizing objects while sparing reaching for them; this impairs reaching for objects while sparing recognizing them.',
+      'The inability to reach accurately for objects under visual guidance, despite normal strength and object recognition, after posterior parietal damage.'],
+    learn:'A deficit in visually guided reaching and grasping after damage to posterior parietal cortex (the dorsal stream), despite normal strength, coordination and object recognition. Patients misreach for objects, especially in peripheral vision, and fail to shape the hand appropriately. It is part of Bálint\'s syndrome. The name combines a- (without) and taxis (orderly movement). Its double dissociation with visual agnosia supports the two-streams hypothesis.' },
+
+  { id:'balint', answer:'Bálint\'s syndrome', aliases:['Balint syndrome','Balint-Holmes syndrome','Balints','Balint'], cat:'lesion', unit:'L8', source:'Lecture 8 (Bálint\'s syndrome)',
+    clues:[
+      'A Hungarian neurologist described it in 1909, and Gordon Holmes later reported similar cases among World War I soldiers with bullet wounds to both sides of the back of the brain.',
+      'Its three parts are a fixed, "sticky" gaze (ocular apraxia), inaccurate reaching under visual guidance, and seeing only one object at a time.',
+      'In the lecture it followed bilateral parieto-occipital damage, and the patient video showed misreaching, impaired depth perception and simultanagnosia.',
+      'Optic ataxia alone is misreaching; this syndrome combines misreaching with an inability to see more than one object at a time and to shift gaze at will.',
+      'The syndrome after bilateral parieto-occipital damage that combines simultanagnosia, optic ataxia and difficulty moving the eyes to a new target.'],
+    learn:'A syndrome caused by bilateral damage to parieto-occipital (dorsal stream) cortex, described by Rezső Bálint (1909). It has three components: simultanagnosia (perceiving only one object at a time), optic ataxia (misreaching under visual guidance) and ocular apraxia (difficulty voluntarily shifting gaze to a new target). Patients may also misjudge depth and distance, while single objects can still be recognized.' },
+
+  { id:'simultanagnosia', answer:'Simultanagnosia', aliases:['simultagnosia','simultaneous agnosia','dorsal simultanagnosia'], cat:'lesion', unit:'L8', source:'Lecture 8 (Bálint\'s syndrome)',
+    clues:[
+      'Wolpert named it in 1924 for a patient who could describe the details of a picture but not what the whole scene was about.',
+      'Shown a large letter made of small letters, patients often name only the small ones, and they can fail Ishihara color plates while still naming the colors.',
+      'In the lecture it was the last part of the patient video on bilateral parieto-occipital damage, after the clips on depth perception and misreaching.',
+      'Visual agnosia is failing to recognize an object even when it is seen alone; in this condition each single object is recognized, but several cannot be seen together.',
+      'The inability to perceive more than one object at a time, one of the three parts of Bálint\'s syndrome.'],
+    learn:'The inability to perceive more than one object (or part of a scene) at a time, even though each object can be recognized when seen alone. Patients cannot grasp the overall meaning of a complex scene and may see only the local elements of a figure. The dorsal form is a component of Bálint\'s syndrome, after bilateral parieto-occipital damage, and is thought to reflect a severe limit on spatial attention.' },
+
+
+  /* ---------------------------- LECTURE 9 ---------------------------- */
+  { id:'necessity', answer:'Necessity', aliases:['necessary','necessary condition','test of necessity','necessity test','causal necessity'], cat:'methods', unit:'L9', source:'Lecture 9 study guide',
+    clues:[
+      'Broca\'s 1861 patient Leborgne, who lost fluent speech after left frontal damage, was the classic evidence of this kind for speech; in genetics the matching test is a knockout.',
+      'It can be shown only by removing or disrupting something: a lesion, an inactivating drug, an optogenetic silencer or a TMS pulse.',
+      'In the lecture, prosopagnosia after damage near the FFA was the evidence of this kind for faces: without the region, face recognition fails.',
+      'Sufficiency is shown by driving a region and producing the function; this is shown by disrupting a region and watching the function fail.',
+      'The property of being required for a function: if the region is disrupted, the function fails.'],
+    learn:'A brain region is necessary for a function if the function fails when the region is damaged or disrupted. It is tested by removing or silencing the region: lesions in patients, inactivation in animals (drugs, optogenetic silencing) or virtual lesions with TMS. Correlational methods such as fMRI and EEG cannot establish it. Necessity and sufficiency together amount to causal determination, and stimulation methods can test both.' },
+
+  { id:'sufficiency', answer:'Sufficiency', aliases:['sufficient','sufficient condition','test of sufficiency','sufficiency test','causal sufficiency'], cat:'methods', unit:'L9', source:'Lecture 9 study guide',
+    clues:[
+      'In genetics, a gene passes this test if switching it on by itself produces a whole program, as when the eyeless gene, turned on in a fly\'s legs, grew eyes there (Halder, Callaerts and Gehring, 1995).',
+      'It is shown by driving activity, for example with microstimulation or optogenetic activation, but because stimulation spreads along connections it never shows that one region acts alone.',
+      'In the lecture, stimulating the FFA made faces look distorted and stimulating MT shifted monkeys\' motion judgments: evidence of this kind.',
+      'Necessity is shown by disrupting a region and watching a function fail; this is shown by activating a region and watching the function appear.',
+      'The property of being enough to produce a function: activating the region produces (part of) the function or experience.'],
+    learn:'A brain region\'s activity is sufficient for a function or experience if activating it produces that function, as when electrical stimulation of the FFA distorts faces, microstimulation of MT biases motion perception, or optogenetic reactivation of engram cells triggers a fear memory. Because stimulation spreads to neighboring and connected areas, sufficiency usually means that activity starting in the region is enough. Contrast with necessity, which is tested by disruption.' },
+
+  { id:'fritsch_hitzig', answer:'Fritsch and Hitzig', aliases:['Fritsch & Hitzig','Gustav Fritsch','Eduard Hitzig','Fritsch','Hitzig','Gustav Fritsch and Eduard Hitzig'], cat:'history', unit:'L9', source:'Lecture 9 (a short history of brain stimulation)',
+    clues:[
+      'Their experiments were reportedly done on a dressing table in one of their homes in Berlin, because no suitable university laboratory was available.',
+      'Their 1870 paper showed that weak current applied to particular spots of the exposed cortex moved particular muscles on the opposite side of the body, overturning the view that the cortex could not be electrically excited.',
+      'In the lecture\'s history of brain stimulation, their 1870 experiment followed a Roman electric-fish remedy: current on a dog\'s cortex moved its paw, localizing motor cortex.',
+      'Penfield mapped the awake human cortex during surgery in the 1930s to 1950s; this pair stimulated the cortex of dogs, decades earlier.',
+      'The two German scientists who in 1870 discovered motor cortex by electrically stimulating the cortex of dogs.'],
+    learn:'Gustav Fritsch and Eduard Hitzig, German physicians who in 1870 applied weak electrical current to the exposed cortex of dogs and evoked movements of particular muscles on the opposite side of the body. This was the first experimental localization of motor cortex, and it showed that the cortex is electrically excitable and functionally specialized, supporting localization of function. Their work led to Ferrier\'s maps in monkeys and, later, to Penfield\'s maps in humans.' },
+
+  { id:'experiential_response', answer:'Experiential response', aliases:['experiential responses','experiential phenomena','experiential phenomenon','experiential hallucination'], cat:'history', unit:'L9', source:'Lecture 9 (what did Penfield\'s patients experience?)',
+    clues:[
+      'Hughlings Jackson had described a similar "dreamy state" in epileptic auras in the 1880s, and later researchers argued that these are dreamlike constructions rather than replayed memories.',
+      'They came from the temporal lobes, often near abnormal epileptic tissue, and stimulating the same site again could bring back the same tune or scene.',
+      'In Penfield and Perot\'s 1963 report, only 40 of 520 patients had them, such as a 22-year-old woman who said "I hear my mother calling."',
+      'Most stimulation sites produced simple tingling, twitching or flashes of light; these were rare, vivid and complex, such as hearing music or voices.',
+      'A vivid, complex experience, such as hearing music or a familiar voice, evoked by electrically stimulating the temporal lobe of an awake patient (Penfield).'],
+    learn:'A vivid, complex experience (hearing music or a familiar voice, seeing a scene, a feeling of reliving an event) evoked by electrical stimulation of the cortex, mostly the temporal lobe, in awake patients during epilepsy surgery. Penfield and Perot (1963) found them in only 40 of 520 patients whose temporal lobes were stimulated. Penfield thought they were replayed memories; most researchers now think they are reconstructions or dreamlike experiences, often from tissue near the seizure focus.' },
+
+  { id:'direct_stimulation', answer:'Direct electrical stimulation', aliases:['DES','electrical brain stimulation','EBS','direct cortical stimulation','electrical stimulation mapping','ESM','cortical stimulation mapping','intracranial electrical stimulation','intracranial stimulation','electrocortical stimulation'], cat:'methods', unit:'L9', source:'Lecture 9 (how are patients stimulated today?)',
+    clues:[
+      'In clinical mapping it usually pulses about 50 times a second for a few seconds, and an afterdischarge, a brief seizure-like burst, warns the team to turn the current down.',
+      'It passes a few milliamps between neighboring electrodes on or in the brain, and good studies include sham trials with no current and stimulation of control electrodes.',
+      'In the lecture\'s prediction game it produced rainbows from color-selective cortex, laughter from the supplementary motor area and a "will to persevere" from the midcingulate cortex.',
+      'TMS stimulates through the skull with a magnetic pulse; this passes current through electrodes placed right on or in the brain.',
+      'Passing a brief electrical current through electrodes on the exposed brain or implanted in it, in awake patients, to map function or produce experiences.'],
+    learn:'Electrical stimulation delivered through electrodes placed directly on the cortex (subdural grids and strips) or implanted in it (depth electrodes), usually in epilepsy patients before surgery or in patients kept awake during tumor surgery. Brief trains of current between a pair of electrodes can block a function (for example speech arrest, used to map tissue that must be spared) or produce an experience (tingling, flashes, distorted faces, laughter, an urge to move). Because patients are awake they can report what they feel, which is why sham trials without current are essential controls.' },
+
+  { id:'ecog', answer:'Electrocorticography', aliases:['ECoG','electrocorticogram','intracranial EEG','iEEG','subdural grid','subdural grids','subdural electrodes','electrode grid','cortical surface recording'], cat:'methods', unit:'L9', source:'Lecture 9 (how are patients stimulated today?)',
+    clues:[
+      'Penfield and Jasper made it routine at the Montreal Neurological Institute in the 1940s and 1950s, recording from the exposed cortex during surgery to find where seizures began.',
+      'Its electrodes sit beneath the skull and dura, so it picks up high-frequency activity (above about 70 Hz) that tracks local neural firing and is largely lost by the time signals reach the scalp.',
+      'In the lecture\'s FFA study, face-selective electrodes recorded with it overlapped the fMRI face patch on the fusiform gyrus, and stimulating those same electrodes distorted faces.',
+      'EEG records through the skull and scalp; this records directly from the surface of the brain.',
+      'Recording electrical activity from grids or strips of electrodes placed directly on the surface of the cortex, usually in epilepsy patients before surgery.'],
+    learn:'Recording of electrical activity from electrodes placed directly on the surface of the brain (subdural grids and strips), usually in epilepsy patients monitored for one to two weeks to find where their seizures start. Compared with scalp EEG it has much better spatial resolution and captures high-frequency (high-gamma) activity, and the same electrodes can be used for electrical stimulation mapping. Together with recordings from depth electrodes (stereo-EEG) it is called intracranial EEG.' },
+
+  { id:'sma', answer:'Supplementary motor area', aliases:['SMA','supplementary motor cortex','supplementary motor areas','SMA proper'], cat:'anatomy', unit:'L9', source:'Lecture 9 (what will the patient report?)', lab:'Cortex_Explorer.html',
+    clues:[
+      'Penfield and Welch named it by 1949 and reported it fully in 1951, after finding that stimulating the medial wall of the hemisphere produced complex postures and vocalizations.',
+      'It lies on the medial surface of the frontal lobe, just in front of the leg representation of the precentral gyrus, and is active when people plan or merely imagine a sequence of movements.',
+      'In the lecture, stimulating a 2-by-2-cm spot of it in a 16-year-old patient produced a smile and then contagious laughter, which she blamed on whatever she was looking at, such as a picture of a horse (Fried et al., 1998).',
+      'Primary motor cortex sends the commands that carry out movements; this area just in front of it on the medial wall helps plan and launch sequences of movements.',
+      'The part of premotor cortex on the medial surface of the frontal lobe, involved in planning and initiating sequences of movements.'],
+    learn:'A region of premotor cortex (medial Brodmann area 6) on the medial surface of the frontal lobe, in front of the leg area of primary motor cortex. It is involved in planning, initiating and sequencing movements, especially self-initiated ones. Penfield and Welch named it (1949) and described it in detail (1951). Stimulating its anterior part produced laughter with a feeling of merriment in patient A.K. (Fried et al., 1998), who attributed it to things around her.' },
+
+  { id:'microstimulation', answer:'Microstimulation', aliases:['electrical microstimulation','intracortical microstimulation','ICMS','micro-stimulation','cortical microstimulation'], cat:'methods', unit:'L9', source:'Lecture 9 (MT microstimulation)',
+    clues:[
+      'Afraz, Kiani and Esteky (2006) used it at face-selective sites in monkey inferotemporal cortex and biased the animals toward calling noisy pictures faces.',
+      'It uses currents of roughly 10 to 100 microamps through a fine electrode (10 in the MT studies, 50 in the face study), activating neurons within a few hundred micrometers of the tip.',
+      'In the lecture\'s MT experiments (Salzman, Newsome and colleagues), applying it to a cluster of neurons that preferred one direction significantly shifted monkeys\' judgments in 89 of 139 experiments, almost always toward that direction.',
+      'Optogenetics activates only genetically chosen cell types with light; this activates every neuron and axon near the electrode tip with a tiny current.',
+      'Electrical stimulation through a fine electrode, with tiny currents, to activate a small cluster of neurons in an animal and test whether their activity is enough to change perception or behavior.'],
+    learn:'Electrical stimulation through a fine microelectrode with very small currents (typically 10 to 100 microamps), activating neurons within a few hundred micrometers of the tip. In monkeys it tests sufficiency: stimulating a column of MT neurons tuned to one direction biased motion judgments toward that direction (Salzman, Britten and Newsome, 1990), and stimulating face-selective inferotemporal sites biased face judgments (Afraz et al., 2006). Unlike optogenetics, it activates all nearby elements, including passing axons.' },
+
+  { id:'optogenetics', answer:'Optogenetics', aliases:['optogenetic','optogenetic stimulation','optogenetic control','optogenetic activation','optogenetic silencing','optogenetic manipulation'], cat:'methods', unit:'L9', source:'Lecture 9 study guide',
+    clues:[
+      'Francis Crick suggested in 1999 that neuroscience needed a way to control one cell type with light; the key demonstration came from Boyden, Zhang, Bamberg, Nagel and Deisseroth in 2005.',
+      'Cell types are targeted with viral vectors carrying cell-specific promoters or with Cre-lox mouse lines, and light arrives through an implanted optical fiber.',
+      'In the lecture\'s simulation, brief blue flashes made one neuron spike within a few milliseconds of each flash, and yellow light nearly silenced another.',
+      'Electrical stimulation activates every neuron and axon near the electrode; this method activates or silences only genetically chosen cell types.',
+      'Controlling the activity of genetically targeted neurons with light, using light-sensitive proteins borrowed from algae and microbes.'],
+    learn:'A method for controlling particular types of neurons with light. Genes for light-sensitive microbial proteins (opsins) are delivered to chosen cells with viral vectors or Cre-lox mouse lines; light delivered through an optical fiber then activates them (channelrhodopsin-2, blue light) or silences them (halorhodopsin or archaerhodopsin, yellow or green light) with millisecond precision. It can test both necessity and sufficiency in animals, for example by reactivating fear-memory engram cells (Liu et al., 2012). Because it requires genetic modification it is used in animals; in humans it has so far been tried only in the retina.' },
+
+  { id:'channelrhodopsin', answer:'Channelrhodopsin-2', aliases:['channelrhodopsin','channelrhodopsins','ChR2','ChR'], cat:'methods', unit:'L9', source:'Lecture 9 (optogenetics)',
+    clues:[
+      'Nagel, Hegemann and colleagues described it in 2003 in a single-celled green alga, Chlamydomonas reinhardtii, which uses it to swim toward light.',
+      'It needs all-trans retinal, which mammalian brains already supply, and its H134R mutant, with larger currents, is the version in many Cre-dependent mouse lines.',
+      'In the lecture\'s fear-memory experiment it was put into dentate gyrus cells active during learning, so that blue light could later reactivate them and make the mice freeze.',
+      'Halorhodopsin pumps chloride in under yellow light and silences neurons; this opens under blue light, lets cations in and makes them fire.',
+      'The light-gated ion channel from algae that makes neurons fire when blue light shines on them, the main activating tool of optogenetics.'],
+    learn:'A light-gated cation channel from the green alga Chlamydomonas reinhardtii. When it absorbs blue light (around 470 nm) it opens and lets positive ions in, depolarizing the neuron and triggering spikes within milliseconds. Expressed in chosen neurons, it is the standard tool for activating them in optogenetics (Boyden et al., 2005).' },
+
+  { id:'halorhodopsin', answer:'Halorhodopsin', aliases:['halorhodopsins','NpHR','eNpHR','eNpHR3.0'], cat:'methods', unit:'L9', source:'Lecture 9 (optogenetics)',
+    clues:[
+      'The version used in neuroscience comes from Natronomonas pharaonis, a salt-loving archaeon of salt lakes, and two groups introduced it as a neural silencer in 2007 (Han and Boyden; Zhang and colleagues).',
+      'As a pump it moves only one ion per photon, so it needs bright, steady light, and long use can load cells with chloride and weaken their GABA inhibition afterward.',
+      'In the lecture\'s simulation, a neuron firing 18 spikes per second dropped to about 0.5 spikes per second while the yellow light was on.',
+      'Channelrhodopsin opens a cation channel under blue light and makes neurons fire; this pumps chloride in under yellow light and silences them.',
+      'The light-driven chloride pump used in optogenetics to silence neurons with yellow light.'],
+    learn:'A light-driven chloride pump from the archaeon Natronomonas pharaonis (NpHR). Under yellow light (around 590 nm) it pumps chloride ions into the neuron, hyperpolarizing it and suppressing firing. It is used in optogenetics to silence chosen neurons and so test their necessity; archaerhodopsin (Arch), a proton pump driven by green-yellow light, is another silencer.' },
+
+  { id:'engram', answer:'Engram', aliases:['engrams','engram cell','engram cells','memory engram','memory trace','memory traces'], cat:'memory', unit:'L9', source:'Lecture 9 (can light switch on a memory?)',
+    clues:[
+      'Richard Semon coined the word in 1904, and Karl Lashley spent decades lesioning rats\' cortex in a failed search for one, concluding that it is not stored in any single place.',
+      'Today it is identified by tagging the cells active during learning with an activity-dependent genetic switch, then reactivating or silencing just those cells later.',
+      'In the lecture, light that reactivated tagged dentate gyrus cells made mice freeze in a safe box (Liu et al., 2012), and a later study used the same approach to create a false memory (Ramirez et al., 2013).',
+      'Consolidation is the process that stabilizes a memory over time; this is the physical trace itself, the cells and connections that hold it.',
+      'The physical trace of a memory in the brain: the set of neurons and connections whose reactivation brings the memory back.'],
+    learn:'The physical trace of a specific memory: the population of neurons (and their synaptic changes) active during learning whose reactivation produces recall. The idea comes from Semon (1904); Lashley failed to localize it with lesions. Modern studies tag cells active during learning and manipulate them with optogenetics: reactivating dentate gyrus engram cells made mice freeze as if recalling a shock (Liu et al., 2012), and reactivating the engram of a safe box while the mouse was shocked elsewhere created a false fear of that box (Ramirez et al., 2013).' },
+
+  { id:'dbs', answer:'Deep brain stimulation', aliases:['DBS','brain pacemaker'], cat:'methods', unit:'L9', source:'Lecture 9 study guide',
+    clues:[
+      'Alim-Louis Benabid discovered its use in 1987 while testing a thalamic target before making a lesion: high-frequency current stopped the tremor just as the lesion would have.',
+      'Its leads carry several contacts (classically four), and for each patient programmers choose which ones to use, the pulse width (often about 60 microseconds) and the amplitude, typically at about 130 pulses per second.',
+      'In the lecture it targeted the subthalamic nucleus or globus pallidus in Parkinson\'s disease; more than 250,000 devices have been implanted, and how it works is still debated.',
+      'TMS stimulates the cortex from outside the head for minutes at a time; this stimulates subcortical structures through implanted electrodes, day and night, for years.',
+      'A treatment in which electrodes implanted in subcortical structures deliver continuous high-frequency electrical pulses, used for Parkinson\'s disease and tremor.'],
+    learn:'A neurosurgical treatment in which electrodes implanted in deep brain structures deliver continuous high-frequency electrical pulses (about 130 Hz) from a pulse generator in the chest. It is FDA-approved for essential tremor (1997), Parkinson\'s disease (2002; targets the subthalamic nucleus or globus pallidus) and epilepsy (2018), with humanitarian exemptions for dystonia and OCD; it is not approved for depression. Discovered by Benabid (1987), it mimics a lesion but is adjustable and reversible. Its mechanism is debated: jamming local activity, activating passing axons, disrupting pathological beta oscillations.' },
+
+  { id:'stn', answer:'Subthalamic nucleus', aliases:['STN','subthalamic nuclei','subthalamus','nucleus of Luys','body of Luys'], cat:'anatomy', unit:'L9', source:'Lecture 9 (what is deep brain stimulation?)',
+    clues:[
+      'Damage to it on one side, usually from a small stroke, causes hemiballismus: violent, involuntary flinging of the arm and leg on the opposite side.',
+      'This small, lens-shaped nucleus is the only excitatory (glutamate-releasing) nucleus of the basal ganglia, driving the inhibitory output nuclei.',
+      'In the lecture it was one of the two standard DBS targets for Parkinson\'s disease, and stimulation there sometimes made patients more impulsive or hypomanic.',
+      'The globus pallidus is the other common DBS target for Parkinson\'s disease; this is the smaller nucleus just below the thalamus.',
+      'The small nucleus below the thalamus, part of the basal ganglia circuit, that is the most common target of deep brain stimulation for Parkinson\'s disease.'],
+    learn:'A small, lens-shaped nucleus of the basal ganglia circuit lying below the thalamus. Its glutamatergic neurons excite the basal ganglia output nuclei (globus pallidus internus and substantia nigra pars reticulata). In Parkinson\'s disease it becomes overactive and shows exaggerated beta oscillations, and it is the most common target of deep brain stimulation (with the globus pallidus). Damage to it causes hemiballismus, and stimulating it can sometimes increase impulsivity.' },
+
+  { id:'beta_oscillations', answer:'Beta oscillations', aliases:['beta oscillation','beta waves','beta wave','beta band','beta rhythm','beta activity','beta power','beta-band oscillations','beta band activity'], cat:'neuron', unit:'L9', source:'Lecture 9 (how does DBS work?)',
+    clues:[
+      'Brown and colleagues found them exaggerated in recordings from DBS electrodes in Parkinson\'s patients, and dopamine medication reduced them along with stiffness and slowness.',
+      'Over motor cortex they drop just before and during a movement and rebound above baseline as soon as the movement ends.',
+      'In the lecture, exaggerated versions of them in Parkinson\'s disease (about 13 to 30 per second) were one idea for what DBS disrupts, and the 2025 adaptive DBS system raises stimulation when their power climbs.',
+      'Gamma rhythms run faster, above about 30 Hz; these sit just below them, between alpha and gamma.',
+      'Brain rhythms of roughly 13 to 30 Hz, prominent in motor circuits and exaggerated in Parkinson\'s disease.'],
+    learn:'Neural oscillations of roughly 13 to 30 Hz, prominent in sensorimotor cortex and the basal ganglia. Beta power decreases before and during movement and rebounds afterward. In Parkinson\'s disease beta oscillations in the subthalamic nucleus and basal ganglia are exaggerated and track stiffness and slowness; dopamine medication and DBS reduce them. Adaptive DBS uses beta power recorded from the stimulating electrodes as a biomarker to adjust stimulation.' },
+
+  { id:'closed_loop', answer:'Closed-loop stimulation', aliases:['closed-loop','closed loop','closed-loop neuromodulation','closed-loop neurostimulation','closed-loop DBS','adaptive DBS','aDBS','adaptive deep brain stimulation','responsive neurostimulation','RNS','responsive stimulation'], cat:'methods', unit:'L9', source:'Lecture 9 (adaptive DBS)',
+    clues:[
+      'Scangos and colleagues (2021) built a personalized version for one woman with severe depression: a signal recorded in her amygdala triggered brief stimulation of the ventral striatum.',
+      'A key engineering problem is recording tiny brain signals through the same leads that deliver much larger pulses, so the device must filter out its own stimulation.',
+      'In the lecture, the FDA approved this kind of DBS for Parkinson\'s disease in February 2025, tracking beta power, and a similar epilepsy device (2013) detects the start of a seizure and answers with a burst of current.',
+      'Conventional DBS delivers the same pulses day and night; this adjusts stimulation in real time according to the brain\'s own signals.',
+      'Brain stimulation that switches on or adjusts itself automatically in response to activity recorded from the brain.'],
+    learn:'Stimulation controlled by the brain\'s own signals rather than delivered continuously at fixed settings. Adaptive DBS for Parkinson\'s disease (FDA, February 2025) records local field potentials through the stimulating leads and raises or lowers the current as beta power crosses thresholds. Responsive neurostimulation for epilepsy (NeuroPace RNS, FDA 2013) detects the onset of a seizure and responds with stimulation. Personalized closed-loop DBS has also been tested for depression (Scangos et al., 2021).' },
+
+  { id:'nucleus_accumbens', answer:'Nucleus accumbens', aliases:['NAcc','NAc','accumbens','accumbens nucleus','nucleus accumbens septi','ventral striatum'], cat:'anatomy', unit:'L9', source:'Lecture 9 (when stimulation changes the person)', lab:'MRI_Explorer.html',
+    clues:[
+      'Its Latin name means "the nucleus lying against the septum," and its dopamine release rises with drugs of abuse and with unexpected rewards.',
+      'It has a core and a shell and gets input from the prefrontal cortex, amygdala and hippocampus as well as dopamine from the ventral tegmental area.',
+      'In the lecture, DBS here for OCD turned a man into a Johnny Cash fan, and it was also the target of the focused ultrasound study read for Wednesday (Yaakub et al., 2025).',
+      'The subthalamic nucleus is a DBS target for movement disorders; this reward structure deep in the front of the brain has been a DBS target for OCD.',
+      'The reward-related nucleus where the caudate and putamen meet, below the front of the lateral ventricle.'],
+    learn:'A nucleus of the ventral striatum where the head of the caudate and the putamen meet, below the front of the lateral ventricle. It receives dopamine from the ventral tegmental area and input from prefrontal cortex, amygdala and hippocampus, and is central to reward, motivation and addiction. It is an experimental DBS target for OCD (the Johnny Cash case, Mantione et al., 2014) and was the target of low-intensity focused ultrasound in Yaakub et al. (2025).' },
+
+  { id:'virtual_lesion', answer:'Virtual lesion', aliases:['virtual lesions','reversible lesion','reversible lesions','transient lesion','temporary lesion','virtual lesion method'], cat:'methods', unit:'L9', source:'Lecture 9 study guide',
+    clues:[
+      'Pascual-Leone, Walsh and Rothwell (2000) and Walsh and Cowey (2000) laid out the approach, arguing that it avoids the reorganization that follows real brain damage.',
+      'Its effects last milliseconds to minutes, so each person can serve as their own control, and the moment of disruption can be chosen to the millisecond.',
+      'In the lecture, TMS to the right TPJ made attempted harms seem more acceptable (Young et al., 2010): a brief disruption in healthy people showing the region is needed for weighing intentions.',
+      'A patient\'s lesion is permanent, large and variable, and the brain reorganizes afterward; this is a brief, controlled disruption in a healthy brain.',
+      'A temporary, reversible disruption of a brain region\'s function, usually with TMS, used to test whether the region is necessary for a task.'],
+    learn:'A brief, reversible disruption of a brain region\'s activity, usually produced with TMS (single pulses during a task, or repetitive TMS beforehand), that mimics the effect of a lesion. Compared with patient lesions it can be placed precisely, timed to the millisecond and repeated in healthy people who serve as their own controls, and it wears off before the brain can reorganize. It tests necessity. Limits: only the outer cortex is reachable, effects spread to connected areas, and the click and scalp sensation complicate sham controls.' },
+
+  { id:'chronometry', answer:'Chronometry', aliases:['TMS chronometry','chronometric TMS','mental chronometry','chronometric'], cat:'methods', unit:'L9', source:'Lecture 9 (TMS as a virtual lesion)',
+    clues:[
+      'Franciscus Donders founded its reaction-time version in 1868, subtracting the time taken by a simpler task from a harder one to estimate how long a mental step takes.',
+      'It needs single or paired pulses delivered during each trial, not rTMS beforehand, because only a brief pulse pins the disruption to one moment.',
+      'In the lecture\'s classic example (Amassian et al., 1989), a pulse over the occipital lobe 80 to 100 ms after three letters flashed left people unable to report them, while earlier or later pulses did little.',
+      'A virtual lesion study asks whether an area is needed; this approach asks when it is needed, by varying the timing of the pulse.',
+      'Using precisely timed TMS pulses to find when, not just where, a brain area is needed for a task.'],
+    learn:'The measurement of the timing of mental processes. Donders (1868) inferred it from differences in reaction time; TMS chronometry delivers pulses at different delays after a stimulus to find when a region\'s activity is necessary. Amassian et al. (1989) found that an occipital pulse 80 to 100 ms after briefly flashed letters made them impossible to report, showing when visual cortex does its essential work.' },
+
+  { id:'rtms', answer:'Repetitive TMS', aliases:['rTMS','repetitive transcranial magnetic stimulation','low-frequency rTMS','high-frequency rTMS'], cat:'methods', unit:'L9', source:'Lecture 9 (repetitive TMS)',
+    clues:[
+      'Its first major safety guidelines (Wassermann, 1998) were written partly because high-frequency trains had occasionally triggered seizures in healthy volunteers.',
+      'Each session delivers hundreds to thousands of pulses in trains, and its after-effects are thought to involve LTP-like and LTD-like changes in synaptic strength.',
+      'In the lecture, slow trains of about one pulse per second quieted the cortex, fast trains of 5 to 20 per second excited it, and daily sessions over the left DLPFC were FDA-cleared for depression in 2008.',
+      'A single TMS pulse disrupts processing for milliseconds; trains of pulses like these change excitability for minutes to an hour after they stop.',
+      'Delivering trains of magnetic pulses over the scalp to produce changes in cortical excitability that outlast the stimulation.'],
+    learn:'TMS delivered as trains of pulses. Low-frequency trains (about 1 Hz) tend to reduce cortical excitability and high-frequency trains (5 to 20 Hz) tend to increase it, for minutes to an hour afterward, probably through LTP-like and LTD-like plasticity; responses vary greatly between individuals. It is used offline as a virtual lesion in research (for example 1 Hz rTMS to the right TPJ in Young et al., 2010) and clinically for depression (left DLPFC, FDA 2008), OCD and smoking cessation.' },
+
+  { id:'tbs', answer:'Theta-burst stimulation', aliases:['TBS','theta burst','theta-burst','theta burst TMS','iTBS','cTBS','intermittent theta burst','intermittent theta-burst stimulation','continuous theta burst','continuous theta-burst stimulation'], cat:'methods', unit:'L9', source:'Lecture 9 (repetitive TMS)',
+    clues:[
+      'Huang and colleagues (2005) introduced it in humans, borrowing a pattern used to induce long-term potentiation in the hippocampus, which mimics how hippocampal neurons fire during exploration.',
+      'A 40-second train of 600 pulses tends to suppress motor-evoked potentials for up to an hour, while the same pulses given in 2-second trains every 10 seconds raise them.',
+      'In the lecture, 3-minute sessions of it worked as well as 37-minute standard sessions for depression, and the SAINT protocol gave ten of them a day for five days.',
+      'Standard rTMS uses evenly spaced pulses at 1 to 20 Hz; this packs pulses into rapid triplets and produces similar after-effects in a fraction of the time.',
+      'A patterned form of rTMS that delivers groups of three 50-Hz pulses five times per second, producing lasting changes in excitability within minutes.'],
+    learn:'A patterned form of repetitive TMS (Huang et al., 2005): bursts of 3 pulses at 50 Hz repeated at 5 Hz, the theta rhythm. Continuous TBS (cTBS, 40 s, 600 pulses) tends to suppress cortical excitability for up to about an hour; intermittent TBS (iTBS, about 3 minutes) tends to facilitate it. It is much quicker than standard rTMS: in depression, 3-minute iTBS was as effective as 37-minute 10 Hz rTMS (the THREE-D trial), and accelerated iTBS is the basis of SAINT.' },
+
+  { id:'snt', answer:'Stanford Neuromodulation Therapy', aliases:['SNT','SAINT','SAINT protocol','Stanford accelerated intelligent neuromodulation therapy','accelerated TMS','accelerated theta burst','accelerated iTBS'], cat:'methods', unit:'L9', source:'Lecture 9 (TMS for depression)',
+    clues:[
+      'Its targeting builds on Fox et al. (2012), who found that the most effective rTMS sites for depression were those whose resting activity was most anticorrelated with the subgenual cingulate.',
+      'It compresses treatment into five days: ten sessions of intermittent theta bursts a day, 50 minutes apart, 1,800 pulses each, 90,000 pulses in all.',
+      'In the lecture\'s trial (Cole et al., 2022), 78.6% of patients reached remission in the four weeks after treatment, versus 13.3% with sham; each target was chosen from that person\'s resting-state fMRI.',
+      'Standard rTMS for depression aims at a scalp location over the left DLPFC for 4 to 6 weeks; this protocol aims at a spot chosen from each person\'s connectivity and finishes in five days.',
+      'The rapid, individually targeted theta-burst TMS treatment for depression, cleared by the FDA in 2022.'],
+    learn:'Stanford Neuromodulation Therapy (originally SAINT), FDA-cleared in September 2022 for treatment-resistant depression. Each patient\'s target is the spot in left dorsolateral prefrontal cortex whose resting-state fMRI signal is most anticorrelated with the subgenual cingulate cortex; treatment is ten sessions of intermittent theta-burst stimulation a day, 50 minutes apart, for five days. In a small sham-controlled trial (Cole et al., 2022), 78.6% remitted vs 13.3% with sham. It links functional connectivity (Lecture 7) to treatment.' },
+
+  { id:'sgacc', answer:'Subgenual cingulate cortex', aliases:['subgenual cingulate','sgACC','subgenual anterior cingulate cortex','subgenual anterior cingulate','subgenual ACC','subcallosal cingulate','subcallosal cingulate cortex','SCC','BA25','Cg25'], cat:'anatomy', unit:'L9', source:'Lecture 9 (TMS for depression)',
+    clues:[
+      'Mayberg and colleagues (2005) implanted DBS electrodes in the white matter beside it in six patients with treatment-resistant depression, after imaging had found it overactive in depression.',
+      'Its activity tends to fall when antidepressant drugs or other treatments work, and it connects with the amygdala, hypothalamus and brainstem centers for mood and stress.',
+      'In the lecture it guided two depression treatments: DBS aimed at the white matter beside it (Lecture 7), and SAINT\'s TMS target, the prefrontal spot most anticorrelated with it.',
+      'The dorsolateral prefrontal cortex is where the TMS coil is placed; this deep medial region is what the target is chosen to influence through its connections.',
+      'The part of the anterior cingulate cortex beneath the front of the corpus callosum, often overactive in depression and a target for DBS.'],
+    learn:'The part of the anterior cingulate cortex below the genu of the corpus callosum (roughly Brodmann area 25), also called subcallosal cingulate cortex. It is linked to mood and is often overactive in depression. DBS of the white matter beside it was tried for depression (Mayberg et al., 2005); the larger BROADEN trial failed, but in a separate 16-patient study every responder\'s stimulation reached the same three tracts (Riva-Posse et al., 2014). SAINT targets the left prefrontal site whose resting activity is most anticorrelated with it.' },
+
+  { id:'dlpfc', answer:'Dorsolateral prefrontal cortex', aliases:['DLPFC','dlPFC','dorsolateral PFC','dorsolateral prefrontal','left DLPFC','dorsolateral frontal cortex','lateral prefrontal cortex'], cat:'anatomy', unit:'L9', source:'Lecture 9 (TMS for depression)', lab:'Cortex_Explorer.html',
+    clues:[
+      'Knoch and colleagues (2006) found that disrupting its right side with rTMS made people accept more unfair offers in the ultimatum game, even though they still judged the offers unfair.',
+      'It lies on the middle frontal gyrus (roughly Brodmann areas 9 and 46) and is central to working memory, planning and cognitive control.',
+      'In the lecture, standard rTMS for depression (FDA, 2008) is aimed at its left side, daily for 4 to 6 weeks.',
+      'The subgenual cingulate is a deep medial region involved in mood; this region on the outer surface is within reach of a TMS coil and can influence the deep region through their connections.',
+      'The region of prefrontal cortex on the upper outer surface of the frontal lobe, involved in working memory and cognitive control, and the standard TMS target for depression.'],
+    learn:'A region of lateral prefrontal cortex on the middle frontal gyrus (roughly Brodmann areas 9 and 46), important for working memory, planning, rule use and cognitive control. The left DLPFC is the standard rTMS target for depression (FDA, 2008), and SAINT chooses the spot within it most anticorrelated with the subgenual cingulate. Disrupting the right DLPFC with rTMS increased acceptance of unfair offers (Knoch et al., 2006).' },
+
+  { id:'tpj', answer:'Temporoparietal junction', aliases:['TPJ','right TPJ','rTPJ','temporo-parietal junction','right temporoparietal junction','temporoparietal cortex'], cat:'anatomy', unit:'L9', source:'Lecture 9 (TMS can change moral judgments)', lab:'Cortex_Explorer.html',
+    clues:[
+      'Blanke and colleagues (2002) produced an out-of-body experience by electrically stimulating it in an epilepsy patient, who saw herself lying in bed from above.',
+      'Rebecca Saxe\'s fMRI studies found its right side active when people think about what others believe or intend, the "theory of mind" region; it is also a hub of the ventral attention network.',
+      'In the lecture, disrupting its right side with TMS made people judge a woman who tried but failed to poison a friend less harshly, so intentions counted less (Young et al., 2010).',
+      'The dorsolateral prefrontal cortex supports cognitive control; this posterior region supports reasoning about other people\'s beliefs and intentions.',
+      'The region where the temporal and parietal lobes meet, around the back of the superior temporal sulcus and the angular gyrus, involved in theory of mind and in reorienting attention.'],
+    learn:'The region where the temporal and parietal lobes meet, around the posterior superior temporal sulcus and the supramarginal and angular gyri. The right TPJ is active when people reason about others\' beliefs and intentions (theory of mind; Saxe) and is a hub of the ventral attention network. TMS to the right TPJ made people weigh intentions less in moral judgments (Young et al., 2010), and electrical stimulation there has produced out-of-body experiences (Blanke et al., 2002).' },
+
+  { id:'tdcs', answer:'tDCS', aliases:['transcranial direct current stimulation','direct current stimulation','anodal tDCS','cathodal tDCS','transcranial DC stimulation','HD-tDCS'], cat:'methods', unit:'L9', source:'Lecture 9 study guide',
+    clues:[
+      'Lippold and Redfearn reported mood changes from it in 1964, Nitsche and Paulus (2000) revived it, and in 2016 neurologists wrote an open letter warning do-it-yourself users.',
+      'Its field polarizes neurons only slightly, about 0.12 mV per V/m in rat neurons, and its effects depend on cell orientation and on what the brain is doing.',
+      'In the lecture, about 75% of the current never reached the brain in cadavers, and a review of 59 analyses found no reliable cognitive effect in healthy adults, yet a home device was FDA-approved for depression in December 2025.',
+      'TMS induces fields of about 75 to 150 V/m that make neurons fire; this produces fields around 1 V/m or less and never makes neurons fire on its own.',
+      'Brain stimulation that passes a weak, constant electrical current between electrodes on the scalp to shift cortical excitability.'],
+    learn:'Transcranial direct current stimulation: a weak constant current (typically 1 to 2 mA for 10 to 30 minutes) passed between sponge electrodes on the scalp. Under the anode neurons become slightly depolarized and more excitable; under the cathode, less. It never makes neurons fire on its own, and much of the current is shunted by the scalp and skull (fields in the brain of about 0.3 to 1 V/m at 2 mA). Effects on cognition in healthy people are small or absent and can involve trade-offs, but a home tDCS device was FDA-approved for depression in December 2025, after a trial by Woodham et al. (2024).' },
+
+  { id:'tacs', answer:'tACS', aliases:['transcranial alternating current stimulation','alternating current stimulation','transcranial AC stimulation','HD-tACS'], cat:'methods', unit:'L9', source:'Lecture 9 study guide',
+    clues:[
+      'Reinhart and Nguyen (2019) reported that 25 minutes of it, tuned to each person\'s brain rhythms, temporarily brought older adults\' working memory up to the level of young adults\'.',
+      'At some frequencies it makes people see flickering light by stimulating the retina, and its artifact swamps EEG at the very frequency applied, so its effects are hard to record.',
+      'In the lecture it was the weak-current partner of tDCS, and the cadaver measurements showing that most scalp current never reaches the brain were in fact made with this kind of current.',
+      'tDCS delivers a steady current that shifts excitability in one direction; this delivers a current that oscillates at a chosen frequency, to entrain brain rhythms.',
+      'Brain stimulation that passes a weak electrical current oscillating at a chosen frequency between scalp electrodes, to influence brain oscillations.'],
+    learn:'Transcranial alternating current stimulation: a weak current (about 1 to 2 mA) passed between scalp electrodes that oscillates sinusoidally at a chosen frequency, such as alpha (10 Hz) or gamma (40 Hz). The aim is to entrain or modulate the brain\'s own oscillations rather than to shift excitability in one direction as tDCS does. Like tDCS, much of its current is shunted by the scalp and skull, and some effects may come from stimulating the skin or the retina (flickering phosphenes); some studies report cognitive effects, such as improved working memory in older adults (Reinhart and Nguyen, 2019).' },
+
+  { id:'temporal_interference', answer:'Temporal interference stimulation', aliases:['temporal interference','TI stimulation','TI','tTIS','transcranial temporal interference stimulation','temporally interfering electric fields','interferential stimulation'], cat:'methods', unit:'L9', source:'Lecture 9 (temporal interference)',
+    clues:[
+      'Grossman and colleagues (2017) first demonstrated it in mice, driving neurons in the hippocampus without driving the cortex above it.',
+      'In cadavers its effective deep field was only about 0.1 V/m per mA at hippocampal depth, while its kilohertz fields still pass through the cortex on the way.',
+      'In the lecture\'s first human hippocampus study (Violante et al., 2023), carriers of 2,000 and 2,005 Hz produced a 5 Hz beat deep in the brain and slightly improved memory for face-name pairs.',
+      'tACS is strongest in the cortex nearest the electrodes; this aims at a deep spot where two fast currents meet.',
+      'Noninvasive stimulation using two high-frequency currents at slightly different frequencies, which combine where they overlap to produce a slow beat deep in the brain.'],
+    learn:'A noninvasive method that applies two high-frequency alternating currents (for example 2,000 and 2,005 Hz) through separate pairs of scalp electrodes. Neurons do not follow the fast carriers, but where the fields overlap their envelope beats at the difference frequency (5 Hz), which neurons can follow, so stimulation can in principle be steered to deep targets. It has been shown in mice (Grossman et al., 2017) and in humans for the hippocampus (Violante et al., 2023) and striatum (Wessel et al., 2023); the deep fields are weak and the technique is young.' },
+
+  { id:'focused_ultrasound', answer:'Focused ultrasound', aliases:['FUS','transcranial focused ultrasound','tFUS','transcranial ultrasound stimulation','TUS','low-intensity focused ultrasound','LIFU','MR-guided focused ultrasound','MRgFUS','high-intensity focused ultrasound','HIFU','ultrasound neuromodulation','ultrasound stimulation'], cat:'methods', unit:'L9', source:'Lecture 9 (focused ultrasound)',
+    clues:[
+      'William Fry\'s group at the University of Illinois used it in the 1950s to make small lesions deep in the brain, and in 1958 reported that it could reversibly suppress visual responses in cats.',
+      'It is run at about 200 to 800 kHz, low enough to cross the skull, forms a focus a few millimeters wide but much longer, and may act through mechanosensitive ion channels.',
+      'In the lecture, its high-power form destroys a tiny thalamic target to ease essential tremor without an incision (FDA, 2016), and its low-power form must control for a faint buzz that can be heard.',
+      'tDCS and TMS lose focus with depth; this method can reach deep structures with millimeter precision without surgery.',
+      'Noninvasive stimulation or ablation that aims sound waves through the skull at a small, deep target.'],
+    learn:'Sound waves above the range of hearing, focused through the skull by a curved transducer onto a spot a few millimeters wide (and longer along the beam). At high intensity it heats and destroys tissue: MR-guided focused ultrasound thalamotomy was FDA-approved for essential tremor in 2016 (47% vs about 1% improvement with sham; Elias et al., 2016). At low intensity (transcranial ultrasound stimulation, about 200 to 800 kHz) it can reversibly change neural activity, first shown in human somatosensory cortex (Legon et al., 2014) and since in deep targets such as the nucleus accumbens (Yaakub et al., 2025). Studies must control for its audible buzz.' },
+
+  { id:'sham', answer:'Sham stimulation', aliases:['sham','sham condition','sham control','sham TMS','sham tDCS','sham trial','sham trials','placebo stimulation','sham coil','sham surgery'], cat:'methods', unit:'L9', source:'Lecture 9 (ultrasound needs careful controls)',
+    clues:[
+      'For tDCS the usual version ramps the current up for about 30 seconds and back down, mimicking the tingling at the start, yet many participants can still tell the difference at 2 mA.',
+      'For TMS it may use a coil that clicks without delivering a strong field, sometimes with scalp electrodes that mimic the tap, because the loud click and scalp sensation alone can change behavior.',
+      'In the lectures, 13.3% of the SAINT trial\'s control group remitted with it, 17% responded to it in the BROADEN DBS trial, and a good ultrasound study played a matching sound during it.',
+      'An active control site is real stimulation of a different region; this is fake stimulation of the same region that should sound and feel identical.',
+      'A fake stimulation condition that mimics the sounds and sensations of real stimulation without its effect on the brain, used as a placebo control.'],
+    learn:'A control condition that imitates real stimulation (the coil\'s click, scalp tingling, the sound of ultrasound, even the surgery) without delivering the active effect, so that expectation, attention and sensory side effects are matched. Comparing real with sham stimulation separates placebo responses from true effects: in the lectures, sham gave 13.3% remission in the SAINT trial and 17% response in the BROADEN DBS trial. A good sham sounds and feels like the real thing; stimulating an active control site is a complementary control.' },
+
+  { id:'vns', answer:'Vagus nerve stimulation', aliases:['VNS','vagal nerve stimulation','vagal stimulation','vagus nerve stimulator','Vivistim','transcutaneous vagus nerve stimulation','tVNS'], cat:'methods', unit:'L9', source:'Lecture 9 (which uses has the FDA authorized?)',
+    clues:[
+      'Jacob Zabara proposed it after finding that it reduced drug-induced seizures in dogs, and the first patient was implanted in 1988 in a trial led by J. Kiffin Penry.',
+      'The signals it sends toward the head reach the brainstem and activate the locus coeruleus and basal forebrain, releasing norepinephrine and acetylcholine across the cortex.',
+      'In the lecture\'s FDA quiz, pairing it with rehabilitation for arm weakness after stroke was authorized in 2021: brief bursts during each practice movement.',
+      'DBS stimulates deep brain structures through electrodes in the brain; this stimulates a nerve in the neck that relays signals into the brainstem.',
+      'Electrical stimulation of the cranial nerve in the neck that carries signals from the body to the brainstem, approved for epilepsy, depression and stroke rehabilitation.'],
+    learn:'Electrical stimulation of the vagus nerve (cranial nerve X), usually by a cuff electrode around the left vagus in the neck connected to a pulse generator in the chest. Ascending vagal signals reach the brainstem and activate neuromodulatory systems such as the locus coeruleus (norepinephrine) and basal forebrain (acetylcholine). It is FDA-approved for epilepsy (1997), depression (2005) and, paired with movement practice, upper-limb rehabilitation after stroke (Vivistim, 2021).' },
+
   ]
 };
