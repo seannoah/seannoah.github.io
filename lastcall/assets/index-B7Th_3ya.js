@@ -34,14 +34,14 @@ safe-buffer/index.js:
         <button class="btn big" data-act="joinLobby">Join a table</button>
       </div>
       <div class="title-solo">
-        <button class="btn ghost" data-act="newGame">Drink with the regulars</button>
-        ${t?'<button class="btn ghost" data-act="continueSave">Return to last night</button>':""}
+        <button class="btn ghost" data-act="newGame">Play solo</button>
+        ${t?'<button class="btn ghost" data-act="continueSave">Continue solo night</button>':""}
         <span class="table-size">chairs:
         ${[2,3,4,5,6].map(r=>`<button class="chip ${e.tableSize===r?"on":""}" data-act="tableSize" data-n="${r}">${r}</button>`).join("")}</span>
       </div>
       <div class="title-solo">
         <button class="btn ghost" data-act="lookOpen">Your likeness</button>
-        <button class="btn ghost" data-act="help">House rules</button>
+        <button class="btn ghost" data-act="help">How to play</button>
         <button class="btn ghost" data-act="sound">Music &amp; sound</button>
       </div>
     </div>
@@ -238,7 +238,7 @@ safe-buffer/index.js:
     <div class="bid-buttons"><button class="bid-btn num" data-act="delta" data-n="-1">−1</button><button class="bid-btn num" data-act="delta" data-n="1">+1</button></div>
     <button class="btn ghost" data-act="cancelTarget">Never mind</button>
   </div></div>`}function gg(){return`<div class="modal"><div class="modal-card help">
-    <h2>House Rules of the Tipsy Wyvern</h2>
+    <h2>How to play</h2>
     <ol>
       <li><b>Name your tricks.</b> Look at your hand and claim how many tricks you'll take. Hit it exactly and earn <b>10, plus 5 for every trick you claimed</b>. Miss, and you scrape 1 per trick.</li>
       <li><b>Follow the suit that's led</b> if you can. The highest card of that suit takes the trick, unless someone throws down <b>trump</b>.</li>
