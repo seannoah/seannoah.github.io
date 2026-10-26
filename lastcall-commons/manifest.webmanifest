@@ -1,13 +1,13 @@
 {
-  "name": "Last Call",
-  "short_name": "Last Call",
-  "description": "A cozy tavern trick-taking game for friends, sunset to sunrise.",
+  "name": "Last Call: Tragedy of the Commons",
+  "short_name": "The Commons",
+  "description": "Rival wizards, demonic familiars and one shared deck: trick-taking from sunset to sunrise at the Hanged Man.",
   "start_url": ".",
   "scope": ".",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#140c08",
-  "theme_color": "#140c08",
+  "background_color": "#0c0810",
+  "theme_color": "#0c0810",
   "icons": [
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
