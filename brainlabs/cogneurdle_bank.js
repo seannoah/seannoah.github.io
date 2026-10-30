@@ -27,7 +27,7 @@
    - `lab` (optional) links the learn card to a Brain Lab page.
    ===================================================================== */
 window.COGNEURDLE = {
-  version: 5,
+  version: 6,
   epoch: '2026-09-04',            // date of CogNeurdle #1 (local time)
   units: {
     L1: { name: 'Lecture 1 · Intro & neuroanatomy', short: 'Anatomy',   released: true },
@@ -39,6 +39,7 @@ window.COGNEURDLE = {
     L7: { name: 'Lecture 7 · Connectivity',         short: 'Networks',  released: true, dailyFrom: '2026-10-20' },
     L8: { name: 'Lecture 8 · High-level perception', short: 'Perception', released: true, dailyFrom: '2026-10-20' },
     L9: { name: 'Lecture 9 · Brain stimulation',    short: 'Brain stim', released: true, dailyFrom: '2026-10-20' },
+    L10: { name: 'Lecture 10 · Aging',              short: 'Aging',     released: true, dailyFrom: '2026-11-02' },
   },
   categories: {
     history:     'People & history',
@@ -53,6 +54,7 @@ window.COGNEURDLE = {
     language:    'Language',
     vision:      'Vision & perception',
     connectivity:'Connectivity & networks',
+    aging:       'Aging & dementia',
   },
   terms: [
   /* ---------------------------- LECTURE 1 ---------------------------- */
@@ -2315,6 +2317,340 @@ window.COGNEURDLE = {
       'DBS stimulates deep brain structures through electrodes in the brain; this stimulates a nerve in the neck that relays signals into the brainstem.',
       'Electrical stimulation of the cranial nerve in the neck that carries signals from the body to the brainstem, approved for epilepsy, depression and stroke rehabilitation.'],
     learn:'Electrical stimulation of the vagus nerve (cranial nerve X), usually by a cuff electrode around the left vagus in the neck connected to a pulse generator in the chest. Ascending vagal signals reach the brainstem and activate neuromodulatory systems such as the locus coeruleus (norepinephrine) and basal forebrain (acetylcholine). It is FDA-approved for epilepsy (1997), depression (2005) and, paired with movement practice, upper-limb rehabilitation after stroke (Vivistim, 2021).' },
+
+  /* ---------------------------- LECTURE 10 ---------------------------- */
+  { id:'crystallized_intelligence', answer:'Crystallized intelligence', aliases:['crystallized ability','crystallized abilities','crystallised intelligence','crystallized knowledge','Gc'], cat:'aging', unit:'L10', source:'Lecture 10 study guide',
+    clues:[
+      'Raymond Cattell introduced it in the 1940s and later refined it with John Horn; in Cattell\'s investment theory it grows as the other broad ability is applied to schooling and culture.',
+      'It is measured with tests of vocabulary, general information and verbal comprehension, so it depends on what a person\'s culture and schooling have taught them.',
+      'In the lecture, vocabulary held steady or even rose with age (r = +0.22 with age), and word knowledge peaked around 50 to 65, later than any other ability shown.',
+      'Fluid ability, solving new problems quickly, declines from early adulthood; this ability, what you have learned, holds steady or grows.',
+      'Accumulated knowledge and skills, such as vocabulary, that hold up or improve with age.'],
+    learn:'The knowledge and skills accumulated through education and experience, such as vocabulary and general information (Cattell and Horn). It holds steady or keeps rising into later adulthood: in large samples vocabulary peaks around 50 to 65, after almost every other ability. Contrast with fluid intelligence (reasoning and problem solving with new material, drawing on processing speed and working memory), which declines from early adulthood.' },
+
+  { id:'fluid_intelligence', answer:'Fluid intelligence', aliases:['fluid ability','fluid abilities','fluid reasoning','fluid cognition','Gf'], cat:'aging', unit:'L10', source:'Lecture 10 (which abilities decline with age?)',
+    clues:[
+      'Raven\'s Progressive Matrices, in which people pick the piece that completes a pattern of shapes, is its best-known test, and Cattell\'s Culture Fair test was designed to measure it without words.',
+      'Scores on its tests track working memory capacity closely, and in factor analyses it is nearly indistinguishable from the general factor, g (Gustafsson, 1984).',
+      'In the lecture\'s lifespan data, the abilities in this group (processing speed, working memory and learning new material) all fell steadily from the 20s on.',
+      'Crystallized intelligence, what you know, holds up with age; this kind, working out something new on the spot, declines from early adulthood.',
+      'The ability to reason and solve new problems quickly, independent of acquired knowledge, which declines from early adulthood.'],
+    learn:'The capacity to reason and solve novel problems independent of acquired knowledge (Cattell and Horn), measured by tests such as Raven\'s Progressive Matrices. It draws on working memory and processing speed and declines steadily from early adulthood in cross-sectional studies. Contrast with crystallized intelligence, which holds steady or grows.' },
+
+  { id:'processing_speed', answer:'Processing speed', aliases:['speed of processing','processing speed theory','processing-speed theory','general slowing','cognitive slowing','mental speed','perceptual speed'], cat:'aging', unit:'L10', source:'Lecture 10 (which abilities decline with age?)',
+    clues:[
+      'A 1997 meta-analysis found that it shared roughly 70 to 80% of the age-related variance in reasoning, spatial ability and episodic memory (Verhaeghen and Salthouse).',
+      'It is measured with simple timed tasks, such as matching symbols to digits or comparing letter strings, in which accuracy is near perfect and only the pace varies.',
+      'In the lecture it peaked in the late teens and showed one of the largest age gaps in psychology: young and older adults differed by about 2 standard deviations on a symbol-matching test.',
+      'Vocabulary grows with age; this, how fast you can carry out simple mental operations, declines the most.',
+      'How quickly a person can take in information and carry out simple mental operations, the ability that declines most with age.'],
+    learn:'The rate at which a person can carry out simple mental operations, measured with timed tasks like digit-symbol substitution. It peaks in the late teens and declines steadily through adulthood, with one of the largest age differences in psychology (about 2 standard deviations between young and older adults; Hoyer et al., 2004). Salthouse\'s processing-speed theory proposes that this general slowing accounts for much of the age-related decline in memory and reasoning.' },
+
+  { id:'dsst', answer:'Digit symbol substitution test', aliases:['digit symbol substitution','digit-symbol coding','digit symbol test','digit symbol','DSST','symbol digit modalities test','SDMT','symbol-digit test','coding test'], cat:'methods', unit:'L10', source:'Lecture 10 (how fast can you match symbols?)',
+    clues:[
+      'Wechsler adapted it for his intelligence scales from a timed pairing task in the Army Beta, the nonverbal World War I test for illiterate and non-English-speaking recruits.',
+      'Besides speed, scores depend on visual scanning, hand movement and learning the pairings, so it is sensitive to many kinds of brain impairment but cannot tell them apart.',
+      'The class took a made-up version for 90 seconds; across 141 studies, older adults scored about 2 standard deviations below young adults on it.',
+      'Processing speed is the ability; this is the classic timed paper-and-pencil test used to measure it.',
+      'The timed test in which people match symbols and numbers using a key, as fast as they can.'],
+    learn:'A timed test in which a key pairs the digits 1 to 9 with simple symbols, and the person fills in the matching symbol for each digit (Wechsler\'s Coding) or the matching digit for each symbol (the Symbol Digit Modalities Test) in a long series. It is one of the most age-sensitive tests in psychology: older adults score about 2 standard deviations below young adults (Hoyer et al., 2004), and it is the standard measure of processing speed.' },
+
+  { id:'cross_sectional', answer:'Cross-sectional design', aliases:['cross-sectional study','cross-sectional studies','cross-sectional','cross-sectional research'], cat:'methods', unit:'L10', source:'Lecture 10 study guide',
+    clues:[
+      'A classic early study of intelligence across the lifespan (Jones and Conrad, 1933) used it and placed the peak near age 20, a result later blamed partly on the older groups having had less schooling.',
+      'With the testing year held fixed, age and birth year move in lockstep, so by itself it cannot separate aging from generational change.',
+      'In the lecture\'s simulation, testing everyone once in 2025 showed a 6-point drop from age 40 to 60, although nobody in the model declined before 60.',
+      'A longitudinal study follows the same people for years; this compares different people of different ages, each tested once.',
+      'A study design that compares different age groups at one point in time.'],
+    learn:'A research design that measures people of different ages at one time point. It is quick and inexpensive, but age is confounded with birth cohort (education, nutrition, health care and test familiarity differ between generations), so cohort effects can masquerade as aging. Cross-sectional studies typically suggest earlier and larger declines than longitudinal studies of the same abilities.' },
+
+  { id:'longitudinal', answer:'Longitudinal design', aliases:['longitudinal study','longitudinal studies','longitudinal','longitudinal research','panel study'], cat:'methods', unit:'L10', source:'Lecture 10 study guide',
+    clues:[
+      'Terman\'s study of gifted California children, begun in 1921 and continued into their old age, is a famous early example of it.',
+      'Its main weaknesses are that it takes decades, the people who drop out tend to be less healthy, and participants improve simply from taking the same tests again.',
+      'In the lecture\'s simulation, following the people born in 1945 from age 40 to 60 showed no change, while comparing age groups in 2025 showed a 6-point drop.',
+      'A cross-sectional study compares different people of different ages at one time; this follows the same people as they age.',
+      'A study design that tests the same people repeatedly over many years.'],
+    learn:'A research design that follows the same individuals over time, measuring them repeatedly. It reveals real change within people and avoids confounding age with birth cohort, but it is slow and costly and suffers from selective dropout (the healthier people tend to stay) and from practice effects (people improve with retesting), both of which can make aging look kinder than it is. The Seattle Longitudinal Study (Schaie) is a classic example.' },
+
+  { id:'cohort_effect', answer:'Cohort effect', aliases:['cohort effects','birth cohort effect','cohort differences','generational effect','generational differences'], cat:'methods', unit:'L10', source:'Lecture 10 (why do two kinds of study disagree?)',
+    clues:[
+      'Schaie\'s sequential designs (1965), which follow several birth groups over time, were invented to separate it from true change with age.',
+      'It arises because people born in different years grew up with different schooling, nutrition, health care and familiarity with tests.',
+      'In the lecture\'s simulation, the 20-year-olds tested in 2025 were born in 2005 and the 80-year-olds in 1945, and that difference alone made ability seem to fall from age 20 although nobody declined before 60.',
+      'A practice effect inflates scores in longitudinal studies; this distorts cross-sectional studies, because the age groups were also born in different eras.',
+      'A difference between age groups caused by when they were born rather than by aging itself.'],
+    learn:'A difference between groups that reflects their birth cohort, the era in which people grew up, rather than age itself. In cross-sectional studies age and cohort are confounded: older groups had different education, nutrition, health care and test experience, so cohort differences can look like age-related decline (or hide it). Rising IQ scores across generations (the Flynn effect) are a classic source. Longitudinal and cohort-sequential designs help separate the two.' },
+
+  { id:'flynn_effect', answer:'Flynn effect', aliases:['Flynn effects','rising IQ scores','secular rise in IQ','IQ gains across generations'], cat:'methods', unit:'L10', source:'Lecture 10 (why do two kinds of study disagree?)',
+    clues:[
+      'A New Zealand political scientist documented it in 1984 for the United States and in 1987 across 14 nations, and it has stalled or reversed in some Scandinavian countries since the 1990s.',
+      'A meta-analysis of 271 samples and almost 4 million people put it at about 2.8 IQ points per decade for full-scale IQ (Pietschnig and Voracek, 2015).',
+      'In the lecture\'s simulation it was the reason each later generation started a little higher, which made a cross-sectional study show decline from age 20.',
+      'Cohort effects are any differences between birth groups; this is one specific example: rising scores on intelligence tests across the 20th century.',
+      'The steady rise in average IQ test scores from one generation to the next during the 20th century.'],
+    learn:'The substantial rise in average IQ test scores across birth cohorts through the 20th century, about 3 points per decade (meta-analytic estimate 2.8 points per decade; Pietschnig and Voracek, 2015), named after James Flynn. Proposed causes include better nutrition, health and schooling and more abstract thinking in daily life; the gains have stalled or reversed in some countries. Because each younger generation scores higher, cross-sectional comparisons exaggerate age-related decline.' },
+
+  { id:'practice_effect', answer:'Practice effect', aliases:['practice effects','retest effect','retest effects','test-retest effect','retest gains'], cat:'methods', unit:'L10', source:'Lecture 10 (why do two kinds of study disagree?)',
+    clues:[
+      'Salthouse (2009) argued that it hides real decline in longitudinal studies, which therefore underestimate how early abilities begin to fall, perhaps in the 20s and 30s.',
+      'One way to estimate it is to add new, never-tested people of the same age at each wave of a study and compare them with the returning participants.',
+      'In the lecture it was one of two reasons longitudinal studies can flatter aging; the other was that the people who stay in a study tend to be healthier.',
+      'A cohort effect distorts cross-sectional comparisons; this distorts longitudinal studies, because the same people take the same tests again.',
+      'Improvement in test scores that comes from having taken the test before rather than from any real change in ability.'],
+    learn:'Improvement on a test that results from previous exposure to it (familiarity with the items, strategies, reduced anxiety) rather than from a real change in ability. In longitudinal studies of aging, practice effects can offset or mask true decline, which is why some researchers (Salthouse, 2009) argue that decline begins earlier than longitudinal data suggest. Adding new participants at each wave lets researchers estimate and correct for it.' },
+
+  { id:'superager', answer:'SuperAger', aliases:['SuperAgers','super ager','super agers','superaging','super-aging'], cat:'aging', unit:'L10', source:'Lecture 10 (what makes a SuperAger?)',
+    clues:[
+      'Autopsies of a few of them found three to five times the density of von Economo neurons, large spindle-shaped cells, in the anterior cingulate cortex compared with typical older adults (Gefen et al., 2015).',
+      'Their cortex is as large as that of people 20 to 30 years younger, and part of the anterior cingulate is thicker even than in middle-aged adults.',
+      'In the lecture, Northwestern\'s program required at least 9 of 15 words recalled after a delay, when the average 80-year-old recalls about 5.',
+      'Mild cognitive impairment is memory worse than expected for one\'s age; this is memory far better than expected, like that of someone decades younger.',
+      'A person over 80 whose memory is as good as that of people decades younger.'],
+    learn:'A person aged 80 or older whose episodic memory (delayed recall of a word list) is at least as good as the average for people in their 50s and 60s, a category defined by Northwestern University\'s SuperAging Program (Harrison et al., 2012). Their brains show less cortical shrinkage, a thicker anterior cingulate, more von Economo neurons and fewer Alzheimer\'s-type tangles. About 10% of people referred as normal for their age qualify, and no single lifestyle explains them.' },
+
+  { id:'positivity_effect', answer:'Positivity effect', aliases:['positivity effects','age-related positivity effect','positivity bias'], cat:'aging', unit:'L10', source:'Lecture 10 (who is happier, younger or older adults?)',
+    clues:[
+      'A meta-analysis found it modest overall (d = 0.26) and larger when processing is unconstrained (d = 0.48), and it weakens when attention is divided, so it seems to take cognitive control.',
+      'Laura Carstensen\'s socioemotional selectivity theory explains it: as people sense that their time is limited, they put emotionally meaningful goals first.',
+      'In the lecture it went along with a 10-year experience-sampling study in which people\'s everyday good feelings rose with age into their 60s.',
+      'Processing speed declines with age; this tendency to favor pleasant information grows with age.',
+      'Older adults\' tendency to attend to and remember positive information more than negative information, compared with young adults.'],
+    learn:'The tendency, relative to young adults, for older adults to attend to and remember positive rather than negative information (Mather and Carstensen, 2005). Experience sampling shows that everyday emotional well-being improves with age until about the mid-60s and becomes more stable (Carstensen et al., 2011). Socioemotional selectivity theory explains it as a shift toward emotionally meaningful goals as time horizons shorten; the effect depends on cognitive control and shrinks when attention is divided.' },
+
+  { id:'dementia', answer:'Dementia', aliases:['dementias','major neurocognitive disorder','senile dementia'], cat:'aging', unit:'L10', source:'Lecture 10 study guide',
+    clues:[
+      'Its name is Latin for "out of one\'s mind," and Kraepelin used a version of it, with "praecox," for the illness now called schizophrenia.',
+      'Besides Alzheimer\'s disease, its common causes include vascular disease, Lewy bodies and frontotemporal degeneration, and many patients have more than one.',
+      'In the lecture it was the result of disease, not the normal course of aging, and Alzheimer\'s disease causes 60 to 80% of cases.',
+      'Mild cognitive impairment is a noticeable decline with daily life still intact; this is decline severe enough to take away independence in daily life.',
+      'A decline in memory or other thinking abilities severe enough to interfere with independent daily life.'],
+    learn:'An acquired decline in memory or other cognitive abilities severe enough to interfere with independent daily functioning (called major neurocognitive disorder in DSM-5). It is caused by disease, not by normal aging. Alzheimer\'s disease causes 60 to 80% of cases; vascular disease, Lewy body disease and frontotemporal degeneration cause most of the rest, often in combination. Mild cognitive impairment is a milder stage in which daily life is still intact.' },
+
+  { id:'mci', answer:'Mild cognitive impairment', aliases:['MCI','mild neurocognitive disorder','amnestic MCI','amnestic mild cognitive impairment'], cat:'aging', unit:'L10', source:'Lecture 10 (is dementia a normal part of aging?)',
+    clues:[
+      'Ronald Petersen and colleagues at the Mayo Clinic set out its criteria in 1999: a memory complaint and memory scores below age norms, with general thinking and everyday function preserved.',
+      'Its amnestic type, with memory as the main problem, most often progresses to Alzheimer\'s disease, but some people return to normal on later testing.',
+      'In the lecture it affects about 12 to 18% of people over 60, and each year roughly 10 to 15% of them progress to dementia.',
+      'Dementia disrupts independent daily life; this is a noticeable decline in thinking while daily life is still intact.',
+      'A decline in memory or thinking that is greater than expected for one\'s age and noticeable to others, but not severe enough to disrupt daily life.'],
+    learn:'A stage between normal aging and dementia: cognitive decline (often in memory) that the person and others notice and that shows on tests, greater than expected for age, while everyday independence is preserved (Petersen et al., 1999). It affects about 12 to 18% of people over 60; in clinic samples roughly 10 to 15% progress to dementia each year (fewer in community studies), while others stay stable or improve.' },
+
+  { id:'alzheimers', answer:'Alzheimer\'s disease', aliases:['Alzheimer\'s','Alzheimer disease','AD','Alzheimer\'s dementia','Alzheimer dementia'], cat:'aging', unit:'L10', source:'Lecture 10 study guide',
+    clues:[
+      'Its namesake described it in 1906 in Auguste Deter, a woman in her 50s whose brain he examined after her death with a new silver stain.',
+      'Its damage usually begins in the entorhinal cortex and hippocampus and spreads through the temporal and parietal lobes, and carrying the APOE ε4 gene variant raises the risk.',
+      'In the lecture, about 7.4 million Americans 65 and older, about 1 in 9, have dementia from it, and in the hippocampal region CA1 it destroys most neurons, while normal aging loses almost none.',
+      'Normal aging loses synapses but few neurons; this disease destroys neurons and causes 60 to 80% of dementia.',
+      'The most common cause of dementia, marked by amyloid plaques and tau tangles in the brain.'],
+    learn:'A neurodegenerative disease and the most common cause of dementia (60 to 80% of cases), first described by Alois Alzheimer in 1906. Its hallmarks are extracellular amyloid-beta plaques and intracellular tau neurofibrillary tangles, with synapse and neuron loss that typically begins in the entorhinal cortex and hippocampus. In 2026 about 7.4 million Americans 65 and older, roughly 1 in 9, have Alzheimer\'s dementia. Anti-amyloid antibodies (lecanemab, donanemab) modestly slow decline, and a blood test was cleared in 2025.' },
+
+  { id:'amyloid_plaque', answer:'Amyloid plaque', aliases:['amyloid plaques','amyloid-beta plaques','amyloid-beta','beta-amyloid','Abeta','amyloid','senile plaques','neuritic plaques','plaques'], cat:'aging', unit:'L10', source:'Lecture 10 study guide',
+    clues:[
+      'Brains of people who died with many of these but no symptoms (Katzman et al., 1988) helped give rise to the idea of cognitive reserve.',
+      'Their core is a protein fragment cut from a larger precursor protein by two enzymes (beta- and gamma-secretase); the 42-amino-acid form clumps more readily than the common 40-amino-acid form.',
+      'In the lecture they build up between neurons, and antibodies that clear them (lecanemab, donanemab) slowed decline modestly but risked brain swelling and bleeding.',
+      'Tau tangles build up inside neurons and track symptoms closely; these build up outside neurons and often appear years before symptoms.',
+      'Clumps of a sticky protein fragment that accumulate between neurons, one of the two hallmarks of Alzheimer\'s disease.'],
+    learn:'Extracellular deposits of amyloid-beta, a peptide cut from the amyloid precursor protein, that accumulate between neurons in Alzheimer\'s disease (and to a lesser degree in many cognitively normal older people). With tau tangles they are one of the two defining hallmarks. They begin accumulating years before symptoms and correlate less closely with symptoms than tangles do. Anti-amyloid antibodies such as lecanemab (2023) and donanemab (2024) clear them and modestly slow decline, with a risk of brain swelling and microbleeds (ARIA).' },
+
+  { id:'neurofibrillary_tangle', answer:'Neurofibrillary tangle', aliases:['neurofibrillary tangles','tau tangles','tau tangle','tangles','tau','tau protein','NFT','NFTs'], cat:'aging', unit:'L10', source:'Lecture 10 study guide',
+    clues:[
+      'Braak and Braak (1991) used how far these had spread, from the entorhinal cortex to the hippocampus to the rest of the cortex, to define six stages of Alzheimer\'s pathology.',
+      'They form when a protein that normally stabilizes microtubules inside axons becomes hyperphosphorylated and twists into paired helical filaments.',
+      'In the lecture they build up inside neurons and track symptoms and neuron loss more closely than the other hallmark does, and SuperAgers have fewer of them than average 80-year-olds.',
+      'Amyloid plaques accumulate outside neurons; these accumulate inside neurons.',
+      'Twisted fibers of an abnormal microtubule-associated protein inside neurons, one of the two hallmarks of Alzheimer\'s disease.'],
+    learn:'Intracellular aggregates of hyperphosphorylated tau, a microtubule-associated protein, twisted into paired helical filaments. With amyloid plaques they are the hallmarks of Alzheimer\'s disease. Their spread follows a typical path from the entorhinal cortex and hippocampus to association cortex (the Braak stages), and tangle burden tracks neuron loss and symptoms more closely than plaque burden.' },
+
+  { id:'last_in_first_out', answer:'Last in, first out', aliases:['last in first out hypothesis','retrogenesis','LIFO'], cat:'aging', unit:'L10', source:'Lecture 10 study guide',
+    clues:[
+      'Douaud and colleagues (2014) found a network of mostly association cortex that matures late, degenerates faster in old age and is especially vulnerable in Alzheimer\'s disease and schizophrenia.',
+      'It fits white matter too: the frontal fibers that finish myelinating latest lose the most integrity with age.',
+      'In the lecture it explained why lateral prefrontal cortex shrank fastest (0.91% a year) while primary visual cortex barely changed (0.10%).',
+      'Dedifferentiation is about areas losing specialization; this is about the order of loss: regions that mature late decline early.',
+      'The idea that the brain regions that mature latest in development, like prefrontal cortex, are the earliest to decline with age.'],
+    learn:'The hypothesis that brain regions and pathways that mature latest in development, such as prefrontal and association cortex and frontal white matter, are the earliest and most vulnerable to decline with age, while early-maturing primary sensory areas such as V1 are relatively spared. It fits the uneven pattern of age-related shrinkage (Raz et al., 2005) and of white matter decline.' },
+
+  { id:'cholinergic_hypothesis', answer:'Cholinergic hypothesis', aliases:['cholinergic hypothesis of geriatric memory dysfunction','cholinergic hypothesis of aging','acetylcholine hypothesis'], cat:'aging', unit:'L10', source:'Lecture 10 (does brain chemistry change with age?)',
+    clues:[
+      'Bartus, Dean, Beer and Lippa proposed it in Science in 1982, citing enzyme losses in Alzheimer\'s brains and the memory loss caused by the drug scopolamine.',
+      'The cells it focuses on sit in the basal forebrain: the nucleus basalis of Meynert supplies the cortex, and the medial septum supplies the hippocampus.',
+      'In the lecture it explained why the main older Alzheimer\'s drugs, such as donepezil, block the enzyme that breaks down acetylcholine.',
+      'Dopamine receptors and transporters also decline with age; this idea centers on a different neuromodulator, the one that Alzheimer\'s drugs boost.',
+      'The proposal that loss of acetylcholine signaling contributes to memory loss in aging and Alzheimer\'s disease.'],
+    learn:'The proposal (Bartus et al., 1982) that degeneration of acetylcholine-releasing neurons in the basal forebrain, which project to the cortex and hippocampus, contributes to memory decline in aging and especially in Alzheimer\'s disease. It motivated the cholinesterase inhibitors (donepezil, rivastigmine, galantamine), which block the breakdown of acetylcholine and give modest symptomatic benefit. Dopamine receptors and transporters also decline with age, by roughly 4 to 14% per decade.' },
+
+  { id:'gaba', answer:'GABA', aliases:['gamma-aminobutyric acid','GABA-A','GABA-A receptor','GABA receptor','GABA receptors','GABAergic'], cat:'neuron', unit:'L10', source:'Lecture 10 (do old neurons lose their selectivity?)',
+    clues:[
+      'Eugene Roberts and Jorge Awapara independently found it in the brain in 1950, and it was later shown to be the transmitter of most of the cortex\'s inhibitory interneurons.',
+      'Its fast receptor is a chloride channel, the target of benzodiazepines and of muscimol; bicuculline blocks it.',
+      'In the lecture, applying it to the poorly tuned V1 neurons of old monkeys restored their orientation selectivity within minutes, and older adults with more of it in auditory cortex had more distinct activity patterns.',
+      'Glutamate is the brain\'s main excitatory transmitter; this is its main inhibitory one.',
+      'The brain\'s main inhibitory neurotransmitter, which sharpens the tuning of neurons.'],
+    learn:'Gamma-aminobutyric acid, the brain\'s main inhibitory neurotransmitter, released by cortical interneurons and by some projection neurons, such as cerebellar Purkinje cells. GABA-A receptors are chloride channels targeted by benzodiazepines and the agonist muscimol and blocked by bicuculline. Inhibition sharpens neural selectivity: in old monkeys V1 neurons are broadly tuned, and applying GABA or muscimol restored their selectivity, while blocking GABA-A receptors made young neurons broadly tuned (Leventhal et al., 2003). In humans, lower GABA levels go with less distinct neural representations in older adults.' },
+
+  { id:'dedifferentiation', answer:'Dedifferentiation', aliases:['neural dedifferentiation','dedifferentiation hypothesis','reduced neural distinctiveness','loss of neural distinctiveness'], cat:'aging', unit:'L10', source:'Lecture 10 (are older brains less distinctive?)',
+    clues:[
+      'Long before fMRI, psychologists used the term for the disputed claim that different mental abilities become more strongly correlated with one another in old age.',
+      'Li, Lindenberger and Sikström (2001) tied it to weaker dopamine signaling, which in their network model made neural signals noisier and representations overlap more.',
+      'In the lecture, a classifier told music from foreign speech in auditory cortex 96% of the time in young adults but 86% in older adults, and faces and houses were less distinct in older visual cortex.',
+      'Compensation reads extra activity as helping performance; this reads it as brain areas losing their specialization.',
+      'The loss of specialization in the aging brain, so that brain areas respond less selectively and patterns for different categories become less distinct.'],
+    learn:'The age-related loss of specificity in neural representations: brain regions respond less selectively, and activity patterns for different stimuli or categories (faces vs houses, music vs speech) become less distinct (Park et al., 2004), so classifiers decode them less accurately (Carp et al., 2011; Lalwani et al., 2019). It is linked to reduced GABA-mediated inhibition, as in the broadly tuned V1 neurons of old monkeys. Contrast with compensation, which predicts that extra activity helps performance.' },
+
+  { id:'harold', answer:'HAROLD', aliases:['HAROLD model','hemispheric asymmetry reduction in older adults','hemispheric asymmetry reduction'], cat:'aging', unit:'L10', source:'Lecture 10 (do older brains work harder?)',
+    clues:[
+      'Roberto Cabeza named it in 2002 in a review of PET and fMRI studies of memory, perception and inhibitory control in aging.',
+      'TMS of right prefrontal cortex disrupted young adults\' memory retrieval more than TMS of the left, but in adults over 50 TMS of either side disrupted it (Rossi et al., 2004).',
+      'In the lecture\'s memory study, young adults and low-scoring older adults used right prefrontal cortex, but high-scoring older adults used both sides, suggesting compensation.',
+      'PASA describes activity shifting from the back of the brain toward the front; this describes activity spreading from one hemisphere to both.',
+      'The finding, named with an acronym, that older adults use prefrontal cortex in both hemispheres for tasks that young adults perform mainly with one.'],
+    learn:'Hemispheric asymmetry reduction in older adults (Cabeza, 2002): prefrontal activity that is lateralized to one hemisphere in young adults tends to be bilateral in older adults. Because high-performing older adults showed the most bilateral activity (Cabeza et al., 2002) and TMS of either hemisphere disrupted older adults\' retrieval (Rossi et al., 2004), it is usually interpreted as compensation rather than dedifferentiation.' },
+
+  { id:'pasa', answer:'PASA', aliases:['posterior-anterior shift in aging','posterior-anterior shift','PASA model'], cat:'aging', unit:'L10', source:'Lecture 10 (do older brains work harder?)',
+    clues:[
+      'Davis and colleagues (2008) showed that it persists when young and older adults are matched on performance and confidence, so it is not just a response to harder tasks.',
+      'It extends to task deactivations: with age, posterior midline cortex deactivates less and medial frontal cortex deactivates more.',
+      'In the lecture it was listed alongside HAROLD as a way older brains reorganize their activity, with more of the work done by frontal cortex.',
+      'HAROLD describes activity spreading from one hemisphere to both; this describes activity shifting from the back of the brain toward the front.',
+      'The age-related shift in brain activity from occipital regions at the back toward frontal regions at the front, named with an acronym.'],
+    learn:'The posterior-anterior shift in aging (Davis et al., 2008): compared with young adults, older adults show reduced activity in occipitotemporal (posterior) regions and increased activity in frontal (anterior) regions during many tasks. The frontal increase often correlates with better performance, so it is usually read as compensation for declining sensory processing.' },
+
+  { id:'compensation', answer:'Compensation', aliases:['neural compensation','compensatory activity','compensatory recruitment','compensation hypothesis','functional compensation'], cat:'aging', unit:'L10', source:'Lecture 10 (is extra activity helpful?)',
+    clues:[
+      'Park and Reuter-Lorenz\'s scaffolding theory (2009) extends it: the aging brain builds alternative circuits as the main ones wear down, and new learning and exercise can strengthen them.',
+      'Its signature is extra activity that goes with better performance across older adults, and disrupting the extra region with TMS should make performance worse.',
+      'In the lecture it was the favored reading of HAROLD, because the extra prefrontal activity showed up in the older adults who remembered best.',
+      'Dedifferentiation reads extra activity as a loss of specialization; this reads it as recruiting more of the brain to keep up.',
+      'The idea that extra brain activity in older adults helps them maintain performance.'],
+    learn:'The interpretation that additional or more widespread brain activity in older adults (for example bilateral prefrontal activity, HAROLD, or increased frontal activity, PASA) helps maintain performance. Evidence includes greater extra activity in high-performing older adults (Cabeza et al., 2002) and performance costs when the extra region is disrupted with TMS (Rossi et al., 2004). The CRUNCH and scaffolding (STAC) models are related accounts. Contrast with dedifferentiation.' },
+
+  { id:'inhibitory_deficit', answer:'Inhibitory deficit hypothesis', aliases:['inhibitory deficit','inhibitory deficits','inhibitory deficit theory','inhibition deficit hypothesis','suppression deficit','top-down suppression deficit'], cat:'aging', unit:'L10', source:'Lecture 10 (can older adults ignore distractions?)',
+    clues:[
+      'Lynn Hasher and Rose Zacks proposed it in 1988, arguing that irrelevant thoughts and information clutter older adults\' working memory.',
+      'It predicts that older adults are hurt more by distractions and have trouble clearing no-longer-relevant information from working memory, while focusing on what is relevant is spared.',
+      'In the lecture\'s fMRI study, 88% of young adults but only 44% of older adults reduced a scene area\'s activity when told to ignore scenes, while both groups boosted it when scenes mattered (Gazzaley et al., 2005).',
+      'Processing speed theory blames general slowing; this blames a failure to shut out what is irrelevant.',
+      'The idea that cognitive aging stems largely from a weakened ability to ignore irrelevant information.'],
+    learn:'The proposal (Hasher and Zacks, 1988) that much of age-related cognitive decline reflects weakened inhibitory control: older adults have more difficulty keeping irrelevant information out of working memory and ignoring distractions. Gazzaley et al. (2005) found that older adults enhanced brain responses to relevant stimuli as well as young adults did but failed to suppress responses to stimuli they were told to ignore, and poorer suppression went with poorer working memory.' },
+
+  { id:'neuroplasticity', answer:'Neuroplasticity', aliases:['plasticity','neural plasticity','brain plasticity','neuronal plasticity','cortical plasticity','experience-dependent plasticity'], cat:'neuron', unit:'L10', source:'Lecture 10 (what is plasticity?)',
+    clues:[
+      'William James used the word in 1890 for the brain\'s capacity to be shaped by habit, and Jerzy Konorski applied it to neurons in 1948.',
+      'It operates at many scales: strengthening and weakening of synapses, growth and pruning of dendritic spines, changes in myelin and gray matter, and reorganization of whole maps.',
+      'In the lecture, older adults\' V5 grew with three months of juggling practice and shrank back without it, and older adults learned a texture task through white matter changes.',
+      'A critical period is a window when it is greatest; this is the brain\'s capacity to change with experience at any age.',
+      'The brain\'s ability to change its structure and function with experience and learning.'],
+    learn:'The capacity of the nervous system to change its structure and function in response to experience, learning or injury. It operates at many scales: synaptic plasticity (LTP and LTD), structural changes in spines, dendrites and myelin, possible adult neurogenesis, and reorganization of cortical maps. It is greatest during critical periods but persists throughout life: older adults still show training-related gray and white matter changes, though often smaller than in young adults and sometimes by a different route.' },
+
+  { id:'ltp', answer:'Long-term potentiation', aliases:['LTP','synaptic potentiation','potentiation'], cat:'neuron', unit:'L10', source:'Lecture 10 (what is plasticity?)',
+    clues:[
+      'Lømo first saw it in 1966, and he and Bliss described it in 1973 after stimulating the perforant path in the hippocampus of anesthetized rabbits.',
+      'Its best-known form needs NMDA receptors, which open only when glutamate binds and the postsynaptic cell is already depolarized, so it strengthens synapses whose inputs fire together.',
+      'In the lecture, it lasted at least two weeks in young rats but faded faster in old rats, and how long it lasted tracked spatial memory (Barnes, 1979).',
+      'Long-term depression weakens synapses after low-frequency stimulation; this strengthens them after high-frequency stimulation.',
+      'A long-lasting strengthening of synapses after strong or repeated stimulation, thought to underlie learning and memory.'],
+    learn:'A persistent increase in synaptic strength following high-frequency or coincident pre- and postsynaptic activity, first observed by Lømo in 1966 and described in full by Bliss and Lømo (1973) in the rabbit hippocampus. Its NMDA-receptor-dependent form implements Hebb\'s rule and is a leading cellular model of learning and memory. In aged rats LTP decays faster, and its persistence predicts spatial memory (Barnes, 1979), one explanation for unstable place-cell maps in old rats.' },
+
+  { id:'critical_period', answer:'Critical period', aliases:['critical periods','sensitive period','sensitive periods','critical window'], cat:'neuron', unit:'L10', source:'Lecture 10 (what is plasticity?)',
+    clues:[
+      'Eric Knudsen found that young barn owls wearing prisms realign their auditory space maps, but adult owls barely do unless the shift comes in small steps.',
+      'Maturing inhibition helps open and close it: in mice lacking GAD65, an enzyme that makes GABA, it does not begin until a benzodiazepine is given (Fagiolini and Hensch, 2000).',
+      'In the lecture, closing one eye for a few weeks in a kitten let the open eye take over visual cortex, but closing an eye for over a year in an adult cat had no detectable effect.',
+      'Neuroplasticity is the brain\'s ability to change at any age; this is a limited developmental window when change comes most easily.',
+      'A window in development when the brain is especially sensitive to experience, so that experience then has lasting effects.'],
+    learn:'A limited window in development during which experience has an especially strong and lasting effect on brain wiring. The classic example is ocular dominance: Hubel and Wiesel showed that closing one eye during a kitten\'s critical period (from about 3 weeks to 3 months of age) shifts visual cortex toward the open eye, while the same deprivation in adulthood has little effect. The maturation of inhibitory (GABA) circuits helps open and close critical periods (Hensch, 2005), and researchers are testing whether drugs can reopen them.' },
+
+  { id:'remapping', answer:'Remapping', aliases:['place cell remapping','global remapping','hippocampal remapping','remap'], cat:'memory', unit:'L10', source:'Lecture 10 (do old rats keep their maps?)',
+    clues:[
+      'Muller and Kubie (1987) first described it, when changing a rat\'s enclosure from a cylinder to a rectangle reshuffled where each place cell fired.',
+      'In its global form, every place cell either fires in a new, unrelated location or falls silent, as if the animal were in a new environment.',
+      'In the lecture, old rats taken out of a familiar box and put back often drew a completely new map of the same place, while young rats\' maps were reliable (Barnes et al., 1997).',
+      'A place cell fires in one location of an environment; this is the whole population\'s switch to a new arrangement of firing locations.',
+      'A change in where hippocampal place cells fire, usually after the environment changes, so that a place is represented by a new map.'],
+    learn:'A change in the spatial firing pattern of a population of hippocampal place cells, so that an environment is represented by a different map. Remapping normally occurs when the environment changes substantially (Muller and Kubie, 1987). In old rats, the hippocampus sometimes remaps a familiar environment after the rat is taken out and returned (Barnes et al., 1997), consistent with faster-decaying LTP, and this may contribute to age-related spatial memory problems.' },
+
+  { id:'neurogenesis', answer:'Adult neurogenesis', aliases:['neurogenesis','adult hippocampal neurogenesis','hippocampal neurogenesis','adult-born neurons'], cat:'neuron', unit:'L10', source:'Lecture 10 (do adults make new neurons?)',
+    clues:[
+      'Joseph Altman reported it in grown rats in the 1960s using radioactive thymidine, but the claim was largely ignored until the 1990s.',
+      'In rodents it happens throughout life in the dentate gyrus of the hippocampus and the lining of the lateral ventricles, and it declines with age.',
+      'In the lecture, carbon-14 from Cold War bomb tests dated about 700 new neurons a day in each adult hippocampus, yet in 2018 one team found none in adults and another found thousands in 79-year-olds.',
+      'Synaptic plasticity changes the strength of connections between existing neurons; this adds brand-new neurons.',
+      'The birth of new neurons in the adult brain, especially in the hippocampus, whose extent in humans is still debated.'],
+    learn:'The generation of new neurons in the adult brain. In rodents it occurs throughout life in the dentate gyrus of the hippocampus (and the subventricular zone), declining with age and increased by exercise. In humans the evidence is contested: cell-division labeling (Eriksson et al., 1998) and carbon-14 dating (Spalding et al., 2013, about 700 new neurons per hippocampus per day) support it, Sorrells et al. (2018) found none in adults, and later studies disagree, partly because of tissue fixation and the markers used.' },
+
+  { id:'perceptual_learning', answer:'Perceptual learning', aliases:['visual perceptual learning','perceptual training','texture discrimination learning'], cat:'vision', unit:'L10', source:'Lecture 10 (do older brains learn differently?)',
+    clues:[
+      'Karni and Sagi (1991) found that gains on their texture task did not carry over to untrained locations in the visual field, suggesting changes in early visual cortex.',
+      'Its improvements are often specific to the trained feature and location, and they can keep growing for hours after a session, especially after sleep.',
+      'In the lecture, older and younger adults improved equally on a texture task, but in older adults the white matter under trained visual cortex changed, while younger adults showed more activity there instead.',
+      'The method of loci is a deliberate memory strategy; this is improvement in seeing itself, from repeated practice.',
+      'Long-lasting improvement in the ability to detect or discriminate sensory stimuli through practice.'],
+    learn:'Long-lasting improvement in sensory discrimination through practice, often specific to the trained feature and location, which points to changes in early sensory cortex (Karni and Sagi, 1991). Older adults still show it: on a texture discrimination task, older and younger adults improved equally, but older adults showed increased white matter FA beneath the trained region of visual cortex, whereas younger adults showed increased activity there (Yotsumoto et al., 2014).' },
+
+  { id:'method_of_loci', answer:'Method of loci', aliases:['memory palace','mind palace','loci method','method of places','journey method'], cat:'memory', unit:'L10', source:'Lecture 10 (can practice close the age gap?)',
+    clues:[
+      'Cicero credited its invention to the poet Simonides of Ceos, who identified the guests crushed in a collapsed banquet hall by remembering where each had been sitting.',
+      'Memory champions have ordinary intellect and brain structure, yet when memorizing with it they engage the hippocampus and other spatial memory areas (Maguire et al., 2003).',
+      'In the lecture, older adults trained in it for 38 sessions still recalled fewer words (14) than young adults did after their first lessons (17) (Baltes and Kliegl, 1992).',
+      'Perceptual learning improves how well you see; this is a deliberate strategy for remembering lists by placing them along an imagined route.',
+      'A memory technique in which items are mentally placed at locations along a familiar route and recalled by retracing it.'],
+    learn:'A mnemonic in which items are mentally placed along a sequence of familiar locations and recalled by mentally walking the route; it is attributed to Simonides of Ceos and is used by memory champions. In "testing the limits" studies (Baltes and Kliegl, 1992), older adults improved greatly with extended training but never reached the levels young adults achieved after brief instruction, showing that the maximum capacity to learn shrinks with age.' },
+
+  { id:'brain_training', answer:'Brain training', aliases:['cognitive training','brain-training games','brain training games','computerized cognitive training','speed of processing training','speed training'], cat:'aging', unit:'L10', source:'Lecture 10 (does brain training work?)',
+    clues:[
+      'Nintendo\'s 2005 game built on neuroscientist Ryuta Kawashima\'s research sold about 19 million copies and set off a commercial boom in it.',
+      'People get better at the practiced games, but gains rarely carry over to other tasks; a review of every study cited by the companies found none that met all the standards of a good trial (Simons et al., 2016).',
+      'In the lecture\'s ACTIVE trial, 10 sessions of processing-speed practice plus boosters went with 25% lower dementia risk over 20 years, while memory and reasoning sessions showed no significant effect.',
+      'Aerobic exercise trains the body in the hope of helping the brain; this trains thinking directly with practice on computerized tasks.',
+      'Practicing cognitive tasks or games in the hope of improving thinking and slowing cognitive decline.'],
+    learn:'Practice on cognitive tasks or games intended to improve cognition. Participants reliably improve on the trained tasks, but transfer to related tasks is weaker and to everyday function is little supported (Owen et al., 2010; Simons et al., 2016); in 2016 Lumosity\'s maker paid $2 million to settle FTC charges of deceptive advertising, including claims about delaying age-related decline. One notable result under debate: in the ACTIVE trial, speed-of-processing training with booster sessions was associated with lower dementia risk 20 years later (Coe et al., 2026).' },
+
+  { id:'far_transfer', answer:'Far transfer', aliases:['transfer of training','transfer effects','generalization of training'], cat:'memory', unit:'L10', source:'Lecture 10 (does brain training work?)',
+    clues:[
+      'Thorndike and Woodworth (1901) found that practicing one mental skill, such as estimating the areas of rectangles, barely improved others, undermining the old idea that exercising the mind like a muscle strengthens it in general.',
+      'Studies look for it with untrained outcome measures that share no surface features with the training, ideally against an active control group that also expects to benefit.',
+      'In the lecture\'s online study of 11,430 people, six weeks of training improved every trained task but left untrained tests of reasoning and memory no better than in controls (Owen et al., 2010).',
+      'Near transfer is improvement on tasks closely resembling the training; this is improvement on very different tasks and in everyday life.',
+      'Improvement from training that generalizes to untrained abilities very different from the trained task, such as everyday thinking.'],
+    learn:'Benefit of training that extends to untrained tasks or real-world abilities quite different from what was practiced, as opposed to near transfer to closely similar tasks. It has been sought since Thorndike and Woodworth (1901) and is the key claim of brain-training products, but large studies find improvement mainly on the trained tasks (Owen et al., 2010; Simons et al., 2016).' },
+
+  { id:'modifiable_risk_factor', answer:'Modifiable risk factor', aliases:['modifiable risk factors','modifiable risks','changeable risk factor','risk factor','Lancet Commission risk factors'], cat:'aging', unit:'L10', source:'Lecture 10 study guide',
+    clues:[
+      'The Lancet Commission counted nine of them for dementia in 2017, linked to about 35% of cases, and raised the count to 12 in 2020.',
+      'Their "population attributable fractions" estimate how much disease might be prevented if each were removed, assuming the associations are causal, which most observational studies cannot show.',
+      'In the lecture, 14 of them together may account for about 45% of dementia cases worldwide, with hearing loss and high LDL cholesterol in midlife the largest (7% each).',
+      'Age and genes such as APOE ε4 raise dementia risk but cannot be changed; this kind, such as high blood pressure, smoking or hearing loss, can be.',
+      'A cause or predictor of disease that can be changed by behavior or treatment, such as physical inactivity or high blood pressure.'],
+    learn:'A risk factor for a disease that can be changed through behavior, treatment or policy, unlike age or genes. The 2024 Lancet Commission listed 14 for dementia across the life course (less education; hearing loss, high LDL cholesterol, depression, traumatic brain injury, physical inactivity, diabetes, smoking, hypertension, obesity and excessive alcohol in midlife; social isolation, air pollution and untreated vision loss in late life), together potentially accounting for about 45% of cases, an estimate that assumes the associations are causal.' },
+
+  { id:'hearing_loss', answer:'Hearing loss', aliases:['age-related hearing loss','presbycusis','hearing impairment','untreated hearing loss'], cat:'aging', unit:'L10', source:'Lecture 10 (do hearing aids protect the brain?)',
+    clues:[
+      'Its age-related form usually begins at the highest frequencies and comes mostly from the loss of cochlear hair cells and their synapses with the auditory nerve.',
+      'Proposed links to dementia include effortful listening that draws resources from memory, fewer social contacts, and a common cause, such as vascular disease, that damages both ear and brain.',
+      'In the lecture it tied for the top of the Lancet Commission\'s list of changeable dementia risks (7%), but in the ACHIEVE trial treating it slowed decline only in a higher-risk subgroup.',
+      'Untreated vision loss is the late-life sensory risk on the Lancet list, about 2% of cases; this is the midlife one, tied for the largest share at about 7%.',
+      'The midlife sensory problem that the 2024 Lancet Commission named as one of the two largest modifiable risk factors for dementia.'],
+    learn:'Reduced hearing, which becomes common with age (age-related hearing loss, or presbycusis, mainly affecting high frequencies). Midlife hearing loss is one of the two largest potentially modifiable risk factors for dementia in the 2024 Lancet Commission report (about 7% of cases). In the ACHIEVE trial (Lin et al., 2023), hearing aids did not slow cognitive decline overall but slowed it by 48% in a higher-risk subgroup.' },
+
+  { id:'natural_experiment', answer:'Natural experiment', aliases:['natural experiments','regression discontinuity','regression discontinuity design','RDD'], cat:'methods', unit:'L10', source:'Lecture 10 (can a vaccine lower dementia risk?)',
+    clues:[
+      'John Snow\'s 1854 comparison of London households served by two water companies, one drawing sewage-polluted water, is a classic example that pointed to cholera\'s spread through water.',
+      'One common form compares people just on either side of an arbitrary cutoff, such as a birth date or a test score, who should otherwise be alike.',
+      'In the lecture, Welsh people born on or after 2 September 1933 could get the shingles vaccine and those born just before could not, and getting the vaccine cut new dementia diagnoses by about a fifth.',
+      'A randomized controlled trial assigns treatment by chance on purpose; this uses an accident of rules or history that assigns it almost as if by chance.',
+      'A study that uses an event or rule outside the researchers\' control, which sorts people into conditions almost randomly, to estimate a causal effect.'],
+    learn:'An observational study in which some event, policy or arbitrary rule assigns people to conditions in a way that is nearly random, allowing causal inference without a planned experiment. A regression discontinuity design compares people just on either side of a cutoff: in Wales, eligibility for the shingles vaccine depended on being born on or after 2 September 1933, and receiving the vaccine reduced new dementia diagnoses over seven years by about a fifth (Eyting et al., 2025).' },
+
+  { id:'white_matter_hyperintensities', answer:'White matter hyperintensities', aliases:['white matter hyperintensity','WMH','WMHs','white matter lesions','white matter lesion','leukoaraiosis'], cat:'aging', unit:'L10', source:'Lecture 10 (does white matter change with age?)',
+    clues:[
+      'Vladimir Hachinski coined a Greek name for them in 1987, describing their thinned-out look on CT scans, and the Fazekas scale, also from 1987, grades how extensive they are on MRI.',
+      'Under the microscope they show loss of myelin and axons and widened spaces around small vessels, and high blood pressure is their strongest modifiable risk factor.',
+      'In the lecture they become nearly universal with age: in a population sample of 1,077 people aged 60 to 90, 95% had some.',
+      'Lower FA in the genu is a subtle change in normal-looking white matter; these are visible patches of damage.',
+      'Bright spots in the white matter on certain MRI scans of older adults, usually reflecting small-vessel disease.'],
+    learn:'Areas of abnormal brightness in cerebral white matter on T2-weighted or FLAIR MRI, mostly reflecting small-vessel disease (demyelination, axon loss and enlarged spaces around vessels). They become nearly universal in older adults (95% of people aged 60 to 90 in the Rotterdam Scan Study had some) and are associated with hypertension, slower processing speed and higher risk of stroke and dementia.' },
 
   ]
 };
