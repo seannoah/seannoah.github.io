@@ -1,0 +1,17 @@
+{
+  "name": "Last Call: Feast or Famine",
+  "short_name": "Feast or Famine",
+  "description": "A harvest party at the Golden Goose: bet on your bids, eat the dishes, tip the band. Trick-taking from sunset to sunrise.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#1f0e08",
+  "theme_color": "#1f0e08",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
