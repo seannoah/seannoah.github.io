@@ -1,0 +1,1549 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Psychedelic Fixation</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Browser version of the lab's gaze-contingent hallucination demo: your mouse pointer stands in for your eyes.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Mono:wght@400;500&family=Familjen+Grotesk:wght@400;500;700&display=swap">
+<style>
+/* Layout: one full-bleed WebGL canvas; translucent chrome floats at the edges and dims
+   while the pointer rests, so the fixation point stays the only thing that matters. */
+:root {
+  color-scheme: dark;
+  --ink: #0c0a12;
+  --glass: rgba(17, 13, 26, 0.76);
+  --veil: rgba(6, 4, 10, 0.45);
+  --line: rgba(243, 238, 248, 0.14);
+  --fg: #f3eef8;
+  --soft: #ddd5e8;
+  --muted: #b0a6c2;
+  --bloom: #f05fdc;
+  --bloom-soft: rgba(240, 95, 220, 0.28);
+  --bloom-ink: #1c0718;
+  --tide: #4fd2ff;
+  --amber: #ffc24a;
+  --display: "Archivo Black", "Arial Black", Impact, sans-serif;
+  --body: "Familjen Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --mono: "DM Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+html, body { height: 100%; }
+body {
+  margin: 0; overflow: hidden; background: var(--ink); color: var(--fg);
+  font: 15px/1.45 var(--body); -webkit-font-smoothing: antialiased;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+[hidden] { display: none !important; }
+#gl { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: crosshair; }
+body.nocursor #gl { cursor: none; }
+.glass {
+  background: var(--glass); border: 1px solid var(--line); border-radius: 14px;
+  -webkit-backdrop-filter: blur(14px) saturate(1.2); backdrop-filter: blur(14px) saturate(1.2);
+}
+.eyebrow { font: 500 11.5px/1.2 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--bloom); }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+/* heads-up display */
+#hud {
+  position: fixed; top: calc(14px + env(safe-area-inset-top, 0px));
+  left: max(14px, env(safe-area-inset-left, 0px)); max-width: min(34rem, calc(100vw - 28px));
+  padding: 10px 14px; pointer-events: none; transition: opacity .7s;
+}
+#hud.fade { opacity: 0; }
+#hudMode { font: 15px/1.2 var(--display); letter-spacing: .03em; text-transform: uppercase; }
+#hudDesc { color: var(--muted); font-size: 13.5px; margin-top: 3px; }
+#hudState { font: 12px/1.3 var(--mono); color: var(--muted); margin-top: 6px; font-variant-numeric: tabular-nums; }
+#meter {
+  position: fixed; left: max(16px, env(safe-area-inset-left, 0px));
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px)); width: min(150px, 26vw); height: 6px;
+  border-radius: 3px; background: rgba(0, 0, 0, .45); overflow: hidden; pointer-events: none;
+}
+#meterFill { display: block; height: 100%; width: 0; background: var(--bloom); }
+#gazeDot {
+  position: fixed; left: 0; top: 0; width: 26px; height: 26px; margin: -15px 0 0 -15px;
+  border: 2px solid var(--tide); border-radius: 50%; box-shadow: 0 0 0 2px rgba(0, 0, 0, .4);
+  pointer-events: none;
+}
+#cortexLab { position: fixed; pointer-events: none; text-align: center; font-size: 12.5px; line-height: 1.35; text-shadow: 0 1px 3px rgba(0, 0, 0, .95), 0 0 8px rgba(0, 0, 0, .8); }
+#cortexLab b { display: block; font: 12px/1.3 var(--display); letter-spacing: .03em; text-transform: uppercase; }
+#cortexLab span { color: var(--muted); }
+#toast {
+  position: fixed; top: calc(16px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%);
+  padding: 9px 14px; font-size: 13.5px; opacity: 0; transition: opacity .35s; pointer-events: none;
+  z-index: 30; max-width: calc(100vw - 32px); text-align: center;
+}
+#toast.show { opacity: 1; }
+
+/* toolbar */
+#bar {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px;
+  padding: 7px; width: max-content; max-width: calc(100vw - 32px); transition: opacity .5s; z-index: 5;
+}
+#bar.dim { opacity: .2; }
+#bar:hover, #bar:focus-within { opacity: 1; }
+button, select {
+  font: 500 12.5px/1 var(--mono); color: var(--fg); background: rgba(255, 255, 255, .06);
+  border: 1px solid var(--line); border-radius: 9px; padding: 8px 10px; cursor: pointer;
+}
+select { padding-right: 6px; max-width: 11rem; }
+select option, select optgroup { background: var(--ink); color: var(--fg); }
+button:hover, select:hover { background: rgba(255, 255, 255, .13); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--tide); outline-offset: 2px; }
+button[aria-pressed="true"] { background: var(--bloom-soft); border-color: var(--bloom); }
+#modeName { min-width: 10.5em; }
+.primary { background: var(--bloom); color: var(--bloom-ink); border-color: transparent; padding: 11px 18px; font-size: 13.5px; }
+.primary:hover { background: var(--bloom); filter: brightness(1.08); }
+
+/* tune drawer */
+#tune {
+  position: fixed; top: calc(14px + env(safe-area-inset-top, 0px));
+  right: max(14px, env(safe-area-inset-right, 0px)); width: min(330px, calc(100vw - 28px));
+  max-height: calc(100% - 110px); overflow: auto; padding: 14px 16px 16px; z-index: 10;
+  display: grid; gap: 10px;
+}
+#tune p { margin: 0; color: var(--muted); font-size: 13px; }
+#sliders { display: grid; gap: 10px; }
+#sliders label { display: grid; grid-template-columns: 1fr auto; gap: 3px 10px; font-size: 13px; }
+#sliders output { font: 12px/1.4 var(--mono); color: var(--amber); font-variant-numeric: tabular-nums; }
+#sliders input { grid-column: 1 / -1; width: 100%; accent-color: var(--bloom); margin: 0; }
+#settingsOut {
+  width: 100%; box-sizing: border-box; height: 6.5em; font: 11px/1.35 var(--mono); color: var(--soft);
+  background: rgba(0, 0, 0, .35); border: 1px solid var(--line); border-radius: 8px; resize: vertical; padding: 8px;
+}
+
+/* modal cards */
+.modal {
+  position: fixed; inset: 0; display: grid; place-items: center; z-index: 20; background: var(--veil);
+  padding: calc(16px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px))
+           calc(16px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+}
+.card { width: 100%; max-width: 37rem; max-height: 100%; overflow: auto; padding: 26px 28px; box-sizing: border-box; display: grid; gap: 12px; }
+.card h1 { font: clamp(28px, 6vw, 40px)/1.02 var(--display); margin: 0; letter-spacing: -.01em; text-wrap: balance; }
+.card h2 { font: 20px/1.1 var(--display); margin: 0; letter-spacing: .01em; }
+.card p { margin: 0; color: var(--soft); max-width: 62ch; }
+.card .note { color: var(--amber); font-size: 13.5px; }
+.keys { font: 12px/1.9 var(--mono); color: var(--muted); }
+kbd {
+  font: 500 11.5px/1 var(--mono); padding: 3px 6px; border: 1px solid var(--line); border-radius: 5px;
+  background: rgba(255, 255, 255, .07); color: var(--fg); white-space: nowrap;
+}
+.keytable { display: grid; grid-template-columns: max-content 1fr; gap: 7px 14px; align-items: baseline; font-size: 14px; }
+.keytable dt { text-align: right; }
+.keytable dd { margin: 0; color: var(--soft); }
+#failLog { font: 11px/1.4 var(--mono); color: var(--muted); white-space: pre-wrap; max-height: 40vh; overflow: auto; margin: 0; }
+@media (max-width: 560px) {
+  #modeName { min-width: 0; }
+  #fsBtn, #photoBtn { display: none; }
+  .card { padding: 20px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<canvas id="gl" aria-label="Animated scene that distorts around the pointer"></canvas>
+
+<div id="hud" class="glass" aria-live="polite">
+  <div id="hudMode">1. Trip</div>
+  <div id="hudDesc"></div>
+  <div id="hudState"></div>
+</div>
+<div id="meter" aria-hidden="true"><i id="meterFill"></i></div>
+<div id="gazeDot" hidden></div>
+<div id="cortexLab" hidden></div>
+<div id="toast" class="glass" role="status"></div>
+
+<nav id="bar" class="glass" aria-label="Demo controls">
+  <button id="prevMode" type="button" aria-label="Previous effect">&lsaquo;</button>
+  <button id="modeName" type="button" title="Next effect">Trip</button>
+  <button id="nextMode" type="button" aria-label="Next effect">&rsaquo;</button>
+  <select id="world" aria-label="Scene"></select>
+  <button id="photoBtn" type="button">Your photo</button>
+  <input id="photoInput" type="file" accept="image/*" hidden>
+  <button id="trailsBtn" type="button" aria-pressed="true" title="Old blooms linger while new ones grow (T)">Trails</button>
+  <button id="autoBtn" type="button" aria-pressed="false" title="Simulated eye movements (D)">Auto-pilot</button>
+  <button id="cortexBtn" type="button" aria-pressed="false" title="Show the pattern in V1 coordinates (C)">V1 view</button>
+  <button id="tuneBtn" type="button" aria-pressed="false">Tune</button>
+  <button id="helpBtn" type="button" aria-label="Keyboard shortcuts">?</button>
+  <button id="fsBtn" type="button">Fullscreen</button>
+</nav>
+
+<aside id="tune" class="glass" hidden>
+  <div class="eyebrow">Tune the blooms</div>
+  <p>Drag the sliders while you watch. When it feels right, copy the settings and send them over.</p>
+  <div id="sliders"></div>
+  <div class="row">
+    <button id="copyBtn" type="button">Copy settings</button>
+    <button id="resetBtn" type="button">Defaults</button>
+  </div>
+  <textarea id="settingsOut" readonly aria-label="Current settings as JSON"></textarea>
+</aside>
+
+<div id="intro" class="modal">
+  <div class="card glass">
+    <div class="eyebrow">Eye-tracking demo &middot; mouse edition</div>
+    <h1>Psychedelic Fixation</h1>
+    <p>In the lab this runs on a Tobii eye tracker. Wherever you hold your gaze,
+      hallucination-like distortions bloom outward from that point and grow stronger
+      the longer you stay still.</p>
+    <p>Here, your <strong>mouse pointer stands in for your eyes</strong>. Rest it anywhere,
+      look right at it, and keep it still. Move it, and a new bloom starts there while
+      the old one slowly fades.</p>
+    <p class="note">Contains swirling motion and rapidly shifting colours.</p>
+    <div class="row">
+      <button id="startBtn" class="primary" type="button">Start</button>
+      <button id="startAuto" type="button">Watch auto-pilot</button>
+    </div>
+    <div class="keys"><kbd>1</kbd>&ndash;<kbd>8</kbd> effects &middot; <kbd>Space</kbd> next scene &middot;
+      <kbd>T</kbd> trails &middot; <kbd>H</kbd> all keys &middot; drop a photo to use your own</div>
+  </div>
+</div>
+
+<div id="help" class="modal" hidden>
+  <div class="card glass">
+    <h2>Controls</h2>
+    <dl class="keytable">
+      <dt>hold still</dt><dd>grow a bloom where the pointer rests</dd>
+      <dt><kbd>1</kbd>&ndash;<kbd>8</kbd> <kbd>&larr;</kbd> <kbd>&rarr;</kbd></dt><dd>effect: Trip, Breathing, Drifting, Kaleidoscope, Form constants, Recursion, Colour, Feedback</dd>
+      <dt><kbd>Space</kbd> <kbd>B</kbd></dt><dd>next / previous scene</dd>
+      <dt><kbd>T</kbd></dt><dd>trails: old blooms linger and fade, or every move resets</dd>
+      <dt><kbd>D</kbd></dt><dd>auto-pilot: simulated eye movements</dd>
+      <dt><kbd>A</kbd></dt><dd>always-on: full strength, follows the pointer</dd>
+      <dt><kbd>C</kbd> <kbd>P</kbd></dt><dd>V1 (cortex) view &middot; next form constant</dd>
+      <dt><kbd>[</kbd> <kbd>]</kbd></dt><dd>fewer / more kaleidoscope folds</dd>
+      <dt><kbd>R</kbd></dt><dd>clear all blooms</dd>
+      <dt><kbd>I</kbd> <kbd>F</kbd></dt><dd>hide the interface &middot; fullscreen</dd>
+      <dt>drop a photo</dt><dd>use your own image (it stays on your computer)</dd>
+    </dl>
+    <p>Form constants (key 5, then C): Klüver's tunnels, spirals and honeycombs are what
+      plain stripes and lattices of activity in V1 look like after the log-polar map from
+      retina to cortex (Bressloff et al., 2001).</p>
+    <div class="row"><button id="helpClose" class="primary" type="button">Back to the demo</button></div>
+  </div>
+</div>
+
+<div id="fail" class="modal" hidden>
+  <div class="card glass">
+    <h2 id="failTitle">This browser can't run the demo</h2>
+    <p id="failMsg"></p>
+    <pre id="failLog"></pre>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+// ===================================================================== GLSL
+// Ported from eyedemos/shaders/*.glsl|frag (desktop, GLSL 330) to WebGL2 (GLSL ES 3.00).
+const VS = `#version 300 es
+void main() {
+  vec2 p = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2));
+  gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0);
+}`;
+
+const HEAD = `#version 300 es
+precision highp float;
+precision highp int;
+precision highp sampler2D;
+`;
+
+const COMMON = `
+uniform vec2 u_res;
+uniform float u_yflip;
+const float PI = 3.14159265359;
+const float TAU = 6.28318530718;
+vec2 frag_px() { return vec2(gl_FragCoord.x, u_yflip > 0.0 ? u_res.y - gl_FragCoord.y : gl_FragCoord.y); }
+mat2 rot2(float a) { float c = cos(a), s = sin(a); return mat2(c, s, -s, c); }
+float hash12(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
+vec2 hash22(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * vec3(0.1031, 0.1030, 0.0973)); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.xx + p3.yz) * p3.zy); }
+float vnoise(vec2 p) {
+  vec2 i = floor(p), f = fract(p);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash12(i), hash12(i + vec2(1.0, 0.0)), u.x), mix(hash12(i + vec2(0.0, 1.0)), hash12(i + vec2(1.0, 1.0)), u.x), u.y);
+}
+float fbm(vec2 p) { float a = 0.5, s = 0.0; for (int i = 0; i < 5; i++) { s += a * vnoise(p); p = rot2(0.62) * p * 2.03 + 17.1; a *= 0.5; } return s / 0.97; }
+float fbm3(vec2 p) { float a = 0.5, s = 0.0; for (int i = 0; i < 3; i++) { s += a * vnoise(p); p = rot2(0.62) * p * 2.03 + 17.1; a *= 0.5; } return s / 0.875; }
+vec3 voronoi(vec2 p) {
+  vec2 i = floor(p), f = fract(p);
+  float d1 = 8.0, d2 = 8.0, id = 0.0;
+  for (int y = -1; y <= 1; y++)
+  for (int x = -1; x <= 1; x++) {
+    vec2 g = vec2(float(x), float(y));
+    vec2 o = hash22(i + g);
+    float d = length(g + o - f);
+    if (d < d1) { d2 = d1; d1 = d; id = hash12(i + g + 3.7); } else if (d < d2) { d2 = d; }
+  }
+  return vec3(d1, d2, id);
+}
+vec3 hsv2rgb(vec3 c) { vec3 p = abs(fract(c.xxx + vec3(0.0, 2.0 / 3.0, 1.0 / 3.0)) * 6.0 - 3.0); return c.z * mix(vec3(1.0), clamp(p - 1.0, 0.0, 1.0), c.y); }
+float luma(vec3 c) { return dot(c, vec3(0.2126, 0.7152, 0.0722)); }
+vec3 saturate_color(vec3 c, float s) { return mix(vec3(luma(c)), c, s); }
+vec3 hue_rotate(vec3 c, float a) { const vec3 k = vec3(0.57735); float ca = cos(a); return c * ca + cross(k, c) * sin(a) + k * dot(k, c) * (1.0 - ca); }
+`;
+
+const FORMCONST = `
+float form_pattern(vec2 w, int type, float t) {
+  const float K = 9.0;
+  const float N = 12.0;
+  if (type == 0) return cos(K * w.x - 2.4 * t);
+  if (type == 1) return cos(N * w.y + 0.5 * t);
+  if (type == 2) return cos(K * w.x + 7.0 * w.y - 2.4 * t);
+  if (type == 3) {
+    float n = 9.0;
+    float k = 2.0 * n / sqrt(3.0);
+    float f = cos(k * w.x - t) + cos(-0.5 * k * w.x + n * w.y - t) + cos(-0.5 * k * w.x - n * w.y - t);
+    return (f - 0.75) / 2.25;
+  }
+  if (type == 4) return cos(K * w.x - 2.0 * t) * cos(N * w.y);
+  float rings = cos(1.3 * K * w.x - 2.0 * t);
+  float rays = cos(N * w.y);
+  return max(rings, rays) * 1.2 - 0.2;
+}
+vec3 form_colorize(float f, vec2 w, float t) {
+  float bands = smoothstep(0.35, 0.9, f);
+  float glow = pow(max(f, 0.0), 3.0);
+  vec3 c = hsv2rgb(vec3(fract(0.16 * w.x - 0.045 * t + w.y / TAU), 0.78, 1.0));
+  return c * (0.85 * bands + 0.45 * glow);
+}
+float form_cycle(vec2 w, float t, float period) {
+  float k = floor(t / period);
+  int a = int(mod(k, 6.0));
+  int b = int(mod(k + 1.0, 6.0));
+  float x = smoothstep(period - 2.5, period, mod(t, period));
+  return mix(form_pattern(w, a, t), form_pattern(w, b, t), x);
+}
+`;
+
+const PSYCHEDELIC = `
+#define MAX_SRC 8
+uniform sampler2D u_image;
+uniform vec2 u_img_size;
+uniform sampler2D u_prev;
+uniform vec4 u_src[MAX_SRC];
+uniform vec4 u_src2[MAX_SRC];
+uniform int u_nsrc;
+uniform float u_time;
+uniform float u_ppd;
+uniform int u_mode;
+uniform int u_pattern;
+uniform float u_folds;
+out vec4 f_color;
+
+vec2 cover_uv(vec2 px) { float s = max(u_res.x / u_img_size.x, u_res.y / u_img_size.y); return ((px - 0.5 * u_res) / s + 0.5 * u_img_size) / u_img_size; }
+vec3 img(vec2 px) {
+  vec2 uv = cover_uv(px);
+  vec2 gx = clamp(dFdx(uv), -0.01, 0.01);
+  vec2 gy = clamp(dFdy(uv), -0.01, 0.01);
+  vec2 m = 1.0 - abs(1.0 - mod(uv, 2.0));
+  return textureGrad(u_image, m, gx, gy).rgb;
+}
+float bloom(int i, vec2 px, out vec2 d, out float rdeg) {
+  d = px - u_src[i].xy;
+  rdeg = length(d) / u_ppd;
+  float R = u_src2[i].x;
+  return u_src[i].w * (1.0 - smoothstep(0.55 * R, R, rdeg));
+}
+float strength(int i) { return smoothstep(0.0, 1.0, u_src[i].z); }
+vec2 cortex(vec2 d, float rdeg) { return vec2(log(rdeg + 0.5), atan(d.y, d.x)); }
+vec2 breathe_disp(vec2 d, float rdeg, float ph) {
+  float lr = log(rdeg + 0.6);
+  float k = 0.085 * sin(7.0 * lr - 2.0 * u_time + ph) + 0.045 * sin(1.1 * u_time + ph);
+  float th = 0.035 * sin(5.0 * atan(d.y, d.x) + 4.0 * lr - 0.8 * u_time + ph);
+  return d * k + vec2(-d.y, d.x) * th;
+}
+vec2 swirl_disp(vec2 d, float rdeg, float ph) { return vec2(-d.y, d.x) * (0.25 * sin(0.21 * u_time + ph) / (1.0 + 0.08 * rdeg)); }
+vec2 drift_flow(vec2 px) {
+  vec2 q = px / u_ppd;
+  float t = 0.12 * u_time;
+  vec2 n = vec2(fbm3(q * 0.28 + vec2(t, -0.7 * t)), fbm3(q * 0.28 + vec2(5.2 - 0.6 * t, 1.3 + t)));
+  return (n - 0.5) * 2.0;
+}
+vec2 kaleido(vec2 d, float n, float rot) {
+  float r = length(d);
+  float seg = TAU / n;
+  float a = mod(atan(d.y, d.x) + rot, seg);
+  a = abs(a - 0.5 * seg);
+  return r * vec2(cos(a), sin(a));
+}
+vec2 droste(vec2 d, float ph) {
+  float ls = log(2.6);
+  vec2 w = vec2(log(max(length(d) / u_ppd, 1e-3)), atan(d.y, d.x) + ph);
+  float c = ls / TAU;
+  vec2 ws = vec2(w.x + w.y * c, w.y - w.x * c);
+  ws.x = mod(ws.x - 0.18 * u_time, ls) + log(2.0);
+  return exp(ws.x) * vec2(cos(ws.y), sin(ws.y)) * u_ppd;
+}
+vec3 fx_breathe(vec2 px) {
+  vec2 disp = vec2(0.0); float wsum = 0.0, ring = 0.0;
+  for (int i = 0; i < MAX_SRC; i++) {
+    if (i >= u_nsrc) break;
+    vec2 d; float rdeg;
+    float a = bloom(i, px, d, rdeg) * strength(i);
+    float ph = u_src2[i].y;
+    disp += a * breathe_disp(d, rdeg, ph);
+    ring += a * sin(7.0 * log(rdeg + 0.6) - 2.0 * u_time + ph);
+    wsum += a;
+  }
+  vec3 c = img(px + disp / max(1.0, wsum));
+  return c * (1.0 + 0.16 * clamp(ring, -1.0, 1.0));
+}
+vec3 fx_drift(vec2 px) {
+  vec2 flow = drift_flow(px);
+  vec2 disp = vec2(0.0); float wsum = 0.0;
+  for (int i = 0; i < MAX_SRC; i++) {
+    if (i >= u_nsrc) break;
+    vec2 d; float rdeg;
+    float a = bloom(i, px, d, rdeg) * strength(i);
+    disp += a * (flow * (0.5 + 0.09 * rdeg) * u_ppd + swirl_disp(d, rdeg, u_src2[i].y));
+    wsum += a;
+  }
+  return img(px + disp / max(1.0, wsum));
+}
+vec3 fx_kaleido(vec2 px) {
+  vec3 c = img(px);
+  for (int i = 0; i < MAX_SRC; i++) {
+    if (i >= u_nsrc) break;
+    vec2 d; float rdeg;
+    float env = bloom(i, px, d, rdeg);
+    float ph = u_src2[i].y;
+    vec2 k = kaleido(d, u_folds, 0.04 * u_time + ph);
+    k *= exp(0.08 * sin(0.4 * u_time + log(rdeg + 1.0) + ph));
+    c = mix(c, img(u_src[i].xy + k), env * smoothstep(0.0, 0.35, strength(i)));
+  }
+  return c;
+}
+vec3 fx_form(vec2 px) {
+  vec2 disp = vec2(0.0); vec3 overlay = vec3(0.0); float wsum = 0.0, dark = 0.0;
+  for (int i = 0; i < MAX_SRC; i++) {
+    if (i >= u_nsrc) break;
+    vec2 d; float rdeg;
+    float a = bloom(i, px, d, rdeg) * strength(i);
+    float ph = u_src2[i].y;
+    disp += 0.3 * a * breathe_disp(d, rdeg, ph);
+    wsum += a;
+    vec2 w = cortex(d, rdeg);
+    float f = form_pattern(w, u_pattern, u_time + 3.0 * ph);
+    float m = a * smoothstep(0.15, 1.2, rdeg);
+    overlay += form_colorize(f, w, u_time) * m;
+    dark += 0.5 * m * smoothstep(-0.2, 0.7, f);
+  }
+  vec3 c = img(px + disp / max(1.0, wsum)) * (1.0 - clamp(dark, 0.0, 0.8));
+  return clamp(c + overlay, 0.0, 1.0);
+}
+vec3 fx_droste(vec2 px) {
+  vec3 c = img(px);
+  for (int i = 0; i < MAX_SRC; i++) {
+    if (i >= u_nsrc) break;
+    vec2 d; float rdeg;
+    float env = bloom(i, px, d, rdeg);
+    c = mix(c, img(u_src[i].xy + droste(d, u_src2[i].y)), env * smoothstep(0.0, 0.35, strength(i)));
+  }
+  return c;
+}
+vec3 fx_color(vec2 px, float scale) {
+  vec2 off = vec2(0.0); float hue = 0.0, sat = 0.0, bright = 0.0;
+  for (int i = 0; i < MAX_SRC; i++) {
+    if (i >= u_nsrc) break;
+    vec2 d; float rdeg;
+    float a = scale * bloom(i, px, d, rdeg) * strength(i);
+    float ph = u_src2[i].y;
+    float lr = log(rdeg + 0.6);
+    off += a * 0.012 * (1.0 + 0.03 * rdeg) * d;
+    hue += a * (1.6 * sin(5.0 * lr - 1.4 * u_time + ph) + 0.25 * u_time);
+    sat += a;
+    bright += a * sin(9.0 * lr - 2.6 * u_time + ph);
+  }
+  vec3 c = vec3(img(px + off).r, img(px).g, img(px - off).b);
+  c = hue_rotate(c, hue);
+  c = saturate_color(c, 1.0 + 1.3 * clamp(sat, 0.0, 1.0));
+  c *= 1.0 + 0.12 * clamp(bright, -1.0, 1.0);
+  return clamp(c, 0.0, 1.0);
+}
+vec3 fx_feedback(vec2 px) {
+  vec3 fresh = fx_color(px, 0.6);
+  vec2 pdisp = vec2(0.0); float k = 0.0;
+  for (int i = 0; i < MAX_SRC; i++) {
+    if (i >= u_nsrc) break;
+    vec2 d; float rdeg;
+    float a = bloom(i, px, d, rdeg) * strength(i);
+    float ph = u_src2[i].y;
+    vec2 w = cortex(d, rdeg);
+    fresh += form_colorize(form_pattern(w, 0, u_time + ph), w, u_time) * 0.35 * a * (1.0 - smoothstep(1.0, 4.0, rdeg));
+    pdisp += a * (rot2(0.016) * d * (1.0 - 0.014) - d);
+    k += a;
+  }
+  k = clamp(k, 0.0, 1.0);
+  vec3 prev = texture(u_prev, (px + pdisp) / u_res).rgb;
+  prev = hue_rotate(prev, 0.06 * k);
+  return clamp(mix(fresh, prev, 0.82 * k), 0.0, 1.0);
+}
+vec3 fx_trip(vec2 px) {
+  vec2 flow = drift_flow(px);
+  vec2 disp = vec2(0.0); vec3 overlay = vec3(0.0);
+  float wsum = 0.0, hue = 0.0, sat = 0.0, dark = 0.0;
+  for (int i = 0; i < MAX_SRC; i++) {
+    if (i >= u_nsrc) break;
+    vec2 d; float rdeg;
+    float env = bloom(i, px, d, rdeg);
+    float lev = u_src[i].z;
+    float ph = u_src2[i].y;
+    float s1 = smoothstep(0.00, 0.30, lev);
+    float s2 = smoothstep(0.15, 0.55, lev);
+    float s3 = smoothstep(0.40, 0.80, lev);
+    disp += env * (s1 * breathe_disp(d, rdeg, ph) + 0.8 * s2 * (flow * (0.5 + 0.09 * rdeg) * u_ppd + swirl_disp(d, rdeg, ph)));
+    wsum += env * max(s1, s2);
+    float lr = log(rdeg + 0.6);
+    hue += env * s1 * 1.2 * sin(4.0 * lr - 1.1 * u_time + ph);
+    sat += env * s1;
+    vec2 cw = cortex(d, rdeg);
+    float f = form_cycle(cw, u_time + 4.0 * ph, 12.0);
+    float m = 0.85 * env * s3 * smoothstep(0.15, 1.2, rdeg);
+    overlay += form_colorize(f, cw, u_time) * m;
+    dark += 0.35 * m * smoothstep(0.0, 0.8, f);
+  }
+  disp /= max(1.0, wsum);
+  vec3 c = img(px + disp);
+  for (int i = 0; i < MAX_SRC; i++) {
+    if (i >= u_nsrc) break;
+    float s4 = smoothstep(0.70, 1.00, u_src[i].z);
+    if (s4 > 0.0) {
+      vec2 d; float rdeg;
+      float env = bloom(i, px, d, rdeg);
+      c = mix(c, img(u_src[i].xy + kaleido(d + disp, u_folds, 0.03 * u_time + u_src2[i].y)), 0.85 * env * s4);
+    }
+  }
+  c = hue_rotate(c, hue);
+  c = saturate_color(c, 1.0 + 0.9 * clamp(sat, 0.0, 1.0));
+  c = c * (1.0 - clamp(dark, 0.0, 0.6)) + overlay;
+  return clamp(c, 0.0, 1.0);
+}
+void main() {
+  vec2 px = frag_px();
+  vec3 col;
+  if (u_mode == 0) col = fx_trip(px);
+  else if (u_mode == 1) col = fx_breathe(px);
+  else if (u_mode == 2) col = fx_drift(px);
+  else if (u_mode == 3) col = fx_kaleido(px);
+  else if (u_mode == 4) col = fx_form(px);
+  else if (u_mode == 5) col = fx_droste(px);
+  else if (u_mode == 6) col = fx_color(px, 1.0);
+  else col = fx_feedback(px);
+  f_color = vec4(col, 1.0);
+}
+`;
+
+const CORTEX = `
+uniform vec4 u_rect;
+uniform int u_pattern;
+uniform float u_time;
+out vec4 f_color;
+void main() {
+  vec2 q = (frag_px() - u_rect.xy) / u_rect.zw;
+  if (q.x < 0.0 || q.y < 0.0 || q.x > 1.0 || q.y > 1.0) discard;
+  vec2 w = vec2(mix(log(0.5), log(40.5), q.x), mix(-PI, PI, q.y));
+  float f = form_pattern(w, u_pattern, u_time);
+  f_color = vec4(vec3(0.04, 0.04, 0.06) + form_colorize(f, w, u_time), 1.0);
+}
+`;
+
+const BLIT = `
+uniform sampler2D u_tex;
+out vec4 f_color;
+void main() { f_color = vec4(texture(u_tex, frag_px() / u_res).rgb, 1.0); }
+`;
+
+const SCENES = `
+uniform int u_scene;
+uniform float u_ppd;
+uniform float u_seed;
+out vec4 f_color;
+
+vec3 bricks(vec2 p) {
+  vec2 bsize = vec2(2.6, 1.05);
+  vec2 q = p / bsize;
+  float row = floor(q.y);
+  q.x += mod(row, 2.0) * 0.5;
+  vec2 cell = floor(q), f = fract(q);
+  float mort = 0.09;
+  vec2 m = vec2(mort * bsize.y / bsize.x, mort);
+  float brick = smoothstep(0.0, m.x, f.x) * smoothstep(1.0, 1.0 - m.x, f.x) * smoothstep(0.0, m.y, f.y) * smoothstep(1.0, 1.0 - m.y, f.y);
+  float h = hash12(cell + u_seed);
+  vec3 bc = mix(vec3(0.50, 0.17, 0.10), vec3(0.78, 0.40, 0.24), h);
+  bc *= 0.72 + 0.4 * fbm3(p * 5.0 + cell * 3.1);
+  bc *= 0.85 + 0.3 * vnoise(p * 0.9 + 7.0);
+  vec3 mc = vec3(0.74, 0.71, 0.64) * (0.78 + 0.3 * vnoise(p * 14.0));
+  return mix(mc, bc, brick);
+}
+vec3 clouds(vec2 p, vec2 uv) {
+  vec3 sky = mix(vec3(0.16, 0.40, 0.82), vec3(0.58, 0.78, 0.96), uv.y);
+  vec2 q = p * vec2(0.10, 0.16) + vec2(3.0 + u_seed, 7.0);
+  float c = smoothstep(0.42, 0.72, fbm(q));
+  float shade = smoothstep(0.35, 0.85, fbm(q + vec2(0.03, -0.05)));
+  vec3 cloud = mix(vec3(1.0), vec3(0.68, 0.72, 0.82), shade * 0.85);
+  return mix(sky, cloud, c);
+}
+vec3 pebbles(vec2 p) {
+  vec2 q = p * 0.85;
+  q += 0.18 * vec2(fbm3(q), fbm3(q + 9.0));
+  vec3 v = voronoi(q + u_seed);
+  float edge = v.y - v.x;
+  float stone = smoothstep(0.03, 0.12, edge);
+  vec3 sc = mix(vec3(0.40, 0.36, 0.32), vec3(0.86, 0.80, 0.70), v.z);
+  sc = mix(sc, vec3(0.38, 0.46, 0.52), step(0.78, fract(v.z * 5.3)) * 0.7);
+  sc = mix(sc, vec3(0.62, 0.42, 0.30), step(0.85, fract(v.z * 11.7)) * 0.6);
+  sc *= 0.75 + 0.35 * fbm3(p * 7.0);
+  sc *= 0.55 + 0.45 * smoothstep(0.0, 0.45, edge);
+  sc += 0.12 * smoothstep(0.35, 0.0, v.x);
+  return mix(vec3(0.10, 0.08, 0.06), sc, stone);
+}
+float flower_sdf(vec2 q, float size, float petals) {
+  float r = length(q) / size;
+  float a = atan(q.y, q.x);
+  return (r - (0.5 + 0.5 * abs(cos(0.5 * petals * a)))) * size;
+}
+vec3 wallpaper(vec2 p) {
+  vec2 tile = vec2(4.6);
+  vec2 cell = floor(p / tile);
+  vec2 q = fract(p / tile) - 0.5;
+  if (mod(cell.x + cell.y, 2.0) > 0.5) q = q.yx * vec2(1.0, -1.0);
+  q = abs(q);
+  if (q.y > q.x) q = q.yx;
+  vec3 bg = vec3(0.30, 0.05, 0.12) * (0.85 + 0.25 * vnoise(p * 2.0));
+  vec3 gold = vec3(0.90, 0.68, 0.30);
+  float d = flower_sdf(q, 0.30, 8.0);
+  d = min(d, abs(length(q) - 0.38) - 0.012);
+  d = min(d, flower_sdf(q - vec2(0.5, 0.0), 0.12, 4.0));
+  d = min(d, abs(q.x + q.y - 0.86) - 0.010);
+  float vine = abs(q.y - 0.07 * sin(q.x * 25.0) - 0.20) - 0.008;
+  d = min(d, max(vine, 0.24 - q.x));
+  float inside = smoothstep(0.006, -0.006, d);
+  float line = smoothstep(0.012, 0.0, abs(d));
+  vec3 c = mix(bg, gold * (0.8 + 0.3 * smoothstep(0.0, -0.08, d)), inside);
+  return mix(c, vec3(0.20, 0.10, 0.04), line * 0.6);
+}
+vec3 carpet(vec2 p) {
+  vec2 tile = vec2(10.0, 10.0);
+  vec2 q = fract(p / tile) - 0.5;
+  float r = length(q) * 2.0;
+  float a = atan(q.y, q.x);
+  float star = r * (1.0 + 0.22 * cos(8.0 * a)) + 0.04 * cos(16.0 * a);
+  float band = floor(star * 6.0);
+  float fb = fract(star * 6.0);
+  vec3 pal0 = vec3(0.62, 0.10, 0.12), pal1 = vec3(0.08, 0.14, 0.38);
+  vec3 pal2 = vec3(0.92, 0.84, 0.66), pal3 = vec3(0.82, 0.58, 0.18);
+  float bi = mod(band, 4.0);
+  vec3 c = bi < 0.5 ? pal0 : bi < 1.5 ? pal1 : bi < 2.5 ? pal2 : pal3;
+  vec3 c2 = bi < 0.5 ? pal2 : bi < 1.5 ? pal3 : bi < 2.5 ? pal1 : pal0;
+  float motif = sin(a * (8.0 + 8.0 * mod(band, 3.0))) * sin(fb * PI);
+  c = mix(c, c2, smoothstep(0.45, 0.6, motif));
+  c *= 0.55 + 0.45 * smoothstep(0.0, 0.1, fb) * smoothstep(1.0, 0.9, fb);
+  vec2 g = abs(fract(p * 0.9) - 0.5);
+  float dia = smoothstep(0.30, 0.26, g.x + g.y);
+  vec3 field = mix(pal0 * 0.9, pal3, dia * 0.8);
+  c = mix(c, field, smoothstep(0.92, 1.0, star));
+  c *= 0.82 + 0.28 * vnoise(p * 30.0);
+  return c;
+}
+vec4 nearest_point(vec2 p) {
+  vec2 i = floor(p), f = fract(p);
+  float best = 8.0, id = 0.0;
+  vec2 bv = vec2(0.0);
+  for (int y = -1; y <= 1; y++)
+  for (int x = -1; x <= 1; x++) {
+    vec2 g = vec2(float(x), float(y));
+    vec2 v = g + hash22(i + g) - f;
+    float d = dot(v, v);
+    if (d < best) { best = d; bv = v; id = hash12(i + g + 3.7); }
+  }
+  return vec4(bv, sqrt(best), id);
+}
+vec3 garden(vec2 p) {
+  vec3 col = vec3(0.03, 0.07, 0.03) * (0.6 + 0.8 * fbm3(p * 0.4));
+  for (int layer = 0; layer < 3; layer++) {
+    float fl = float(layer);
+    vec2 q = p * (0.85 + 0.25 * fl) + fl * 17.3 + u_seed;
+    vec2 i = floor(q), f = fract(q);
+    for (int y = -1; y <= 1; y++)
+    for (int x = -1; x <= 1; x++) {
+      vec2 gcell = vec2(float(x), float(y));
+      vec2 o = hash22(i + gcell + fl * 3.1);
+      vec2 dv = gcell + o - f;
+      float ang = hash12(i + gcell + 7.7 + fl) * TAU;
+      vec2 u = rot2(-ang) * (-dv);
+      float L = 0.78, Wd = 0.30;
+      float t = clamp(u.x / L, -1.0, 1.0);
+      float hw = Wd * (1.0 - t * t);
+      float inside = step(abs(u.x), L) * smoothstep(hw, hw - 0.05, abs(u.y));
+      if (inside > 0.0) {
+        float h = hash12(i + gcell + 1.3 + fl);
+        vec3 lc = mix(vec3(0.10, 0.32, 0.07), vec3(0.52, 0.78, 0.20), h);
+        lc *= 0.5 + 0.28 * fl;
+        lc *= 0.75 + 0.45 * (0.5 + 0.5 * u.y / Wd);
+        lc *= 1.0 - 0.35 * smoothstep(0.03, 0.0, abs(u.y));
+        lc *= 1.0 - 0.2 * smoothstep(0.02, 0.0, abs(abs(u.y) - 0.35 * (L - abs(u.x))));
+        col = mix(col, lc, inside);
+      }
+    }
+  }
+  vec4 fl = nearest_point(p * 0.42 + 51.0 + u_seed);
+  if (fl.w > 0.70) {
+    float s = 0.34;
+    vec2 v = -fl.xy;
+    float d = fl.z;
+    float a = atan(v.y, v.x) + fl.w * 20.0;
+    float pr = s * (0.5 + 0.5 * abs(cos(2.5 * a)));
+    float petals = smoothstep(pr, pr - 0.03, d);
+    vec3 pc = hsv2rgb(vec3(fract(fl.w * 7.3), 0.65, 1.0));
+    col = mix(col, pc * (0.75 + 0.25 * smoothstep(s, 0.0, d)), petals);
+    col = mix(col, vec3(1.0, 0.82, 0.2), smoothstep(s * 0.26, s * 0.18, d));
+  }
+  return col;
+}
+float ridge_h(float x, float seed) {
+  float h = 0.0, a = 0.5, f = 1.0;
+  for (int k = 0; k < 5; k++) {
+    float n = vnoise(vec2(x * f, seed + 3.1 * float(k)));
+    n = 1.0 - abs(2.0 * n - 1.0);
+    h += a * n * n;
+    f *= 2.07;
+    a *= 0.5;
+  }
+  return h / 0.97;
+}
+const float LAKE_HZ = 0.58;
+const vec2 LAKE_SUN = vec2(0.70, 0.33);
+vec3 lake_above(vec2 p, vec2 uv) {
+  float aspect = u_res.x / u_res.y;
+  vec3 col = mix(vec3(0.99, 0.70, 0.45), vec3(0.22, 0.42, 0.80), smoothstep(LAKE_HZ, 0.02, uv.y));
+  float sd = length((uv - LAKE_SUN) * vec2(aspect, 1.0));
+  col += vec3(1.0, 0.82, 0.55) * (smoothstep(0.045, 0.035, sd) + 0.35 * exp(-sd * 7.0));
+  float cl = fbm(vec2(p.x * 0.05, p.y * 0.22) + vec2(3.0, u_seed));
+  col = mix(col, vec3(1.0, 0.88, 0.80), smoothstep(0.55, 0.8, cl) * smoothstep(LAKE_HZ, 0.15, uv.y) * 0.55);
+  for (int i = 0; i < 3; i++) {
+    float fi = float(i);
+    float base = 0.06 - 0.03 * fi;
+    float amp = 0.30 - 0.10 * fi;
+    float rh = ridge_h(p.x * (0.045 + 0.025 * fi) + 7.3 * fi, 11.0 + fi);
+    if (i == 2) rh += 0.08 * vnoise(vec2(p.x * 3.0, 5.0));
+    float top = LAKE_HZ - base - amp * rh;
+    if (uv.y > top && uv.y < LAKE_HZ) {
+      float below = uv.y - top;
+      vec3 rock = i == 0 ? vec3(0.47, 0.47, 0.62) : (i == 1 ? vec3(0.27, 0.33, 0.40) : vec3(0.09, 0.17, 0.11));
+      rock *= 0.8 + 0.35 * vnoise(vec2(p.x * 0.9, p.y * 3.5) + fi * 9.0);
+      if (i == 0) rock = mix(rock, vec3(0.97, 0.95, 1.0), smoothstep(0.55, 0.75, rh) * smoothstep(0.05, 0.015, below));
+      rock = mix(rock, col, 0.45 - 0.2 * fi);
+      col = rock;
+    }
+  }
+  return col;
+}
+vec3 lake(vec2 p, vec2 uv) {
+  if (uv.y < LAKE_HZ) return lake_above(p, uv);
+  float depth = uv.y - LAKE_HZ;
+  float rip = 0.006 * sin(p.y * 7.0 + 4.0 * vnoise(p * vec2(0.3, 1.5))) * (0.2 + 5.0 * depth);
+  vec2 m = vec2(uv.x + rip, 2.0 * LAKE_HZ - uv.y);
+  vec3 col = lake_above(m * u_res / u_ppd, m) * vec3(0.60, 0.70, 0.78);
+  float glit = smoothstep(0.78, 1.0, vnoise(vec2(p.x * 2.5, p.y * 16.0))) * exp(-abs(uv.x - LAKE_SUN.x) * 9.0 / (0.3 + depth * 4.0));
+  col += vec3(1.0, 0.85, 0.6) * glit * 0.9;
+  col *= 1.0 - 0.45 * smoothstep(0.0, 0.42, depth);
+  col *= smoothstep(0.0, 0.004, depth) * 0.6 + 0.4;
+  return col;
+}
+vec3 nebula(vec2 p) {
+  vec2 q = p * 0.06 + u_seed;
+  float n1 = fbm(q + vec2(1.7, 9.2));
+  float n2 = fbm(q * 1.8 + vec2(2.0 * n1, 3.1));
+  float n3 = fbm(q * 3.5 + 1.5 * n2);
+  vec3 c = vec3(0.01, 0.01, 0.03);
+  c += vec3(0.60, 0.10, 0.48) * smoothstep(0.35, 0.85, n2) * 0.95;
+  c += vec3(0.10, 0.35, 0.70) * smoothstep(0.40, 0.90, n1) * 0.85;
+  c += vec3(1.0, 0.55, 0.25) * pow(smoothstep(0.50, 0.95, n3 * n2 * 1.6), 2.0);
+  c *= 0.35 + 0.65 * smoothstep(0.25, 0.6, fbm(q * 2.5 + 11.0));
+  for (int i = 0; i < 2; i++) {
+    vec2 g = p * (1.1 + 1.6 * float(i)) + 17.0 * float(i);
+    vec2 id = floor(g), f = fract(g) - 0.5;
+    float h = hash12(id + 5.0);
+    float d = length(f - 0.35 * (hash22(id) - 0.5));
+    float sz = mix(0.02, 0.11, h * h);
+    vec3 sc = mix(vec3(0.70, 0.80, 1.0), vec3(1.0, 0.85, 0.70), hash12(id + 9.0));
+    c += sc * smoothstep(sz, 0.0, d) * step(0.55, h) * (0.6 + 0.9 * h);
+    c += sc * 0.25 * exp(-d * 18.0) * step(0.93, h);
+  }
+  return c;
+}
+vec3 sunflowers(vec2 p) {
+  const float cell = 6.2;
+  vec2 id = floor(p / cell);
+  vec3 col = mix(vec3(0.05, 0.16, 0.05), vec3(0.20, 0.42, 0.12), fbm3(p * 0.35 + u_seed));
+  col *= 0.7 + 0.5 * vnoise(p * 2.5);
+  for (int y = -1; y <= 1; y++)
+  for (int x = -1; x <= 1; x++) {
+    vec2 cid = id + vec2(float(x), float(y));
+    vec2 c = (cid + 0.5 + 0.35 * (hash22(cid + 31.0) - 0.5)) * cell;
+    float s = 0.85 + 0.35 * hash12(cid + 7.0);
+    float Rc = 1.15 * s, Ro = 2.6 * s;
+    vec2 v = p - c;
+    float r = length(v);
+    if (r > Ro * 1.05) continue;
+    float th = atan(v.y, v.x) + hash12(cid + 3.0) * TAU;
+    for (int L = 1; L >= 0; L--) {
+      float fl = float(L);
+      float a = th * 21.0 / TAU + 0.5 * fl;
+      float f = abs(fract(a) - 0.5) * 2.0;
+      float len = Ro * (1.0 - 0.15 * fl) * (0.93 + 0.07 * hash12(cid + floor(a)));
+      float rt = Rc + (len - Rc) * sqrt(max(0.0, 1.0 - f * f));
+      float ins = smoothstep(rt + 0.04, rt - 0.04, r);
+      vec3 pc = mix(vec3(0.95, 0.60, 0.05), vec3(1.0, 0.86, 0.18), (r - Rc) / (Ro - Rc));
+      pc *= (0.82 + 0.18 * (1.0 - f)) * (1.0 - 0.18 * fl);
+      col = mix(col, pc, ins);
+    }
+    if (r < Rc * 1.02) {
+      float rn = r / Rc;
+      float a1 = cos(21.0 * th - 80.4 * rn * rn);
+      float a2 = cos(34.0 * th + 49.7 * rn * rn);
+      float seeds = smoothstep(0.15, 0.85, 0.25 * (a1 + a2) + 0.5);
+      vec3 sc = mix(vec3(0.15, 0.07, 0.03), vec3(0.45, 0.27, 0.08), seeds);
+      sc = mix(sc, vec3(0.38, 0.42, 0.10), smoothstep(0.35, 0.0, rn) * 0.6);
+      sc *= 0.7 + 0.3 * smoothstep(1.0, 0.75, rn);
+      col = mix(col, sc, smoothstep(Rc, Rc - 0.05, r));
+    }
+  }
+  return col;
+}
+vec3 wood(vec2 p) {
+  const float bh = 3.6;
+  float row = floor(p.y / bh);
+  float yb = p.y - row * bh;
+  float sx = p.x + hash12(vec2(row, 1.0)) * 50.0;
+  float joint = floor(sx / 28.0);
+  float ringv = yb + row * 13.7 + 6.0 * fbm3(vec2(sx * 0.03, yb * 0.25 + row) + joint * 4.1);
+  float kx = floor(sx / 12.0);
+  float knot = 0.0;
+  if (hash12(vec2(kx, row + 5.0)) > 0.6) {
+    vec2 kc = vec2((kx + 0.5) * 12.0, bh * (0.3 + 0.4 * hash12(vec2(kx, row))));
+    float dd = length((vec2(sx, yb) - kc) * vec2(0.45, 1.0));
+    ringv += 1.3 * exp(-dd * 1.1);
+    knot = exp(-dd * 3.0);
+  }
+  float rings = fract(ringv * 1.6);
+  float late = smoothstep(0.0, 0.25, rings) * smoothstep(0.55, 0.3, rings);
+  float tone = hash12(vec2(row, joint));
+  vec3 light = mix(vec3(0.86, 0.62, 0.38), vec3(0.76, 0.48, 0.27), tone);
+  vec3 dark = mix(vec3(0.55, 0.32, 0.15), vec3(0.40, 0.21, 0.10), tone);
+  vec3 c = mix(light, dark, late * 0.85);
+  c *= 0.86 + 0.2 * vnoise(vec2(sx * 0.6, yb * 25.0));
+  c *= 1.0 - 0.55 * knot;
+  float gap = smoothstep(0.0, 0.06, yb) * smoothstep(bh, bh - 0.06, yb) * smoothstep(0.0, 0.06, sx - joint * 28.0);
+  return c * (0.3 + 0.7 * gap);
+}
+vec3 marble(vec2 p) {
+  vec2 q = p * 0.08 + u_seed;
+  float s1 = abs(sin(q.x * 3.0 + q.y * 1.5 + 9.0 * fbm(q * 1.5)));
+  float v1 = 1.0 - smoothstep(0.0, 0.16, s1);
+  float halo = 1.0 - smoothstep(0.0, 0.55, s1);
+  float v2 = 1.0 - smoothstep(0.0, 0.05, abs(sin(-2.0 * q.x + 4.0 * q.y + 12.0 * fbm(q * 3.5 + 7.0))));
+  vec3 base = mix(vec3(0.94, 0.93, 0.90), vec3(0.74, 0.75, 0.74), fbm(q * 4.0 + 3.0));
+  vec3 c = mix(base, vec3(0.55, 0.60, 0.58), halo * 0.45);
+  c = mix(c, vec3(0.16, 0.24, 0.21), v1 * 0.9);
+  c = mix(c, vec3(0.82, 0.63, 0.30), v2 * 0.75);
+  c *= 0.94 + 0.08 * vnoise(p * 6.0);
+  vec2 slab = fract(p / 16.0);
+  return c * (0.75 + 0.25 * smoothstep(0.0, 0.004, slab.x) * smoothstep(0.0, 0.004, slab.y));
+}
+float sd_box2(vec2 p, vec2 b) { vec2 d = abs(p) - b; return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0); }
+vec3 mosaic(vec2 p) {
+  const float tile = 4.2;
+  vec2 cid = floor(p / tile);
+  vec2 q = fract(p / tile) - 0.5;
+  mat2 r45 = rot2(0.7853982);
+  float star = min(sd_box2(q, vec2(0.27)), sd_box2(r45 * q, vec2(0.27)));
+  float inner = min(sd_box2(q, vec2(0.12)), sd_box2(r45 * q, vec2(0.12)));
+  vec2 qc = abs(q) - 0.5;
+  float cross_ = min(sd_box2(qc, vec2(0.17, 0.055)), sd_box2(qc, vec2(0.055, 0.17)));
+  float h = hash12(cid + u_seed);
+  vec3 blue = mix(vec3(0.05, 0.20, 0.50), vec3(0.10, 0.34, 0.64), h);
+  vec3 green = vec3(0.07, 0.42, 0.32), terra = vec3(0.72, 0.30, 0.15) * (0.85 + 0.2 * h);
+  vec3 cream = vec3(0.93, 0.90, 0.82);
+  const float gr = 0.012;
+  vec3 c = cream * 0.92;
+  c = mix(c, terra, smoothstep(gr, 0.0, cross_ + gr));
+  c = mix(c, blue, smoothstep(gr, 0.0, star + gr));
+  c = mix(c, cream, smoothstep(gr, 0.0, inner + gr));
+  c = mix(c, green, smoothstep(gr, 0.0, inner + 0.05 + gr));
+  c *= 0.88 + 0.2 * vnoise(p * 3.0 + 10.0 * h);
+  c += 0.07 * smoothstep(0.03, 0.0, abs(star + 0.03));
+  return c;
+}
+void main() {
+  vec2 px = frag_px();
+  vec2 p = px / u_ppd;
+  vec2 uv = px / u_res;
+  vec3 c;
+  if (u_scene == 0) c = garden(p);
+  else if (u_scene == 1) c = bricks(p);
+  else if (u_scene == 2) c = wallpaper(p);
+  else if (u_scene == 3) c = clouds(p, uv);
+  else if (u_scene == 4) c = pebbles(p);
+  else if (u_scene == 5) c = carpet(p);
+  else if (u_scene == 6) c = lake(p, uv);
+  else if (u_scene == 7) c = nebula(p);
+  else if (u_scene == 8) c = sunflowers(p);
+  else if (u_scene == 9) c = wood(p);
+  else if (u_scene == 10) c = marble(p);
+  else c = mosaic(p);
+  f_color = vec4(clamp(c, 0.0, 1.0), 1.0);
+}
+`;
+
+// ============================================================= content
+const MODES = [
+  ['Trip', 'Everything in stages: colour, breathing, drifting, geometry, then kaleidoscope'],
+  ['Breathing', 'Surfaces swell and contract in rings radiating from where you look'],
+  ['Drifting', 'Textures crawl and flow, one of the most common psychedelic reports'],
+  ['Kaleidoscope', 'Mirror symmetry blooms around fixation ([ and ] change the folds)'],
+  ['Form constants', "Klüver's tunnels, spirals and lattices: stripes in V1 (C shows the cortex, P cycles)"],
+  ['Recursion', 'A Droste spiral: the scene around fixation repeats inside itself forever'],
+  ['Colour', 'Hue waves, boosted saturation and chromatic fringes radiating outward'],
+  ['Feedback', 'Video-feedback tunnel: each frame echoes the last, zoomed and rotated'],
+];
+const PATTERNS = ['tunnel', 'funnel', 'spiral', 'honeycomb', 'dartboard', 'cobweb'];
+const WORLDS = [
+  ['garden', 'Garden', 1], ['bricks', 'Bricks', 1], ['wallpaper', 'Wallpaper', 1],
+  ['clouds', 'Clouds', 1], ['pebbles', 'Pebbles', 1], ['carpet', 'Carpet', 1],
+  ['lake', 'Mountain lake', 2], ['nebula', 'Nebula', 2], ['sunflowers', 'Sunflowers', 2],
+  ['wood', 'Wood', 2], ['marble', 'Marble', 2], ['mosaic', 'Mosaic', 2],
+];
+
+// Same names and defaults as PsychedelicConfig in eyedemos/config.py.
+const DEFAULTS = {
+  ramp_s: 12, onset_delay_s: 0.5, fade_in_tau_s: 1.8, bloom_s: 5, linger_tau_s: 2.5, carry: 0.6,
+  decay_tau_s: 0.13, max_sources: 6, anchor_tolerance_deg: 2.0, break_s: 0.06, blink_grace_s: 0.6,
+  anchor_follow_per_s: 0.6, min_radius_deg: 1.5, max_radius_deg: 50, weak_radius_frac: 0.35,
+};
+const TUNABLE = [
+  ['ramp_s', 'Build-up to full strength', 4, 30, 0.5, ' s'],
+  ['fade_in_tau_s', 'New bloom fade-in', 0.2, 5, 0.1, ' s'],
+  ['bloom_s', 'Spread to full size', 1, 12, 0.5, ' s'],
+  ['linger_tau_s', 'Old blooms linger', 0.3, 10, 0.1, ' s'],
+  ['carry', 'Strength carried to the next bloom', 0, 1, 0.05, ''],
+  ['max_radius_deg', 'Maximum bloom radius', 10, 60, 1, '°'],
+  ['anchor_tolerance_deg', 'Pointer wobble allowed', 0.5, 5, 0.1, '°'],
+  ['max_sources', 'Blooms at once', 1, 8, 1, ''],
+];
+const VIEW_DEG = 40;           // the window is treated as 40° of visual angle wide
+const MAX_SRC = 8;
+const STORE = 'psychedelic-fixation.settings.v1';
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function loadSettings() {
+  const p = { ...DEFAULTS };
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORE) || '{}');
+    for (const k of Object.keys(DEFAULTS)) if (typeof saved[k] === 'number') p[k] = saved[k];
+  } catch (e) { /* storage unavailable: defaults */ }
+  return p;
+}
+function saveSettings() { try { localStorage.setItem(STORE, JSON.stringify(P)); } catch (e) { /* ignore */ } }
+let P = loadSettings();
+
+// ================================================================ DOM
+const $ = (id) => document.getElementById(id);
+const canvas = $('gl');
+const ui = {
+  hud: $('hud'), mode: $('hudMode'), desc: $('hudDesc'), state: $('hudState'), meter: $('meterFill'),
+  bar: $('bar'), modeName: $('modeName'), world: $('world'), trails: $('trailsBtn'), auto: $('autoBtn'),
+  cortex: $('cortexBtn'), tuneBtn: $('tuneBtn'), tune: $('tune'), toast: $('toast'), dot: $('gazeDot'),
+  cortexLab: $('cortexLab'), intro: $('intro'), help: $('help'), out: $('settingsOut'),
+};
+let toastTimer = 0;
+function toast(msg) {
+  ui.toast.textContent = msg;
+  ui.toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => ui.toast.classList.remove('show'), 2200);
+}
+function fail(title, msg, log) {
+  $('failTitle').textContent = title;
+  $('failMsg').textContent = msg;
+  $('failLog').textContent = log || '';
+  $('fail').hidden = false;
+  ui.intro.hidden = true;
+}
+
+// ================================================================ WebGL
+const gl = canvas.getContext('webgl2', { antialias: false, alpha: false, depth: false, stencil: false,
+                                          powerPreference: 'high-performance' });
+if (!gl) {
+  fail("This browser can't run the demo", 'It needs WebGL 2, which current Chrome, Edge, Firefox and Safari (15+) all support. Try one of those, or turn on hardware acceleration.');
+  return;
+}
+gl.bindVertexArray(gl.createVertexArray());
+const aniso = gl.getExtension('EXT_texture_filter_anisotropic');
+
+class Prog {
+  constructor(name, body) {
+    const vs = this.shader(gl.VERTEX_SHADER, VS, name);
+    const fs = this.shader(gl.FRAGMENT_SHADER, HEAD + COMMON + body, name);
+    this.p = gl.createProgram();
+    gl.attachShader(this.p, vs);
+    gl.attachShader(this.p, fs);
+    gl.linkProgram(this.p);
+    if (!gl.getProgramParameter(this.p, gl.LINK_STATUS)) throw new Error(`${name}: ${gl.getProgramInfoLog(this.p)}`);
+    this.loc = {};
+  }
+  shader(type, src, name) {
+    const s = gl.createShader(type);
+    gl.shaderSource(s, src);
+    gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+      const lines = src.split('\n').map((l, i) => `${String(i + 1).padStart(4)} ${l}`).join('\n');
+      throw new Error(`${name}: ${gl.getShaderInfoLog(s)}\n${lines}`);
+    }
+    return s;
+  }
+  use() { gl.useProgram(this.p); return this; }
+  l(n) { if (!(n in this.loc)) this.loc[n] = gl.getUniformLocation(this.p, n); return this.loc[n]; }
+  f(n, ...v) { const l = this.l(n); if (l) [gl.uniform1f, gl.uniform2f, gl.uniform3f, gl.uniform4f][v.length - 1].call(gl, l, ...v); return this; }
+  i(n, v) { const l = this.l(n); if (l) gl.uniform1i(l, v); return this; }
+  v4(n, arr) { const l = this.l(n); if (l) gl.uniform4fv(l, arr); return this; }
+}
+
+let progs;
+try {
+  progs = {
+    psy: new Prog('psychedelic', FORMCONST + PSYCHEDELIC),
+    cortex: new Prog('cortex', FORMCONST + CORTEX),
+    blit: new Prog('blit', BLIT),
+    scenes: new Prog('scenes', SCENES),
+  };
+} catch (e) {
+  console.error(e);
+  fail('The shaders did not compile on this computer', 'Please send this message to the lab so we can fix it:', String(e.message || e).slice(0, 4000));
+  return;
+}
+
+function makeTarget(w, h) {
+  const tex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  const fb = gl.createFramebuffer();
+  gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+  gl.clearColor(0, 0, 0, 1);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+  return { tex, fb, w, h };
+}
+function freeTarget(t) { if (t) { gl.deleteFramebuffer(t.fb); gl.deleteTexture(t.tex); } }
+function mipmap(tex) {
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.generateMipmap(gl.TEXTURE_2D);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+  if (aniso) gl.texParameterf(gl.TEXTURE_2D, aniso.TEXTURE_MAX_ANISOTROPY_EXT, 8);
+}
+function bindTex(unit, tex) { gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, tex); }
+function drawTo(prog, target) {
+  const w = target ? target.w : canvas.width;
+  const h = target ? target.h : canvas.height;
+  gl.bindFramebuffer(gl.FRAMEBUFFER, target ? target.fb : null);
+  gl.viewport(0, 0, w, h);
+  prog.f('u_res', w, h).f('u_yflip', target ? -1 : 1);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
+
+// ===================================================== sizing & quality
+let quality = 1.0;              // lowered automatically if frames get slow
+let ping = [null, null], pingI = 0;
+const worldTex = new Map();     // world index -> {tex, w, h}
+let photo = null;               // {tex, w, h, name}
+
+function pixelScale() { return Math.min(window.devicePixelRatio || 1, 2) * quality; }
+function ppd() { return canvas.width / VIEW_DEG; }
+function resize() {
+  const s = pixelScale();
+  const w = Math.max(2, Math.round(window.innerWidth * s));
+  const h = Math.max(2, Math.round(window.innerHeight * s));
+  if (w === canvas.width && h === canvas.height && ping[0]) return;
+  const kx = w / (canvas.width || w), ky = h / (canvas.height || h);
+  canvas.width = w;
+  canvas.height = h;
+  freeTarget(ping[0]); freeTarget(ping[1]);
+  ping = [makeTarget(w, h), makeTarget(w, h)];
+  for (const t of worldTex.values()) gl.deleteTexture(t.tex);
+  worldTex.clear();
+  for (const b of blooms) { b.x *= kx; b.y *= ky; }   // keep blooms where they were on screen
+  if (cand) { cand.x *= kx; cand.y *= ky; }
+  pointer.x *= kx; pointer.y *= ky;
+  pilot.x *= kx; pilot.y *= ky; pilot.fx *= kx; pilot.fy *= ky; pilot.tx *= kx; pilot.ty *= ky;
+}
+let resizeTimer = 0;
+window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(resize, 120); });
+
+function worldTexture(i) {
+  let t = worldTex.get(i);
+  if (t) return t;
+  const target = makeTarget(canvas.width, canvas.height);
+  progs.scenes.use().i('u_scene', i).f('u_ppd', ppd()).f('u_seed', 3.0 * i);
+  drawTo(progs.scenes, target);
+  gl.deleteFramebuffer(target.fb);
+  mipmap(target.tex);
+  t = { tex: target.tex, w: target.w, h: target.h };
+  worldTex.set(i, t);
+  return t;
+}
+
+// ========================================================= state
+const S = {
+  mode: 0, pattern: 0, folds: 8, world: 0, usePhoto: false, trails: true, always: false,
+  autopilot: false, cortex: false, uiHidden: false, t: 0, hudT: 0, started: false,
+};
+let blooms = [], active = null, cand = null, candT = 0, away = 0, gap = 0, lastLevel = 0;
+const pointer = { x: 0, y: 0, valid: false, lastMove: 0 };
+const pilot = { x: 0, y: 0, fx: 0, fy: 0, tx: 0, ty: 0, tMove: -1, tNext: 0 };
+const srcArr = new Float32Array(MAX_SRC * 4), src2Arr = new Float32Array(MAX_SRC * 4);
+
+const ease = (x) => { x = Math.min(Math.max(x, 0), 1); return x * x * (3 - 2 * x); };
+
+function startBloom(p) {
+  const b = { x: p.x, y: p.y, level: (S.trails ? P.carry : 0) * lastLevel, weight: 0, grow: 0,
+              phase: Math.random() * Math.PI * 2, active: true, fadeTau: P.linger_tau_s };
+  blooms.push(b);
+  active = b;
+  away = 0;
+}
+function abandon() {
+  if (!active) return;
+  active.active = false;
+  active.fadeTau = S.trails ? P.linger_tau_s : P.decay_tau_s;
+  lastLevel = active.level;
+  active = null;
+  away = 0;
+}
+function resetBlooms() { blooms = []; active = null; cand = null; candT = away = gap = lastLevel = 0; }
+
+function autopilotGaze(t) {
+  const W = canvas.width, H = canvas.height;
+  if (t >= pilot.tNext) {
+    pilot.fx = pilot.x; pilot.fy = pilot.y;
+    if (pilot.tNext > 0 && Math.random() < 0.3) {            // short hop near the last spot
+      const a = Math.random() * Math.PI * 2, r = (2.5 + Math.random() * 4) * ppd();
+      pilot.tx = Math.min(W * 0.92, Math.max(W * 0.08, pilot.x + r * Math.cos(a)));
+      pilot.ty = Math.min(H * 0.9, Math.max(H * 0.1, pilot.y + r * Math.sin(a)));
+    } else {
+      pilot.tx = W * (0.12 + 0.76 * Math.random());
+      pilot.ty = H * (0.15 + 0.70 * Math.random());
+    }
+    pilot.tMove = t;
+    pilot.tNext = t + 1.2 + Math.random() * 3.8;               // fixation duration
+  }
+  const f = Math.min(1, (t - pilot.tMove) / 0.045);            // 45 ms saccade
+  pilot.x = pilot.fx + (pilot.tx - pilot.fx) * f;
+  pilot.y = pilot.fy + (pilot.ty - pilot.fy) * f;
+  return { x: pilot.x, y: pilot.y };
+}
+
+let clock = 0;   // real seconds since start (bloom dynamics use real time)
+function updateBlooms(dt) {
+  clock += dt;
+  const p = S.autopilot ? autopilotGaze(clock) : (pointer.valid ? { x: pointer.x, y: pointer.y } : null);
+  const k_ppd = ppd(), tol = P.anchor_tolerance_deg;
+  if (S.always) {
+    if (p) {
+      if (!active) startBloom(p);
+      const k = Math.min(1, dt * 12);
+      active.x += (p.x - active.x) * k;
+      active.y += (p.y - active.y) * k;
+      active.level = Math.min(1, active.level + dt / 1.5);
+      active.grow = 1;
+    }
+  } else if (p) {
+    gap = 0;
+    if (active) {
+      if (Math.hypot(p.x - active.x, p.y - active.y) / k_ppd <= tol) {
+        away = 0;
+        const k = Math.min(1, dt * P.anchor_follow_per_s);
+        active.x += (p.x - active.x) * k;
+        active.y += (p.y - active.y) * k;
+        active.level = Math.min(1, active.level + dt / P.ramp_s);
+      } else {
+        away += dt;
+        if (away >= P.break_s) { abandon(); cand = { x: p.x, y: p.y }; candT = 0; }
+      }
+    } else if (!cand || Math.hypot(p.x - cand.x, p.y - cand.y) / k_ppd > tol) {
+      cand = { x: p.x, y: p.y }; candT = 0;
+    } else {
+      candT += dt;
+      if (candT >= P.onset_delay_s) startBloom(cand);
+    }
+  } else {
+    gap += dt;
+    if (gap > P.blink_grace_s && active) { abandon(); cand = null; }
+  }
+  const fadeIn = 1 - Math.exp(-dt / P.fade_in_tau_s);
+  for (const b of blooms) {
+    if (b.active) b.weight += (1 - b.weight) * fadeIn;
+    else b.weight *= Math.exp(-dt / b.fadeTau);
+    b.grow = Math.min(1, b.grow + dt / P.bloom_s);
+  }
+  blooms = blooms.filter((b) => b.active || b.weight > 0.02);
+  const cap = Math.max(1, Math.min(Math.round(P.max_sources), MAX_SRC));
+  while (blooms.length > cap) {
+    const i = blooms.findIndex((b) => !b.active);
+    blooms.splice(i >= 0 ? i : 0, 1);
+  }
+}
+function bloomRadius(b) {
+  const reach = P.weak_radius_frac + (1 - P.weak_radius_frac) * ease(b.level / 0.75);
+  return P.min_radius_deg + (P.max_radius_deg - P.min_radius_deg) * ease(b.grow) * reach;
+}
+function intensity() { return blooms.reduce((m, b) => Math.max(m, b.level * b.weight), 0); }
+
+// ========================================================== render
+function render() {
+  const img = S.usePhoto && photo ? photo : worldTexture(S.world);
+  const cur = ping[pingI], prev = ping[1 - pingI];
+  const list = blooms.slice(-MAX_SRC);
+  srcArr.fill(0); src2Arr.fill(0);
+  list.forEach((b, i) => {
+    srcArr.set([b.x, b.y, b.level, b.weight], i * 4);
+    src2Arr.set([bloomRadius(b), b.phase, 0, 0], i * 4);
+  });
+  const ps = progs.psy.use();
+  bindTex(0, img.tex); ps.i('u_image', 0);
+  bindTex(1, prev.tex); ps.i('u_prev', 1);
+  ps.f('u_img_size', img.w, img.h).i('u_nsrc', list.length).v4('u_src', srcArr).v4('u_src2', src2Arr)
+    .f('u_time', S.t).f('u_ppd', ppd()).i('u_mode', S.mode).i('u_pattern', S.pattern).f('u_folds', S.folds);
+  drawTo(ps, cur);
+  const bl = progs.blit.use();
+  bindTex(0, cur.tex); bl.i('u_tex', 0);
+  drawTo(bl, null);
+  if (S.cortex) {
+    const r = cortexRect(), s = canvas.width / window.innerWidth;
+    progs.cortex.use().f('u_rect', r.x * s, r.y * s, r.w * s, r.h * s)
+      .i('u_pattern', S.mode === 4 ? S.pattern : Math.floor(S.t / 12) % 6).f('u_time', S.t);
+    drawTo(progs.cortex, null);
+  }
+  pingI = 1 - pingI;
+}
+function cortexRect() {          // CSS px, bottom-left above the toolbar (the Tune panel is on the right)
+  const w = Math.min(340, window.innerWidth * 0.3), h = w * 0.62;
+  return { x: 24, y: window.innerHeight - h - 130, w, h };
+}
+
+// ============================================================== HUD
+let hudKey = '';
+function updateHud(dt) {
+  S.hudT += dt;
+  const [name, desc] = MODES[S.mode];
+  const label = `${S.mode + 1}. ${name}${S.mode === 4 ? ': ' + PATTERNS[S.pattern] : ''}`;
+  const fix = active && !S.always ? `fixating ${(clock - (active.t0 ?? clock)).toFixed(1)} s` : (S.always ? 'always-on' : 'no fixation');
+  const state = `${blooms.length} bloom${blooms.length === 1 ? '' : 's'} · ${fix} · trails ${S.trails ? 'on' : 'off'}${S.autopilot ? ' · auto-pilot' : ''}`;
+  const key = label + desc + state;
+  if (key !== hudKey) {
+    hudKey = key;
+    ui.mode.textContent = label;
+    ui.desc.textContent = desc;
+    ui.state.textContent = state;
+  }
+  ui.hud.classList.toggle('fade', S.uiHidden || (S.hudT > 4.5 && !ui.hud.matches(':hover')));
+  ui.meter.style.width = `${(intensity() * 100).toFixed(1)}%`;
+  const idle = performance.now() - pointer.lastMove > 1800;
+  ui.bar.classList.toggle('dim', idle && !S.autopilot);
+  ui.bar.hidden = S.uiHidden;
+  $('meter').hidden = S.uiHidden;
+  if (S.autopilot) {
+    const s = window.innerWidth / canvas.width;
+    ui.dot.style.transform = `translate(${pilot.x * s}px, ${pilot.y * s}px)`;
+  }
+  ui.dot.hidden = !S.autopilot || S.uiHidden;
+  ui.cortexLab.hidden = !S.cortex || S.uiHidden;
+}
+function showHud() { S.hudT = 0; }
+
+// ======================================================== controls
+function setMode(m) {
+  S.mode = (m + MODES.length) % MODES.length;
+  ui.modeName.textContent = MODES[S.mode][0];
+  showHud();
+}
+function setWorld(i) {
+  S.usePhoto = false;
+  S.world = (i + WORLDS.length) % WORLDS.length;
+  ui.world.value = String(S.world);
+  try {
+    if (location.hash.slice(1) !== WORLDS[S.world][0]) history.replaceState(null, '', '#' + WORLDS[S.world][0]);
+  } catch (e) { /* some embeds forbid history changes */ }
+}
+function stepWorld(d) {
+  if (S.usePhoto) { setWorld(d > 0 ? 0 : WORLDS.length - 1); return; }
+  setWorld(S.world + d);
+  toast(WORLDS[S.world][1]);
+}
+function setPressed(btn, on) { btn.setAttribute('aria-pressed', on ? 'true' : 'false'); }
+function toggleTrails() {
+  S.trails = !S.trails;
+  setPressed(ui.trails, S.trails);
+  toast(S.trails ? 'Trails on: old blooms linger while new ones grow' : 'Trails off: every move resets the hallucinations');
+}
+function toggleAuto(force) {
+  S.autopilot = force ?? !S.autopilot;
+  setPressed(ui.auto, S.autopilot);
+  if (S.autopilot) {
+    pilot.x = pilot.fx = pilot.tx = canvas.width / 2;
+    pilot.y = pilot.fy = pilot.ty = canvas.height / 2;
+    pilot.tNext = clock + 3.0;
+  }
+  document.body.classList.toggle('nocursor', S.autopilot);
+  toast(S.autopilot ? 'Auto-pilot: simulated eye movements (fixations of 1-5 s)' : 'Auto-pilot off: the pointer is your gaze again');
+}
+function toggleCortex() {
+  S.cortex = !S.cortex;
+  setPressed(ui.cortex, S.cortex);
+  if (S.cortex && S.mode !== 0 && S.mode !== 4) setMode(4);
+  placeCortexLabel();
+}
+function placeCortexLabel() {
+  const r = cortexRect();
+  ui.cortexLab.innerHTML = '';
+  const top = document.createElement('b'); top.textContent = "What V1 'sees': plain stripes";
+  const bottom = document.createElement('span');
+  bottom.textContent = 'x: log eccentricity · y: polar angle. The retina-to-V1 map turns these into tunnels and spirals.';
+  ui.cortexLab.append(top, bottom);
+  Object.assign(ui.cortexLab.style, { left: `${r.x}px`, top: `${r.y - 22}px`, width: `${r.w}px` });
+  top.style.marginBottom = `${r.h + 8}px`;
+}
+function toggleTune() {
+  ui.tune.hidden = !ui.tune.hidden;
+  setPressed(ui.tuneBtn, !ui.tune.hidden);
+}
+function fullscreen() {
+  const el = document.documentElement;
+  if (document.fullscreenElement) document.exitFullscreen?.();
+  else if (el.requestFullscreen) el.requestFullscreen().catch(() => toast('Fullscreen is not available here'));
+  else toast('Fullscreen is not available here');
+}
+function start(auto) {
+  ui.intro.hidden = true;
+  S.started = true;
+  showHud();
+  canvas.focus?.();
+  if (auto) toggleAuto(true);
+}
+
+// world picker
+(() => {
+  for (const part of [1, 2]) {
+    const g = document.createElement('optgroup');
+    g.label = part === 1 ? 'Part I' : 'Part II';
+    WORLDS.forEach(([, label, p], i) => {
+      if (p !== part) return;
+      const o = document.createElement('option');
+      o.value = String(i); o.textContent = label;
+      g.append(o);
+    });
+    ui.world.append(g);
+  }
+})();
+ui.world.addEventListener('change', () => {
+  if (ui.world.value === 'photo') { S.usePhoto = true; return; }
+  setWorld(Number(ui.world.value));
+  ui.world.blur();
+});
+
+// tune sliders
+function renderSettings() { ui.out.value = JSON.stringify(Object.fromEntries(TUNABLE.map(([k]) => [k, P[k]]).concat([['trails', S.trails]])), null, 1); }
+(() => {
+  const box = $('sliders');
+  for (const [key, label, lo, hi, step, unit] of TUNABLE) {
+    const id = `s_${key}`;
+    const lab = document.createElement('label');
+    lab.htmlFor = id;
+    const name = document.createElement('span'); name.textContent = label;
+    const out = document.createElement('output'); out.id = `${id}_out`;
+    const inp = document.createElement('input');
+    Object.assign(inp, { id, type: 'range', min: lo, max: hi, step, value: P[key] });
+    const show = () => { out.textContent = `${(+P[key]).toFixed(step < 0.1 ? 2 : step < 1 ? 1 : 0)}${unit}`; };
+    inp.addEventListener('input', () => { P[key] = parseFloat(inp.value); show(); saveSettings(); renderSettings(); });
+    lab.append(name, out, inp);
+    box.append(lab);
+    show();
+  }
+  renderSettings();
+})();
+$('copyBtn').addEventListener('click', async () => {
+  renderSettings();
+  try { await navigator.clipboard.writeText(ui.out.value); toast('Settings copied'); }
+  catch (e) { ui.out.focus(); ui.out.select(); toast('Press Ctrl/Cmd+C to copy the selected settings'); }
+});
+$('resetBtn').addEventListener('click', () => {
+  P = { ...DEFAULTS };
+  saveSettings();
+  for (const [key, , , , step, unit] of TUNABLE) {
+    $(`s_${key}`).value = P[key];
+    $(`s_${key}_out`).textContent = `${(+P[key]).toFixed(step < 0.1 ? 2 : step < 1 ? 1 : 0)}${unit}`;
+  }
+  renderSettings();
+  toast('Back to the default settings');
+});
+
+// your own photo (stays in the browser)
+async function usePhoto(file) {
+  if (!file || !file.type.startsWith('image/')) { toast('That file is not an image'); return; }
+  try {
+    const bmp = await createImageBitmap(file);
+    const max = gl.getParameter(gl.MAX_TEXTURE_SIZE);
+    let src = bmp, w = bmp.width, h = bmp.height;
+    if (Math.max(w, h) > Math.min(max, 4096)) {
+      const k = Math.min(max, 4096) / Math.max(w, h);
+      w = Math.round(w * k); h = Math.round(h * k);
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      c.getContext('2d').drawImage(bmp, 0, 0, w, h);
+      src = c;
+    }
+    if (photo) gl.deleteTexture(photo.tex);
+    const tex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, src);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    mipmap(tex);
+    photo = { tex, w, h, name: file.name };
+    let opt = ui.world.querySelector('option[value="photo"]');
+    if (!opt) { opt = document.createElement('option'); opt.value = 'photo'; ui.world.append(opt); }
+    opt.textContent = 'Your photo';
+    ui.world.value = 'photo';
+    S.usePhoto = true;
+    toast(`Using ${file.name}`);
+  } catch (e) {
+    console.error(e);
+    toast("Couldn't read that image");
+  }
+}
+$('photoBtn').addEventListener('click', () => $('photoInput').click());
+$('photoInput').addEventListener('change', (e) => usePhoto(e.target.files[0]));
+window.addEventListener('dragover', (e) => e.preventDefault());
+window.addEventListener('drop', (e) => { e.preventDefault(); usePhoto(e.dataTransfer.files[0]); });
+
+// buttons
+$('prevMode').addEventListener('click', () => setMode(S.mode - 1));
+$('nextMode').addEventListener('click', () => setMode(S.mode + 1));
+ui.modeName.addEventListener('click', () => setMode(S.mode + 1));
+ui.trails.addEventListener('click', toggleTrails);
+ui.auto.addEventListener('click', () => toggleAuto());
+ui.cortex.addEventListener('click', toggleCortex);
+ui.tuneBtn.addEventListener('click', toggleTune);
+$('helpBtn').addEventListener('click', () => { ui.help.hidden = false; });
+$('helpClose').addEventListener('click', () => { ui.help.hidden = true; });
+$('fsBtn').addEventListener('click', fullscreen);
+$('startBtn').addEventListener('click', () => start(false));
+$('startAuto').addEventListener('click', () => start(true));
+
+// pointer = gaze
+function toCanvas(e) {
+  const s = canvas.width / window.innerWidth;
+  pointer.x = e.clientX * s;
+  pointer.y = e.clientY * s;
+  pointer.valid = true;
+  pointer.lastMove = performance.now();
+}
+window.addEventListener('pointermove', toCanvas, { passive: true });
+window.addEventListener('pointerdown', toCanvas, { passive: true });
+window.addEventListener('pointerup', (e) => { if (e.pointerType === 'touch') pointer.valid = false; });
+document.documentElement.addEventListener('pointerleave', () => { pointer.valid = false; });
+window.addEventListener('blur', () => { pointer.valid = false; });
+
+// keyboard
+window.addEventListener('keydown', (e) => {
+  if (e.target.closest && e.target.closest('input, select, textarea')) return;
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const k = e.key;
+  if (k === 'Escape') { ui.help.hidden = true; if (!ui.intro.hidden) start(false); return; }
+  if (!ui.intro.hidden && (k === 'Enter' || k === ' ')) { e.preventDefault(); start(false); return; }
+  if (k >= '1' && k <= '8') setMode(Number(k) - 1);
+  else if (k === 'ArrowRight') setMode(S.mode + 1);
+  else if (k === 'ArrowLeft') setMode(S.mode - 1);
+  else if (k === ' ' || k === 'n' || k === 'N') { e.preventDefault(); stepWorld(1); }
+  else if (k === 'b' || k === 'B') stepWorld(-1);
+  else if (k === 't' || k === 'T') toggleTrails();
+  else if (k === 'd' || k === 'D') toggleAuto();
+  else if (k === 'a' || k === 'A') { S.always = !S.always; toast(S.always ? 'Always-on: full strength, follows the pointer' : 'Fixation mode: hold still to grow a bloom'); }
+  else if (k === 'c' || k === 'C') toggleCortex();
+  else if (k === 'p' || k === 'P') { S.pattern = (S.pattern + 1) % PATTERNS.length; if (S.mode !== 4) setMode(4); toast(`Form constant: ${PATTERNS[S.pattern]}`); showHud(); }
+  else if (k === '[' || k === ']') { S.folds = Math.max(2, Math.min(24, S.folds + (k === ']' ? 1 : -1))); toast(`Kaleidoscope: ${S.folds} folds`); }
+  else if (k === 'r' || k === 'R') { resetBlooms(); toast('Cleared'); }
+  else if (k === 'h' || k === 'H' || k === '?') ui.help.hidden = !ui.help.hidden;
+  else if (k === 'i' || k === 'I') { S.uiHidden = !S.uiHidden; }
+  else if (k === 'f' || k === 'F') fullscreen();
+  else return;
+  showHud();
+});
+window.addEventListener('resize', () => { if (S.cortex) placeCortexLabel(); });
+
+// ============================================================ loop
+let last = performance.now(), slowFor = 0, warm = 0, frameAvg = 1 / 60;
+function frame(now) {
+  const raw = (now - last) / 1000;
+  last = now;
+  const dt = Math.min(raw, 0.1);
+  warm += dt;
+  if (raw < 0.1 && warm > 3) {                       // keep it smooth on slower GPUs
+    frameAvg = frameAvg * 0.95 + raw * 0.05;
+    if (frameAvg > 1 / 38) {
+      slowFor += raw;
+      if (slowFor > 2.5 && quality > 0.5) {
+        quality = Math.max(0.5, quality * 0.8);
+        slowFor = 0; frameAvg = 1 / 60;
+        resize();
+        toast(`Lowered the resolution to keep it smooth (${Math.round(quality * 100)}%)`);
+      }
+    } else slowFor = 0;
+  }
+  S.t += dt * (reduceMotion ? 0.5 : 1);
+  if (active && active.t0 === undefined) active.t0 = clock;
+  updateBlooms(S.started ? dt : 0);
+  render();
+  updateHud(dt);
+  requestAnimationFrame(frame);
+}
+
+// Test hook for automated checks: step the simulation at a fixed 60 fps, optionally
+// with the "gaze" held at (fx, fy) in fractions of the window. Harmless for viewers.
+window.__psyTest = {
+  advance(seconds, fx, fy) {
+    S.started = true;
+    if (fx !== undefined) {
+      pointer.x = fx * canvas.width; pointer.y = fy * canvas.height; pointer.valid = true;
+    }
+    const n = Math.max(1, Math.round(seconds * 60));
+    for (let i = 0; i < n; i++) {
+      S.t += 1 / 60;
+      if (active && active.t0 === undefined) active.t0 = clock;
+      updateBlooms(1 / 60);
+      if (i % 3 === 0 || i === n - 1) render();
+    }
+    updateHud(1 / 60);
+    return { blooms: blooms.length, intensity: +intensity().toFixed(3), mode: MODES[S.mode][0] };
+  },
+  mode: (m) => setMode(m),
+  world: (w) => setWorld(w),
+  key: (k) => window.dispatchEvent(new KeyboardEvent('keydown', { key: k })),
+};
+
+// boot
+const fromHash = WORLDS.findIndex(([slug]) => slug === location.hash.slice(1));
+resize();
+setMode(0);
+setWorld(fromHash >= 0 ? fromHash : 0);
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
