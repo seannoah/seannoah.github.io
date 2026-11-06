@@ -102,7 +102,7 @@ button[aria-pressed="true"] { background: var(--bloom-soft); border-color: var(-
 #tune {
   position: fixed; top: calc(14px + env(safe-area-inset-top, 0px));
   right: max(14px, env(safe-area-inset-right, 0px)); width: min(330px, calc(100vw - 28px));
-  max-height: calc(100% - 110px); overflow: auto; padding: 14px 16px 16px; z-index: 10;
+  max-height: calc(100% - 110px); overflow: auto; padding: 14px 16px 16px; z-index: 10; box-sizing: border-box;
   display: grid; gap: 10px;
 }
 #tune p { margin: 0; color: var(--muted); font-size: 13px; }
@@ -165,7 +165,7 @@ kbd {
   <input id="photoInput" type="file" accept="image/*" hidden>
   <button id="trailsBtn" type="button" aria-pressed="true" title="Old blooms linger while new ones grow (T)">Trails</button>
   <button id="autoBtn" type="button" aria-pressed="false" title="Simulated eye movements (D)">Auto-pilot</button>
-  <button id="cortexBtn" type="button" aria-pressed="false" title="Show the pattern in V1 coordinates (C)">V1 view</button>
+  <button id="cortexBtn" type="button" aria-pressed="false" title="The scene around your gaze in V1 coordinates (C)">V1 view</button>
   <button id="tuneBtn" type="button" aria-pressed="false">Tune</button>
   <button id="helpBtn" type="button" aria-label="Keyboard shortcuts">?</button>
   <button id="fsBtn" type="button">Fullscreen</button>
@@ -190,14 +190,14 @@ kbd {
       hallucination-like distortions bloom outward from that point and grow stronger
       the longer you stay still.</p>
     <p>Here, your <strong>mouse pointer stands in for your eyes</strong>. Rest it anywhere,
-      look right at it, and keep it still. Move it, and a new bloom starts there while
-      the old one slowly fades.</p>
+      look right at it, and keep it still. Move it, and a new bloom starts there; the old
+      spot stops producing anything new, and its ripples travel outward and fade.</p>
     <p class="note">Contains swirling motion and rapidly shifting colours.</p>
     <div class="row">
       <button id="startBtn" class="primary" type="button">Start</button>
       <button id="startAuto" type="button">Watch auto-pilot</button>
     </div>
-    <div class="keys"><kbd>1</kbd>&ndash;<kbd>8</kbd> effects &middot; <kbd>Space</kbd> next scene &middot;
+    <div class="keys"><kbd>1</kbd>&ndash;<kbd>7</kbd> effects &middot; <kbd>Space</kbd> next scene &middot;
       <kbd>T</kbd> trails &middot; <kbd>H</kbd> all keys &middot; drop a photo to use your own</div>
   </div>
 </div>
@@ -207,20 +207,22 @@ kbd {
     <h2>Controls</h2>
     <dl class="keytable">
       <dt>hold still</dt><dd>grow a bloom where the pointer rests</dd>
-      <dt><kbd>1</kbd>&ndash;<kbd>8</kbd> <kbd>&larr;</kbd> <kbd>&rarr;</kbd></dt><dd>effect: Trip, Breathing, Drifting, Kaleidoscope, Form constants, Recursion, Colour, Feedback</dd>
+      <dt><kbd>1</kbd>&ndash;<kbd>7</kbd> <kbd>&larr;</kbd> <kbd>&rarr;</kbd></dt><dd>effect: Trip, Breathing, Drifting, Kaleidoscope, Recursion, Colour, Feedback</dd>
       <dt><kbd>Space</kbd> <kbd>B</kbd></dt><dd>next / previous scene</dd>
       <dt><kbd>T</kbd></dt><dd>trails: old blooms linger and fade, or every move resets</dd>
       <dt><kbd>D</kbd></dt><dd>auto-pilot: simulated eye movements</dd>
       <dt><kbd>A</kbd></dt><dd>always-on: full strength, follows the pointer</dd>
-      <dt><kbd>C</kbd> <kbd>P</kbd></dt><dd>V1 (cortex) view &middot; next form constant</dd>
+      <dt><kbd>C</kbd></dt><dd>V1 view: the scene around your gaze in cortical coordinates</dd>
       <dt><kbd>[</kbd> <kbd>]</kbd></dt><dd>fewer / more kaleidoscope folds</dd>
       <dt><kbd>R</kbd></dt><dd>clear all blooms</dd>
       <dt><kbd>I</kbd> <kbd>F</kbd></dt><dd>hide the interface &middot; fullscreen</dd>
       <dt>drop a photo</dt><dd>use your own image (it stays on your computer)</dd>
     </dl>
-    <p>Form constants (key 5, then C): Klüver's tunnels, spirals and honeycombs are what
-      plain stripes and lattices of activity in V1 look like after the log-polar map from
-      retina to cortex (Bressloff et al., 2001).</p>
+    <p>Each bloom sends out waves for as long as you hold still. They travel at a steady
+      speed across V1, so in your visual field they speed up and widen as they move out.
+      Look away and the old spot stops sending: its waves travel on and fade. The V1 view
+      (C) shows the scene around your gaze laid out the way V1 maps it, with the
+      expanding ripples as straight stripes.</p>
     <div class="row"><button id="helpClose" class="primary" type="button">Back to the demo</button></div>
   </div>
 </div>
@@ -252,301 +254,389 @@ precision highp sampler2D;
 `;
 
 const COMMON = `
-uniform vec2 u_res;
-uniform float u_yflip;
+// Shared helpers, prepended to every full-screen fragment shader (after #version).
+uniform vec2 u_res;      // render-target size in px
+uniform float u_yflip;   // +1 when drawing to the window, -1 when drawing into a texture
+
 const float PI = 3.14159265359;
 const float TAU = 6.28318530718;
-vec2 frag_px() { return vec2(gl_FragCoord.x, u_yflip > 0.0 ? u_res.y - gl_FragCoord.y : gl_FragCoord.y); }
-mat2 rot2(float a) { float c = cos(a), s = sin(a); return mat2(c, s, -s, c); }
-float hash12(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
-vec2 hash22(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * vec3(0.1031, 0.1030, 0.0973)); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.xx + p3.yz) * p3.zy); }
-float vnoise(vec2 p) {
-  vec2 i = floor(p), f = fract(p);
-  vec2 u = f * f * (3.0 - 2.0 * f);
-  return mix(mix(hash12(i), hash12(i + vec2(1.0, 0.0)), u.x), mix(hash12(i + vec2(0.0, 1.0)), hash12(i + vec2(1.0, 1.0)), u.x), u.y);
-}
-float fbm(vec2 p) { float a = 0.5, s = 0.0; for (int i = 0; i < 5; i++) { s += a * vnoise(p); p = rot2(0.62) * p * 2.03 + 17.1; a *= 0.5; } return s / 0.97; }
-float fbm3(vec2 p) { float a = 0.5, s = 0.0; for (int i = 0; i < 3; i++) { s += a * vnoise(p); p = rot2(0.62) * p * 2.03 + 17.1; a *= 0.5; } return s / 0.875; }
-vec3 voronoi(vec2 p) {
-  vec2 i = floor(p), f = fract(p);
-  float d1 = 8.0, d2 = 8.0, id = 0.0;
-  for (int y = -1; y <= 1; y++)
-  for (int x = -1; x <= 1; x++) {
-    vec2 g = vec2(float(x), float(y));
-    vec2 o = hash22(i + g);
-    float d = length(g + o - f);
-    if (d < d1) { d2 = d1; d1 = d; id = hash12(i + g + 3.7); } else if (d < d2) { d2 = d; }
-  }
-  return vec3(d1, d2, id);
-}
-vec3 hsv2rgb(vec3 c) { vec3 p = abs(fract(c.xxx + vec3(0.0, 2.0 / 3.0, 1.0 / 3.0)) * 6.0 - 3.0); return c.z * mix(vec3(1.0), clamp(p - 1.0, 0.0, 1.0), c.y); }
-float luma(vec3 c) { return dot(c, vec3(0.2126, 0.7152, 0.0722)); }
-vec3 saturate_color(vec3 c, float s) { return mix(vec3(luma(c)), c, s); }
-vec3 hue_rotate(vec3 c, float a) { const vec3 k = vec3(0.57735); float ca = cos(a); return c * ca + cross(k, c) * sin(a) + k * dot(k, c) * (1.0 - ca); }
-`;
 
-const FORMCONST = `
-float form_pattern(vec2 w, int type, float t) {
-  const float K = 9.0;
-  const float N = 12.0;
-  if (type == 0) return cos(K * w.x - 2.4 * t);
-  if (type == 1) return cos(N * w.y + 0.5 * t);
-  if (type == 2) return cos(K * w.x + 7.0 * w.y - 2.4 * t);
-  if (type == 3) {
-    float n = 9.0;
-    float k = 2.0 * n / sqrt(3.0);
-    float f = cos(k * w.x - t) + cos(-0.5 * k * w.x + n * w.y - t) + cos(-0.5 * k * w.x - n * w.y - t);
-    return (f - 0.75) / 2.25;
-  }
-  if (type == 4) return cos(K * w.x - 2.0 * t) * cos(N * w.y);
-  float rings = cos(1.3 * K * w.x - 2.0 * t);
-  float rays = cos(N * w.y);
-  return max(rings, rays) * 1.2 - 0.2;
+// Pixel coordinate with origin top-left and y pointing down (same as pygame/the demos).
+vec2 frag_px() {
+    return vec2(gl_FragCoord.x, u_yflip > 0.0 ? u_res.y - gl_FragCoord.y : gl_FragCoord.y);
 }
-vec3 form_colorize(float f, vec2 w, float t) {
-  float bands = smoothstep(0.35, 0.9, f);
-  float glow = pow(max(f, 0.0), 3.0);
-  vec3 c = hsv2rgb(vec3(fract(0.16 * w.x - 0.045 * t + w.y / TAU), 0.78, 1.0));
-  return c * (0.85 * bands + 0.45 * glow);
+
+mat2 rot2(float a) { float c = cos(a), s = sin(a); return mat2(c, s, -s, c); }
+
+float hash12(vec2 p) {
+    vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
 }
-float form_cycle(vec2 w, float t, float period) {
-  float k = floor(t / period);
-  int a = int(mod(k, 6.0));
-  int b = int(mod(k + 1.0, 6.0));
-  float x = smoothstep(period - 2.5, period, mod(t, period));
-  return mix(form_pattern(w, a, t), form_pattern(w, b, t), x);
+
+vec2 hash22(vec2 p) {
+    vec3 p3 = fract(vec3(p.xyx) * vec3(0.1031, 0.1030, 0.0973));
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.xx + p3.yz) * p3.zy);
+}
+
+float vnoise(vec2 p) {
+    vec2 i = floor(p), f = fract(p);
+    vec2 u = f * f * (3.0 - 2.0 * f);
+    return mix(mix(hash12(i), hash12(i + vec2(1.0, 0.0)), u.x),
+               mix(hash12(i + vec2(0.0, 1.0)), hash12(i + vec2(1.0, 1.0)), u.x), u.y);
+}
+
+float fbm(vec2 p) {            // ~[0, 1]
+    float a = 0.5, s = 0.0;
+    for (int i = 0; i < 5; i++) { s += a * vnoise(p); p = rot2(0.62) * p * 2.03 + 17.1; a *= 0.5; }
+    return s / 0.97;
+}
+
+float fbm3(vec2 p) {           // cheaper 3-octave version
+    float a = 0.5, s = 0.0;
+    for (int i = 0; i < 3; i++) { s += a * vnoise(p); p = rot2(0.62) * p * 2.03 + 17.1; a *= 0.5; }
+    return s / 0.875;
+}
+
+// x = distance to nearest feature point, y = to 2nd nearest, z = random id of nearest cell
+vec3 voronoi(vec2 p) {
+    vec2 i = floor(p), f = fract(p);
+    float d1 = 8.0, d2 = 8.0, id = 0.0;
+    for (int y = -1; y <= 1; y++)
+    for (int x = -1; x <= 1; x++) {
+        vec2 g = vec2(float(x), float(y));
+        vec2 o = hash22(i + g);
+        float d = length(g + o - f);
+        if (d < d1) { d2 = d1; d1 = d; id = hash12(i + g + 3.7); }
+        else if (d < d2) { d2 = d; }
+    }
+    return vec3(d1, d2, id);
+}
+
+vec3 hsv2rgb(vec3 c) {
+    vec3 p = abs(fract(c.xxx + vec3(0.0, 2.0 / 3.0, 1.0 / 3.0)) * 6.0 - 3.0);
+    return c.z * mix(vec3(1.0), clamp(p - 1.0, 0.0, 1.0), c.y);
+}
+
+float luma(vec3 c) { return dot(c, vec3(0.2126, 0.7152, 0.0722)); }
+
+vec3 saturate_color(vec3 c, float s) { return mix(vec3(luma(c)), c, s); }
+
+// Rotate hue by angle a (radians) about the grey axis (Rodrigues' formula).
+vec3 hue_rotate(vec3 c, float a) {
+    const vec3 k = vec3(0.57735);
+    float ca = cos(a);
+    return c * ca + cross(k, c) * sin(a) + k * dot(k, c) * (1.0 - ca);
 }
 `;
 
 const PSYCHEDELIC = `
+// Gaze-contingent "hallucinations" as waves that travel outward from fixation.
+//
+// Every fixation starts a *bloom*: a source at the fixation point that keeps
+// emitting for as long as you hold still. Whatever it emits (ripples, colour,
+// warps) travels outward at a constant speed in cortical coordinates
+// w = log(1 + r / r0), like a wave crossing V1, so in the visual field it speeds
+// up and widens with eccentricity. Looking away switches the source off: nothing
+// new appears at the old spot, the waves already under way keep travelling out
+// and fade, and the old spot clears from the centre outward.
+// Each effect sums/layers the contributions of all blooms.
 #define MAX_SRC 8
 uniform sampler2D u_image;
 uniform vec2 u_img_size;
-uniform sampler2D u_prev;
-uniform vec4 u_src[MAX_SRC];
-uniform vec4 u_src2[MAX_SRC];
-uniform int u_nsrc;
+uniform sampler2D u_prev;          // previous output frame (feedback mode)
+uniform vec4 u_src[MAX_SRC];       // xy = source (px), z = age (s), w = age when it stopped emitting (1e5 while fixated)
+uniform vec4 u_src2[MAX_SRC];      // x = strength at onset, y = strength now (or when it stopped),
+                                   // z = age when y was reached, w = phase (rad)
+uniform vec4 u_src3[MAX_SRC];      // x = fade-out (1 while fixated), y = distance to the farthest screen corner (deg)
+uniform int u_nsrc;                // blooms in use, oldest first (the newest is layered on top)
 uniform float u_time;
 uniform float u_ppd;
 uniform int u_mode;
-uniform int u_pattern;
 uniform float u_folds;
+uniform float u_speed;             // wave speed: cortical units (log eccentricity) per second
+uniform float u_r0;                // log-polar offset (deg)
+uniform float u_max_deg;           // waves sent at full strength die out by this eccentricity ...
+uniform float u_weak;              // ... and at zero strength by this fraction of it
+uniform float u_fade_in;           // what a new bloom sends out fades in with this time constant (s)
+uniform float u_colour_at;         // Trip: strength at which colour starts to come in
+uniform float u_kaleido_at;        // Trip: strength at which the kaleidoscope starts closing in
 out vec4 f_color;
 
-vec2 cover_uv(vec2 px) { float s = max(u_res.x / u_img_size.x, u_res.y / u_img_size.y); return ((px - 0.5 * u_res) / s + 0.5 * u_img_size) / u_img_size; }
+const float STOP_S = 0.35;         // a stopped source fades out over this much emission time
+const float CORE_DEG = 0.6;        // the Trip kaleidoscope stops closing in this far from fixation
+
+// ---- image sampling: cover-fit, mirrored repeat, explicit gradients so the
+// mip level stays sensible through warps (clamped so seams don't smear).
+vec2 cover_uv(vec2 px) {
+    float s = max(u_res.x / u_img_size.x, u_res.y / u_img_size.y);
+    return ((px - 0.5 * u_res) / s + 0.5 * u_img_size) / u_img_size;
+}
+
 vec3 img(vec2 px) {
-  vec2 uv = cover_uv(px);
-  vec2 gx = clamp(dFdx(uv), -0.01, 0.01);
-  vec2 gy = clamp(dFdy(uv), -0.01, 0.01);
-  vec2 m = 1.0 - abs(1.0 - mod(uv, 2.0));
-  return textureGrad(u_image, m, gx, gy).rgb;
+    vec2 uv = cover_uv(px);
+    vec2 gx = clamp(dFdx(uv), -0.01, 0.01);
+    vec2 gy = clamp(dFdy(uv), -0.01, 0.01);
+    vec2 m = 1.0 - abs(1.0 - mod(uv, 2.0));
+    return textureGrad(u_image, m, gx, gy).rgb;
 }
-float bloom(int i, vec2 px, out vec2 d, out float rdeg) {
-  d = px - u_src[i].xy;
-  rdeg = length(d) / u_ppd;
-  float R = u_src2[i].x;
-  return u_src[i].w * (1.0 - smoothstep(0.55 * R, R, rdeg));
+
+// ---- waves -----------------------------------------------------------------------
+struct Wave {
+    vec2 d;        // offset from the source (px)
+    float r;       // eccentricity (deg)
+    float w;       // cortical eccentricity log(1 + r / r0)
+    float e;       // cortical distance behind the wavefront: oscillations in e travel outward
+    float lev;     // strength of the source when this part of the wave left it
+    float amp;     // 0..1: arrived, sent before the source stopped, faded in, in reach, not faded out
+    float ph;      // the bloom's random phase
+};
+
+Wave wave(int i, vec2 px) {
+    Wave s;
+    s.d = px - u_src[i].xy;
+    s.r = length(s.d) / u_ppd;
+    s.w = log(1.0 + s.r / u_r0);
+    float ae = u_src[i].z - s.w / u_speed;          // sent this long after the bloom's onset (s)
+    s.e = max(ae, 0.0) * u_speed;
+    s.lev = mix(u_src2[i].x, u_src2[i].y, clamp(ae / max(u_src2[i].z, 1e-3), 0.0, 1.0));
+    float reach = u_max_deg * (u_weak + (1.0 - u_weak) * smoothstep(0.0, 0.75, s.lev));
+    s.amp = (1.0 - exp(-max(ae, 0.0) / u_fade_in))                    // not here yet / fading in
+          * (1.0 - smoothstep(u_src[i].w, u_src[i].w + STOP_S, ae))   // sent after the source stopped
+          * (1.0 - smoothstep(0.55 * reach, reach, s.r))
+          * u_src3[i].x;
+    s.ph = u_src2[i].w;
+    return s;
 }
-float strength(int i) { return smoothstep(0.0, 1.0, u_src[i].z); }
-vec2 cortex(vec2 d, float rdeg) { return vec2(log(rdeg + 0.5), atan(d.y, d.x)); }
-vec2 breathe_disp(vec2 d, float rdeg, float ph) {
-  float lr = log(rdeg + 0.6);
-  float k = 0.085 * sin(7.0 * lr - 2.0 * u_time + ph) + 0.045 * sin(1.1 * u_time + ph);
-  float th = 0.035 * sin(5.0 * atan(d.y, d.x) + 4.0 * lr - 0.8 * u_time + ph);
-  return d * k + vec2(-d.y, d.x) * th;
+
+float strength(float lev) { return smoothstep(0.0, 1.0, lev); }
+
+// Displacement in px at unit amplitude: the scene swells and shrinks as each ring
+// passes, on top of a slow swell and a gentle spiral twist.
+vec2 breathe_disp(Wave s) {
+    float k = 0.085 * sin(6.5 * s.e + s.ph) + 0.045 * sin(1.3 * s.e + 1.7 * s.ph);
+    float th = 0.035 * sin(5.0 * atan(s.d.y, s.d.x) + 3.0 * s.e + s.ph);
+    return s.d * k + vec2(-s.d.y, s.d.x) * th;
 }
-vec2 swirl_disp(vec2 d, float rdeg, float ph) { return vec2(-d.y, d.x) * (0.25 * sin(0.21 * u_time + ph) / (1.0 + 0.08 * rdeg)); }
-vec2 drift_flow(vec2 px) {
-  vec2 q = px / u_ppd;
-  float t = 0.12 * u_time;
-  vec2 n = vec2(fbm3(q * 0.28 + vec2(t, -0.7 * t)), fbm3(q * 0.28 + vec2(5.2 - 0.6 * t, 1.3 + t)));
-  return (n - 0.5) * 2.0;
+
+vec2 swirl_disp(Wave s) {
+    return vec2(-s.d.y, s.d.x) * (0.25 * sin(0.21 * u_time + s.ph) / (1.0 + 0.08 * s.r));
 }
+
+vec2 drift_flow(vec2 px) {               // screen-anchored flow field in [-1, 1]
+    vec2 q = px / u_ppd;
+    float t = 0.12 * u_time;
+    vec2 n = vec2(fbm3(q * 0.28 + vec2(t, -0.7 * t)),
+                  fbm3(q * 0.28 + vec2(5.2 - 0.6 * t, 1.3 + t)));
+    return (n - 0.5) * 2.0;
+}
+
 vec2 kaleido(vec2 d, float n, float rot) {
-  float r = length(d);
-  float seg = TAU / n;
-  float a = mod(atan(d.y, d.x) + rot, seg);
-  a = abs(a - 0.5 * seg);
-  return r * vec2(cos(a), sin(a));
+    float r = length(d);
+    float seg = TAU / n;
+    float a = mod(atan(d.y, d.x) + rot, seg);
+    a = abs(a - 0.5 * seg);
+    return r * vec2(cos(a), sin(a));
 }
-vec2 droste(vec2 d, float ph) {
-  float ls = log(2.6);
-  vec2 w = vec2(log(max(length(d) / u_ppd, 1e-3)), atan(d.y, d.x) + ph);
-  float c = ls / TAU;
-  vec2 ws = vec2(w.x + w.y * c, w.y - w.x * c);
-  ws.x = mod(ws.x - 0.18 * u_time, ls) + log(2.0);
-  return exp(ws.x) * vec2(cos(ws.y), sin(ws.y)) * u_ppd;
+
+vec2 droste(vec2 d, float ph) {          // Escher-style recursive spiral (de Smit & Lenstra 2003)
+    float ls = log(2.6);                 // zoom factor per turn
+    vec2 w = vec2(log(max(length(d) / u_ppd, 1e-3)), atan(d.y, d.x) + ph);
+    float c = ls / TAU;
+    vec2 ws = vec2(w.x + w.y * c, w.y - w.x * c);
+    ws.x = mod(ws.x - 0.18 * u_time, ls) + log(2.0);   // repeat the 2.0-5.2 deg annulus
+    return exp(ws.x) * vec2(cos(ws.y), sin(ws.y)) * u_ppd;
 }
+
+// Hue shift carried by a wave: rings of colour plus a slow, bounded sweep (an
+// unbounded drift like 0.25 * t would smear into rainbow fringes where blooms overlap).
+float hue_wave(Wave s, float rings, float sweep) {
+    return rings * sin(5.0 * s.e + s.ph) + sweep * sin(0.11 * u_time + s.ph);
+}
+
+// ---- effects ---------------------------------------------------------------------
 vec3 fx_breathe(vec2 px) {
-  vec2 disp = vec2(0.0); float wsum = 0.0, ring = 0.0;
-  for (int i = 0; i < MAX_SRC; i++) {
-    if (i >= u_nsrc) break;
-    vec2 d; float rdeg;
-    float a = bloom(i, px, d, rdeg) * strength(i);
-    float ph = u_src2[i].y;
-    disp += a * breathe_disp(d, rdeg, ph);
-    ring += a * sin(7.0 * log(rdeg + 0.6) - 2.0 * u_time + ph);
-    wsum += a;
-  }
-  vec3 c = img(px + disp / max(1.0, wsum));
-  return c * (1.0 + 0.16 * clamp(ring, -1.0, 1.0));
-}
-vec3 fx_drift(vec2 px) {
-  vec2 flow = drift_flow(px);
-  vec2 disp = vec2(0.0); float wsum = 0.0;
-  for (int i = 0; i < MAX_SRC; i++) {
-    if (i >= u_nsrc) break;
-    vec2 d; float rdeg;
-    float a = bloom(i, px, d, rdeg) * strength(i);
-    disp += a * (flow * (0.5 + 0.09 * rdeg) * u_ppd + swirl_disp(d, rdeg, u_src2[i].y));
-    wsum += a;
-  }
-  return img(px + disp / max(1.0, wsum));
-}
-vec3 fx_kaleido(vec2 px) {
-  vec3 c = img(px);
-  for (int i = 0; i < MAX_SRC; i++) {
-    if (i >= u_nsrc) break;
-    vec2 d; float rdeg;
-    float env = bloom(i, px, d, rdeg);
-    float ph = u_src2[i].y;
-    vec2 k = kaleido(d, u_folds, 0.04 * u_time + ph);
-    k *= exp(0.08 * sin(0.4 * u_time + log(rdeg + 1.0) + ph));
-    c = mix(c, img(u_src[i].xy + k), env * smoothstep(0.0, 0.35, strength(i)));
-  }
-  return c;
-}
-vec3 fx_form(vec2 px) {
-  vec2 disp = vec2(0.0); vec3 overlay = vec3(0.0); float wsum = 0.0, dark = 0.0;
-  for (int i = 0; i < MAX_SRC; i++) {
-    if (i >= u_nsrc) break;
-    vec2 d; float rdeg;
-    float a = bloom(i, px, d, rdeg) * strength(i);
-    float ph = u_src2[i].y;
-    disp += 0.3 * a * breathe_disp(d, rdeg, ph);
-    wsum += a;
-    vec2 w = cortex(d, rdeg);
-    float f = form_pattern(w, u_pattern, u_time + 3.0 * ph);
-    float m = a * smoothstep(0.15, 1.2, rdeg);
-    overlay += form_colorize(f, w, u_time) * m;
-    dark += 0.5 * m * smoothstep(-0.2, 0.7, f);
-  }
-  vec3 c = img(px + disp / max(1.0, wsum)) * (1.0 - clamp(dark, 0.0, 0.8));
-  return clamp(c + overlay, 0.0, 1.0);
-}
-vec3 fx_droste(vec2 px) {
-  vec3 c = img(px);
-  for (int i = 0; i < MAX_SRC; i++) {
-    if (i >= u_nsrc) break;
-    vec2 d; float rdeg;
-    float env = bloom(i, px, d, rdeg);
-    c = mix(c, img(u_src[i].xy + droste(d, u_src2[i].y)), env * smoothstep(0.0, 0.35, strength(i)));
-  }
-  return c;
-}
-vec3 fx_color(vec2 px, float scale) {
-  vec2 off = vec2(0.0); float hue = 0.0, sat = 0.0, bright = 0.0;
-  for (int i = 0; i < MAX_SRC; i++) {
-    if (i >= u_nsrc) break;
-    vec2 d; float rdeg;
-    float a = scale * bloom(i, px, d, rdeg) * strength(i);
-    float ph = u_src2[i].y;
-    float lr = log(rdeg + 0.6);
-    off += a * 0.012 * (1.0 + 0.03 * rdeg) * d;
-    hue += a * (1.6 * sin(5.0 * lr - 1.4 * u_time + ph) + 0.25 * u_time);
-    sat += a;
-    bright += a * sin(9.0 * lr - 2.6 * u_time + ph);
-  }
-  vec3 c = vec3(img(px + off).r, img(px).g, img(px - off).b);
-  c = hue_rotate(c, hue);
-  c = saturate_color(c, 1.0 + 1.3 * clamp(sat, 0.0, 1.0));
-  c *= 1.0 + 0.12 * clamp(bright, -1.0, 1.0);
-  return clamp(c, 0.0, 1.0);
-}
-vec3 fx_feedback(vec2 px) {
-  vec3 fresh = fx_color(px, 0.6);
-  vec2 pdisp = vec2(0.0); float k = 0.0;
-  for (int i = 0; i < MAX_SRC; i++) {
-    if (i >= u_nsrc) break;
-    vec2 d; float rdeg;
-    float a = bloom(i, px, d, rdeg) * strength(i);
-    float ph = u_src2[i].y;
-    vec2 w = cortex(d, rdeg);
-    fresh += form_colorize(form_pattern(w, 0, u_time + ph), w, u_time) * 0.35 * a * (1.0 - smoothstep(1.0, 4.0, rdeg));
-    pdisp += a * (rot2(0.016) * d * (1.0 - 0.014) - d);
-    k += a;
-  }
-  k = clamp(k, 0.0, 1.0);
-  vec3 prev = texture(u_prev, (px + pdisp) / u_res).rgb;
-  prev = hue_rotate(prev, 0.06 * k);
-  return clamp(mix(fresh, prev, 0.82 * k), 0.0, 1.0);
-}
-vec3 fx_trip(vec2 px) {
-  vec2 flow = drift_flow(px);
-  vec2 disp = vec2(0.0); vec3 overlay = vec3(0.0);
-  float wsum = 0.0, hue = 0.0, sat = 0.0, dark = 0.0;
-  for (int i = 0; i < MAX_SRC; i++) {
-    if (i >= u_nsrc) break;
-    vec2 d; float rdeg;
-    float env = bloom(i, px, d, rdeg);
-    float lev = u_src[i].z;
-    float ph = u_src2[i].y;
-    float s1 = smoothstep(0.00, 0.30, lev);
-    float s2 = smoothstep(0.15, 0.55, lev);
-    float s3 = smoothstep(0.40, 0.80, lev);
-    disp += env * (s1 * breathe_disp(d, rdeg, ph) + 0.8 * s2 * (flow * (0.5 + 0.09 * rdeg) * u_ppd + swirl_disp(d, rdeg, ph)));
-    wsum += env * max(s1, s2);
-    float lr = log(rdeg + 0.6);
-    hue += env * s1 * 1.2 * sin(4.0 * lr - 1.1 * u_time + ph);
-    sat += env * s1;
-    vec2 cw = cortex(d, rdeg);
-    float f = form_cycle(cw, u_time + 4.0 * ph, 12.0);
-    float m = 0.85 * env * s3 * smoothstep(0.15, 1.2, rdeg);
-    overlay += form_colorize(f, cw, u_time) * m;
-    dark += 0.35 * m * smoothstep(0.0, 0.8, f);
-  }
-  disp /= max(1.0, wsum);
-  vec3 c = img(px + disp);
-  for (int i = 0; i < MAX_SRC; i++) {
-    if (i >= u_nsrc) break;
-    float s4 = smoothstep(0.70, 1.00, u_src[i].z);
-    if (s4 > 0.0) {
-      vec2 d; float rdeg;
-      float env = bloom(i, px, d, rdeg);
-      c = mix(c, img(u_src[i].xy + kaleido(d + disp, u_folds, 0.03 * u_time + u_src2[i].y)), 0.85 * env * s4);
+    vec2 disp = vec2(0.0);
+    float wsum = 0.0, ring = 0.0;
+    for (int i = 0; i < MAX_SRC; i++) {
+        if (i >= u_nsrc) break;
+        Wave s = wave(i, px);
+        float a = s.amp * strength(s.lev);
+        disp += a * breathe_disp(s);
+        ring += a * sin(6.5 * s.e + s.ph);
+        wsum += a;
     }
-  }
-  c = hue_rotate(c, hue);
-  c = saturate_color(c, 1.0 + 0.9 * clamp(sat, 0.0, 1.0));
-  c = c * (1.0 - clamp(dark, 0.0, 0.6)) + overlay;
-  return clamp(c, 0.0, 1.0);
+    vec3 c = img(px + disp / max(1.0, wsum));
+    return c * (1.0 + 0.16 * clamp(ring, -1.0, 1.0));
 }
+
+vec3 fx_drift(vec2 px) {
+    vec2 flow = drift_flow(px);
+    vec2 disp = vec2(0.0);
+    float wsum = 0.0;
+    for (int i = 0; i < MAX_SRC; i++) {
+        if (i >= u_nsrc) break;
+        Wave s = wave(i, px);
+        float a = s.amp * strength(s.lev);
+        disp += a * (flow * (0.5 + 0.09 * s.r) * u_ppd + swirl_disp(s));
+        wsum += a;
+    }
+    return img(px + disp / max(1.0, wsum));
+}
+
+vec3 fx_kaleido(vec2 px) {
+    vec3 c = img(px);
+    for (int i = 0; i < MAX_SRC; i++) {
+        if (i >= u_nsrc) break;
+        Wave s = wave(i, px);
+        vec2 k = kaleido(s.d, u_folds, 0.04 * u_time + s.ph);
+        k *= exp(0.08 * sin(0.4 * u_time + log(s.r + 1.0) + s.ph));
+        c = mix(c, img(u_src[i].xy + k), s.amp * smoothstep(0.0, 0.35, strength(s.lev)));
+    }
+    return c;
+}
+
+vec3 fx_droste(vec2 px) {
+    vec3 c = img(px);
+    for (int i = 0; i < MAX_SRC; i++) {
+        if (i >= u_nsrc) break;
+        Wave s = wave(i, px);
+        c = mix(c, img(u_src[i].xy + droste(s.d, s.ph)),
+                s.amp * smoothstep(0.0, 0.35, strength(s.lev)));
+    }
+    return c;
+}
+
+vec3 fx_color(vec2 px, float scale) {
+    vec2 off = vec2(0.0);
+    float hue = 0.0, sat = 0.0, bright = 0.0;
+    for (int i = 0; i < MAX_SRC; i++) {
+        if (i >= u_nsrc) break;
+        Wave s = wave(i, px);
+        float a = scale * s.amp * strength(s.lev);
+        off += a * 0.012 * (1.0 + 0.03 * s.r) * s.d;
+        hue += a * hue_wave(s, 1.6, 2.2);
+        sat += a;
+        bright += a * sin(9.0 * s.e + s.ph);
+    }
+    vec3 c = vec3(img(px + off).r, img(px).g, img(px - off).b);
+    c = hue_rotate(c, hue);
+    c = saturate_color(c, 1.0 + 1.3 * clamp(sat, 0.0, 1.0));
+    c *= 1.0 + 0.12 * clamp(bright, -1.0, 1.0);
+    return clamp(c, 0.0, 1.0);
+}
+
+vec3 fx_feedback(vec2 px) {
+    vec3 fresh = fx_color(px, 0.6);
+    vec2 pdisp = vec2(0.0);
+    float k = 0.0;
+    for (int i = 0; i < MAX_SRC; i++) {
+        if (i >= u_nsrc) break;
+        Wave s = wave(i, px);
+        float a = s.amp * strength(s.lev);
+        float f = cos(9.0 * s.e + s.ph);                                   // seed rings leaving fixation
+        vec3 rc = hsv2rgb(vec3(fract(0.16 * s.w + 0.03 * u_time + atan(s.d.y, s.d.x) / TAU), 0.78, 1.0));
+        fresh += rc * (0.85 * smoothstep(0.35, 0.9, f) + 0.45 * pow(max(f, 0.0), 3.0))
+                 * 0.35 * a * (1.0 - smoothstep(1.0, 4.0, s.r));
+        pdisp += a * (rot2(0.016) * s.d * (1.0 - 0.014) - s.d);            // zoom + twist toward bloom
+        k += a;
+    }
+    k = clamp(k, 0.0, 1.0);
+    vec3 prev = texture(u_prev, (px + pdisp) / u_res).rgb;
+    prev = hue_rotate(prev, 0.06 * k);
+    return clamp(mix(fresh, prev, 0.82 * k), 0.0, 1.0);
+}
+
+// Trip, in stages: breathing ripples from the first moment, growing with every
+// second of steady fixation; then colour rides out on the ripples; then a
+// kaleidoscope closes in from the edge of the screen toward the fixation point.
+vec3 fx_trip(vec2 px) {
+    vec2 disp = vec2(0.0);
+    float wsum = 0.0, ring = 0.0, hue = 0.0, sat = 0.0, bright = 0.0;
+    for (int i = 0; i < MAX_SRC; i++) {
+        if (i >= u_nsrc) break;
+        Wave s = wave(i, px);
+        float b = s.amp * (0.22 + 0.78 * smoothstep(0.0, 0.85, s.lev));        // 1. breathing
+        disp += 1.25 * b * breathe_disp(s);
+        ring += b * sin(6.5 * s.e + s.ph);
+        wsum += b;
+        float col = s.amp * clamp((s.lev - u_colour_at) / 0.45, 0.0, 1.0);     // 2. colour: shimmering
+        hue += col * hue_wave(s, 1.4, 0.8);                                     //    rings around the
+        sat += col;                                                             //    scene's own hues
+        bright += col * sin(9.0 * s.e + s.ph);
+    }
+    disp /= max(1.0, wsum);
+    vec3 c = img(px + disp);
+    float rim = 0.0;
+    for (int i = 0; i < MAX_SRC; i++) {                                         // 3. kaleidoscope,
+        if (i >= u_nsrc) break;                                                 //    newest on top
+        float k = clamp((u_src2[i].y - u_kaleido_at) / max(1.0 - u_kaleido_at, 1e-3), 0.0, 1.0);
+        if (k > 0.0) {                       // uniform branch: k depends only on uniforms
+            vec2 d = px - u_src[i].xy;
+            float r = length(d) / u_ppd;
+            float w = log(1.0 + r / u_r0);
+            float rot = 0.03 * u_time + u_src2[i].w;
+            // the inner edge sweeps in from the farthest corner, slowing as it nears fixation
+            float w_out = log(1.0 + min(u_src3[i].y, u_max_deg) / u_r0);
+            float w_in = mix(w_out, log(1.0 + CORE_DEG / u_r0), 1.0 - (1.0 - k) * (1.0 - k));
+            float petals = 0.12 * cos(u_folds * (atan(d.y, d.x) + rot)) * smoothstep(0.0, 0.8, w);
+            float edge = w + petals - w_in;
+            // like everything else it is no longer fed once the source stops, so it
+            // clears from the centre outward
+            float ae = u_src[i].z - w / u_speed;
+            float env = (1.0 - smoothstep(u_src[i].w, u_src[i].w + STOP_S, ae))
+                      * (1.0 - exp(-min(u_src[i].z, u_src[i].w) / u_fade_in)) * u_src3[i].x
+                      * smoothstep(0.0, 0.1, k) * (1.0 - smoothstep(0.55 * u_max_deg, u_max_deg, r));
+            float m = smoothstep(-0.15, 0.15, edge) * env;
+            c = mix(c, img(u_src[i].xy + kaleido(d + disp, u_folds, rot)), 0.92 * m);
+            rim += exp(-edge * edge / 0.004) * env * (1.0 - k);   // glowing edge while it sweeps in
+        }
+    }
+    c *= 1.0 + 0.10 * clamp(ring, -1.0, 1.0) + 0.35 * clamp(rim, 0.0, 1.0);
+    c = hue_rotate(c, hue);
+    c = saturate_color(c, 1.0 + 0.9 * clamp(sat, 0.0, 1.0));
+    c *= 1.0 + 0.10 * clamp(bright, -1.0, 1.0);
+    return clamp(c, 0.0, 1.0);
+}
+
 void main() {
-  vec2 px = frag_px();
-  vec3 col;
-  if (u_mode == 0) col = fx_trip(px);
-  else if (u_mode == 1) col = fx_breathe(px);
-  else if (u_mode == 2) col = fx_drift(px);
-  else if (u_mode == 3) col = fx_kaleido(px);
-  else if (u_mode == 4) col = fx_form(px);
-  else if (u_mode == 5) col = fx_droste(px);
-  else if (u_mode == 6) col = fx_color(px, 1.0);
-  else col = fx_feedback(px);
-  f_color = vec4(col, 1.0);
+    vec2 px = frag_px();
+    vec3 col;
+    if (u_mode == 0) col = fx_trip(px);
+    else if (u_mode == 1) col = fx_breathe(px);
+    else if (u_mode == 2) col = fx_drift(px);
+    else if (u_mode == 3) col = fx_kaleido(px);
+    else if (u_mode == 4) col = fx_droste(px);
+    else if (u_mode == 5) col = fx_color(px, 1.0);
+    else col = fx_feedback(px);
+    f_color = vec4(col, 1.0);
 }
 `;
 
 const CORTEX = `
-uniform vec4 u_rect;
-uniform int u_pattern;
-uniform float u_time;
+// Inset: the frame around the gaze point re-plotted in V1 (cortical) coordinates,
+// horizontal = log eccentricity, vertical = polar angle. The hallucination waves
+// travel at a constant speed in exactly these coordinates, so rings expanding
+// from fixation show up as straight stripes marching right, and the few degrees
+// around fixation fill most of the map (cortical magnification).
+uniform sampler2D u_frame;    // the rendered frame (row 0 = top)
+uniform vec4 u_rect;          // inset x, y, w, h (px)
+uniform vec2 u_center;        // gaze point (px)
+uniform float u_ppd;
+uniform float u_r0;           // same log-polar offset as the waves (deg)
+uniform float u_max_ecc;      // eccentricity at the right-hand edge (deg)
 out vec4 f_color;
+
 void main() {
-  vec2 q = (frag_px() - u_rect.xy) / u_rect.zw;
-  if (q.x < 0.0 || q.y < 0.0 || q.x > 1.0 || q.y > 1.0) discard;
-  vec2 w = vec2(mix(log(0.5), log(40.5), q.x), mix(-PI, PI, q.y));
-  float f = form_pattern(w, u_pattern, u_time);
-  f_color = vec4(vec3(0.04, 0.04, 0.06) + form_colorize(f, w, u_time), 1.0);
+    vec2 q = (frag_px() - u_rect.xy) / u_rect.zw;
+    if (q.x < 0.0 || q.y < 0.0 || q.x > 1.0 || q.y > 1.0) discard;
+    float r = u_r0 * (exp(q.x * log(1.0 + u_max_ecc / u_r0)) - 1.0);
+    float th = mix(-PI, PI, q.y);
+    vec2 uv = (u_center + r * u_ppd * vec2(cos(th), sin(th))) / u_res;
+    vec3 c = texture(u_frame, clamp(uv, 0.0, 1.0)).rgb;
+    bool inside = uv.x >= 0.0 && uv.y >= 0.0 && uv.x <= 1.0 && uv.y <= 1.0;
+    f_color = vec4(inside ? c : vec3(0.05, 0.045, 0.07), 1.0);
 }
 `;
 
@@ -901,16 +991,14 @@ void main() {
 
 // ============================================================= content
 const MODES = [
-  ['Trip', 'Everything in stages: colour, breathing, drifting, geometry, then kaleidoscope'],
-  ['Breathing', 'Surfaces swell and contract in rings radiating from where you look'],
+  ['Trip', 'Breathing that deepens the longer you look, then colour, then a kaleidoscope closing in from the edges'],
+  ['Breathing', 'Surfaces swell and contract in ripples that radiate from where you look'],
   ['Drifting', 'Textures crawl and flow, one of the most common psychedelic reports'],
   ['Kaleidoscope', 'Mirror symmetry blooms around fixation ([ and ] change the folds)'],
-  ['Form constants', "Klüver's tunnels, spirals and lattices: stripes in V1 (C shows the cortex, P cycles)"],
   ['Recursion', 'A Droste spiral: the scene around fixation repeats inside itself forever'],
   ['Colour', 'Hue waves, boosted saturation and chromatic fringes radiating outward'],
   ['Feedback', 'Video-feedback tunnel: each frame echoes the last, zoomed and rotated'],
 ];
-const PATTERNS = ['tunnel', 'funnel', 'spiral', 'honeycomb', 'dartboard', 'cobweb'];
 const WORLDS = [
   ['garden', 'Garden', 1], ['bricks', 'Bricks', 1], ['wallpaper', 'Wallpaper', 1],
   ['clouds', 'Clouds', 1], ['pebbles', 'Pebbles', 1], ['carpet', 'Carpet', 1],
@@ -920,23 +1008,28 @@ const WORLDS = [
 
 // Same names and defaults as PsychedelicConfig in eyedemos/config.py.
 const DEFAULTS = {
-  ramp_s: 12, onset_delay_s: 0.5, fade_in_tau_s: 1.8, bloom_s: 5, linger_tau_s: 2.5, carry: 0.6,
-  decay_tau_s: 0.13, max_sources: 6, anchor_tolerance_deg: 2.0, break_s: 0.06, blink_grace_s: 0.6,
-  anchor_follow_per_s: 0.6, min_radius_deg: 1.5, max_radius_deg: 50, weak_radius_frac: 0.35,
+  ramp_s: 12, onset_delay_s: 0.5, fade_in_tau_s: 1.8, bloom_s: 6, wave_r0_deg: 1.0, linger_tau_s: 2.5,
+  carry: 0.6, decay_tau_s: 0.13, max_sources: 6, anchor_tolerance_deg: 2.0, break_s: 0.06,
+  blink_grace_s: 0.6, anchor_follow_per_s: 0.6, max_radius_deg: 50, weak_radius_frac: 0.35,
+  trip_colour_at: 0.3, trip_kaleido_at: 0.55, v1_view_max_deg: 30,
 };
+// key, label, min, max, step, unit, display scale
 const TUNABLE = [
-  ['ramp_s', 'Build-up to full strength', 4, 30, 0.5, ' s'],
-  ['fade_in_tau_s', 'New bloom fade-in', 0.2, 5, 0.1, ' s'],
-  ['bloom_s', 'Spread to full size', 1, 12, 0.5, ' s'],
-  ['linger_tau_s', 'Old blooms linger', 0.3, 10, 0.1, ' s'],
-  ['carry', 'Strength carried to the next bloom', 0, 1, 0.05, ''],
-  ['max_radius_deg', 'Maximum bloom radius', 10, 60, 1, '°'],
-  ['anchor_tolerance_deg', 'Pointer wobble allowed', 0.5, 5, 0.1, '°'],
-  ['max_sources', 'Blooms at once', 1, 8, 1, ''],
+  ['ramp_s', 'Build-up to full strength', 4, 30, 0.5, ' s', 1],
+  ['trip_colour_at', 'Trip: colour comes in at', 0, 1, 0.05, '% strength', 100],
+  ['trip_kaleido_at', 'Trip: kaleidoscope starts at', 0, 0.95, 0.05, '% strength', 100],
+  ['fade_in_tau_s', 'New bloom fade-in', 0.2, 5, 0.1, ' s', 1],
+  ['bloom_s', 'Spread time (sets the wave speed)', 1, 12, 0.5, ' s', 1],
+  ['linger_tau_s', 'Old waves fade over', 0.3, 10, 0.1, ' s', 1],
+  ['carry', 'Strength carried to the next bloom', 0, 1, 0.05, '', 1],
+  ['max_radius_deg', 'Maximum bloom radius', 10, 60, 1, '°', 1],
+  ['anchor_tolerance_deg', 'Pointer wobble allowed', 0.5, 5, 0.1, '°', 1],
+  ['max_sources', 'Blooms at once', 1, 8, 1, '', 1],
 ];
 const VIEW_DEG = 40;           // the window is treated as 40° of visual angle wide
 const MAX_SRC = 8;
-const STORE = 'psychedelic-fixation.settings.v1';
+const NOT_STOPPED = 1e5;       // "stopped at age" sent to the shader while a bloom is still fixated
+const STORE = 'psychedelic-fixation.settings.v2';
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 function loadSettings() {
@@ -1015,8 +1108,8 @@ class Prog {
 let progs;
 try {
   progs = {
-    psy: new Prog('psychedelic', FORMCONST + PSYCHEDELIC),
-    cortex: new Prog('cortex', FORMCONST + CORTEX),
+    psy: new Prog('psychedelic', PSYCHEDELIC),
+    cortex: new Prog('cortex', CORTEX),
     blit: new Prog('blit', BLIT),
     scenes: new Prog('scenes', SCENES),
   };
@@ -1101,30 +1194,37 @@ function worldTexture(i) {
 
 // ========================================================= state
 const S = {
-  mode: 0, pattern: 0, folds: 8, world: 0, usePhoto: false, trails: true, always: false,
+  mode: 0, folds: 8, world: 0, usePhoto: false, trails: true, always: false,
   autopilot: false, cortex: false, uiHidden: false, t: 0, hudT: 0, started: false,
 };
+// A bloom is a source at a fixation point that sends out waves while it is fixated
+// (stop = Infinity). Looking away sets stop = its age: nothing new leaves the old
+// spot, and what is already travelling moves on outward and fades.
 let blooms = [], active = null, cand = null, candT = 0, away = 0, gap = 0, lastLevel = 0;
 const pointer = { x: 0, y: 0, valid: false, lastMove: 0 };
 const pilot = { x: 0, y: 0, fx: 0, fy: 0, tx: 0, ty: 0, tMove: -1, tNext: 0 };
-const srcArr = new Float32Array(MAX_SRC * 4), src2Arr = new Float32Array(MAX_SRC * 4);
-
-const ease = (x) => { x = Math.min(Math.max(x, 0), 1); return x * x * (3 - 2 * x); };
+const srcArr = new Float32Array(MAX_SRC * 4), src2Arr = new Float32Array(MAX_SRC * 4), src3Arr = new Float32Array(MAX_SRC * 4);
+const fixated = (b) => b.stop === Infinity;
 
 function startBloom(p) {
-  const b = { x: p.x, y: p.y, level: (S.trails ? P.carry : 0) * lastLevel, weight: 0, grow: 0,
-              phase: Math.random() * Math.PI * 2, active: true, fadeTau: P.linger_tau_s };
+  const level = (S.trails ? P.carry : 0) * lastLevel;
+  const b = { x: p.x, y: p.y, level, level0: level, rampAge: 0, age: 0, stop: Infinity, fade: 1,
+              phase: Math.random() * Math.PI * 2, fadeTau: P.linger_tau_s };
   blooms.push(b);
   active = b;
   away = 0;
 }
 function abandon() {
   if (!active) return;
-  active.active = false;
+  active.stop = active.age;
   active.fadeTau = S.trails ? P.linger_tau_s : P.decay_tau_s;
   lastLevel = active.level;
   active = null;
   away = 0;
+}
+function raiseLevel(b, rate, dt) {
+  const v = Math.min(1, b.level + dt * rate);
+  if (v > b.level) { b.level = v; b.rampAge = b.age; }
 }
 function resetBlooms() { blooms = []; active = null; cand = null; candT = away = gap = lastLevel = 0; }
 
@@ -1152,6 +1252,10 @@ function autopilotGaze(t) {
 let clock = 0;   // real seconds since start (bloom dynamics use real time)
 function updateBlooms(dt) {
   clock += dt;
+  for (const b of blooms) {
+    b.age += dt;
+    if (!fixated(b)) b.fade *= Math.exp(-dt / b.fadeTau);
+  }
   const p = S.autopilot ? autopilotGaze(clock) : (pointer.valid ? { x: pointer.x, y: pointer.y } : null);
   const k_ppd = ppd(), tol = P.anchor_tolerance_deg;
   if (S.always) {
@@ -1160,8 +1264,10 @@ function updateBlooms(dt) {
       const k = Math.min(1, dt * 12);
       active.x += (p.x - active.x) * k;
       active.y += (p.y - active.y) * k;
-      active.level = Math.min(1, active.level + dt / 1.5);
-      active.grow = 1;
+      raiseLevel(active, 1 / 1.5, dt);
+      active.level0 = active.level;                       // same strength everywhere ...
+      active.age = Math.max(active.age, P.bloom_s + 1);   // ... and already spread over the screen
+      active.rampAge = active.age;
     }
   } else if (p) {
     gap = 0;
@@ -1171,7 +1277,7 @@ function updateBlooms(dt) {
         const k = Math.min(1, dt * P.anchor_follow_per_s);
         active.x += (p.x - active.x) * k;
         active.y += (p.y - active.y) * k;
-        active.level = Math.min(1, active.level + dt / P.ramp_s);
+        raiseLevel(active, 1 / P.ramp_s, dt);
       } else {
         away += dt;
         if (away >= P.break_s) { abandon(); cand = { x: p.x, y: p.y }; candT = 0; }
@@ -1186,49 +1292,66 @@ function updateBlooms(dt) {
     gap += dt;
     if (gap > P.blink_grace_s && active) { abandon(); cand = null; }
   }
-  const fadeIn = 1 - Math.exp(-dt / P.fade_in_tau_s);
-  for (const b of blooms) {
-    if (b.active) b.weight += (1 - b.weight) * fadeIn;
-    else b.weight *= Math.exp(-dt / b.fadeTau);
-    b.grow = Math.min(1, b.grow + dt / P.bloom_s);
-  }
-  blooms = blooms.filter((b) => b.active || b.weight > 0.02);
+  blooms = blooms.filter(onScreen);
   const cap = Math.max(1, Math.min(Math.round(P.max_sources), MAX_SRC));
   while (blooms.length > cap) {
-    const i = blooms.findIndex((b) => !b.active);
+    const i = blooms.findIndex((b) => !fixated(b));
     blooms.splice(i >= 0 ? i : 0, 1);
   }
 }
-function bloomRadius(b) {
-  const reach = P.weak_radius_frac + (1 - P.weak_radius_frac) * ease(b.level / 0.75);
-  return P.min_radius_deg + (P.max_radius_deg - P.min_radius_deg) * ease(b.grow) * reach;
+// Waves move at a constant speed in cortical units w = log(1 + r / r0) and reach
+// max_radius_deg after bloom_s seconds.
+function waveSpeed() { return Math.log1p(P.max_radius_deg / P.wave_r0_deg) / Math.max(P.bloom_s, 0.1); }
+function farDeg(b) {             // distance to the farthest screen corner
+  const W = canvas.width, H = canvas.height;
+  return Math.max(Math.hypot(b.x, b.y), Math.hypot(W - b.x, b.y), Math.hypot(b.x, H - b.y),
+                  Math.hypot(W - b.x, H - b.y)) / ppd();
 }
-function intensity() { return blooms.reduce((m, b) => Math.max(m, b.level * b.weight), 0); }
+function onScreen(b) {           // a stopped bloom goes once faded or once its waves have left the screen
+  if (fixated(b)) return true;
+  if (b.fade < 0.02) return false;
+  return (b.age - b.stop) * waveSpeed() < Math.log1p(farDeg(b) / P.wave_r0_deg) + 0.5;
+}
+function visibility(b) { return (1 - Math.exp(-Math.min(b.age, b.stop) / P.fade_in_tau_s)) * b.fade; }
+function intensity() { return blooms.reduce((m, b) => Math.max(m, b.level * visibility(b)), 0); }
+function gazePoint() {
+  if (S.autopilot) return { x: pilot.x, y: pilot.y };
+  if (pointer.valid) return { x: pointer.x, y: pointer.y };
+  const b = blooms[blooms.length - 1];
+  return b ? { x: b.x, y: b.y } : { x: canvas.width / 2, y: canvas.height / 2 };
+}
 
 // ========================================================== render
 function render() {
   const img = S.usePhoto && photo ? photo : worldTexture(S.world);
   const cur = ping[pingI], prev = ping[1 - pingI];
   const list = blooms.slice(-MAX_SRC);
-  srcArr.fill(0); src2Arr.fill(0);
+  srcArr.fill(0); src2Arr.fill(0); src3Arr.fill(0);
   list.forEach((b, i) => {
-    srcArr.set([b.x, b.y, b.level, b.weight], i * 4);
-    src2Arr.set([bloomRadius(b), b.phase, 0, 0], i * 4);
+    srcArr.set([b.x, b.y, b.age, fixated(b) ? NOT_STOPPED : b.stop], i * 4);
+    src2Arr.set([b.level0, b.level, b.rampAge, b.phase], i * 4);
+    src3Arr.set([b.fade, farDeg(b), 0, 0], i * 4);
   });
   const ps = progs.psy.use();
   bindTex(0, img.tex); ps.i('u_image', 0);
   bindTex(1, prev.tex); ps.i('u_prev', 1);
-  ps.f('u_img_size', img.w, img.h).i('u_nsrc', list.length).v4('u_src', srcArr).v4('u_src2', src2Arr)
-    .f('u_time', S.t).f('u_ppd', ppd()).i('u_mode', S.mode).i('u_pattern', S.pattern).f('u_folds', S.folds);
+  ps.f('u_img_size', img.w, img.h).i('u_nsrc', list.length)
+    .v4('u_src', srcArr).v4('u_src2', src2Arr).v4('u_src3', src3Arr)
+    .f('u_time', S.t).f('u_ppd', ppd()).i('u_mode', S.mode).f('u_folds', S.folds)
+    .f('u_speed', waveSpeed()).f('u_r0', P.wave_r0_deg).f('u_max_deg', P.max_radius_deg)
+    .f('u_weak', P.weak_radius_frac).f('u_fade_in', P.fade_in_tau_s)
+    .f('u_colour_at', P.trip_colour_at).f('u_kaleido_at', P.trip_kaleido_at);
   drawTo(ps, cur);
   const bl = progs.blit.use();
   bindTex(0, cur.tex); bl.i('u_tex', 0);
   drawTo(bl, null);
-  if (S.cortex) {
-    const r = cortexRect(), s = canvas.width / window.innerWidth;
-    progs.cortex.use().f('u_rect', r.x * s, r.y * s, r.w * s, r.h * s)
-      .i('u_pattern', S.mode === 4 ? S.pattern : Math.floor(S.t / 12) % 6).f('u_time', S.t);
-    drawTo(progs.cortex, null);
+  if (S.cortex) {                // the frame around the gaze point, re-plotted in V1 coordinates
+    const r = cortexRect(), s = canvas.width / window.innerWidth, g = gazePoint();
+    const cp = progs.cortex.use();
+    bindTex(0, cur.tex); cp.i('u_frame', 0);
+    cp.f('u_rect', r.x * s, r.y * s, r.w * s, r.h * s).f('u_center', g.x, g.y).f('u_ppd', ppd())
+      .f('u_r0', P.wave_r0_deg).f('u_max_ecc', P.v1_view_max_deg);
+    drawTo(cp, null);
   }
   pingI = 1 - pingI;
 }
@@ -1242,8 +1365,8 @@ let hudKey = '';
 function updateHud(dt) {
   S.hudT += dt;
   const [name, desc] = MODES[S.mode];
-  const label = `${S.mode + 1}. ${name}${S.mode === 4 ? ': ' + PATTERNS[S.pattern] : ''}`;
-  const fix = active && !S.always ? `fixating ${(clock - (active.t0 ?? clock)).toFixed(1)} s` : (S.always ? 'always-on' : 'no fixation');
+  const label = `${S.mode + 1}. ${name}`;
+  const fix = active && !S.always ? `fixating ${active.age.toFixed(1)} s` : (S.always ? 'always-on' : 'no fixation');
   const state = `${blooms.length} bloom${blooms.length === 1 ? '' : 's'} · ${fix} · trails ${S.trails ? 'on' : 'off'}${S.autopilot ? ' · auto-pilot' : ''}`;
   const key = label + desc + state;
   if (key !== hudKey) {
@@ -1290,7 +1413,8 @@ function setPressed(btn, on) { btn.setAttribute('aria-pressed', on ? 'true' : 'f
 function toggleTrails() {
   S.trails = !S.trails;
   setPressed(ui.trails, S.trails);
-  toast(S.trails ? 'Trails on: old blooms linger while new ones grow' : 'Trails off: every move resets the hallucinations');
+  if (!S.trails) for (const b of blooms) if (!fixated(b)) b.fadeTau = P.decay_tau_s;   // clear what is still travelling
+  toast(S.trails ? 'Trails on: old waves travel on and fade while new ones start' : 'Trails off: every move resets the hallucinations');
 }
 function toggleAuto(force) {
   S.autopilot = force ?? !S.autopilot;
@@ -1306,15 +1430,14 @@ function toggleAuto(force) {
 function toggleCortex() {
   S.cortex = !S.cortex;
   setPressed(ui.cortex, S.cortex);
-  if (S.cortex && S.mode !== 0 && S.mode !== 4) setMode(4);
   placeCortexLabel();
 }
 function placeCortexLabel() {
   const r = cortexRect();
   ui.cortexLab.innerHTML = '';
-  const top = document.createElement('b'); top.textContent = "What V1 'sees': plain stripes";
+  const top = document.createElement('b'); top.textContent = "What V1 'sees' around your gaze";
   const bottom = document.createElement('span');
-  bottom.textContent = 'x: log eccentricity · y: polar angle. The retina-to-V1 map turns these into tunnels and spirals.';
+  bottom.textContent = `x: log eccentricity (0–${P.v1_view_max_deg}°) · y: polar angle. Rings spreading from fixation are stripes crossing V1.`;
   ui.cortexLab.append(top, bottom);
   Object.assign(ui.cortexLab.style, { left: `${r.x}px`, top: `${r.y - 22}px`, width: `${r.w}px` });
   top.style.marginBottom = `${r.h + 8}px`;
@@ -1359,9 +1482,14 @@ ui.world.addEventListener('change', () => {
 
 // tune sliders
 function renderSettings() { ui.out.value = JSON.stringify(Object.fromEntries(TUNABLE.map(([k]) => [k, P[k]]).concat([['trails', S.trails]])), null, 1); }
+function fmtSetting([key, , , , step, unit, scale]) {
+  const v = P[key] * scale, s = step * scale;
+  return `${v.toFixed(s < 0.1 ? 2 : s < 1 ? 1 : 0)}${unit}`;
+}
 (() => {
   const box = $('sliders');
-  for (const [key, label, lo, hi, step, unit] of TUNABLE) {
+  for (const spec of TUNABLE) {
+    const [key, label, lo, hi, step] = spec;
     const id = `s_${key}`;
     const lab = document.createElement('label');
     lab.htmlFor = id;
@@ -1369,7 +1497,7 @@ function renderSettings() { ui.out.value = JSON.stringify(Object.fromEntries(TUN
     const out = document.createElement('output'); out.id = `${id}_out`;
     const inp = document.createElement('input');
     Object.assign(inp, { id, type: 'range', min: lo, max: hi, step, value: P[key] });
-    const show = () => { out.textContent = `${(+P[key]).toFixed(step < 0.1 ? 2 : step < 1 ? 1 : 0)}${unit}`; };
+    const show = () => { out.textContent = fmtSetting(spec); };
     inp.addEventListener('input', () => { P[key] = parseFloat(inp.value); show(); saveSettings(); renderSettings(); });
     lab.append(name, out, inp);
     box.append(lab);
@@ -1385,9 +1513,9 @@ $('copyBtn').addEventListener('click', async () => {
 $('resetBtn').addEventListener('click', () => {
   P = { ...DEFAULTS };
   saveSettings();
-  for (const [key, , , , step, unit] of TUNABLE) {
-    $(`s_${key}`).value = P[key];
-    $(`s_${key}_out`).textContent = `${(+P[key]).toFixed(step < 0.1 ? 2 : step < 1 ? 1 : 0)}${unit}`;
+  for (const spec of TUNABLE) {
+    $(`s_${spec[0]}`).value = P[spec[0]];
+    $(`s_${spec[0]}_out`).textContent = fmtSetting(spec);
   }
   renderSettings();
   toast('Back to the default settings');
@@ -1467,7 +1595,7 @@ window.addEventListener('keydown', (e) => {
   const k = e.key;
   if (k === 'Escape') { ui.help.hidden = true; if (!ui.intro.hidden) start(false); return; }
   if (!ui.intro.hidden && (k === 'Enter' || k === ' ')) { e.preventDefault(); start(false); return; }
-  if (k >= '1' && k <= '8') setMode(Number(k) - 1);
+  if (k.length === 1 && k >= '1' && k <= String(MODES.length)) setMode(Number(k) - 1);
   else if (k === 'ArrowRight') setMode(S.mode + 1);
   else if (k === 'ArrowLeft') setMode(S.mode - 1);
   else if (k === ' ' || k === 'n' || k === 'N') { e.preventDefault(); stepWorld(1); }
@@ -1476,7 +1604,6 @@ window.addEventListener('keydown', (e) => {
   else if (k === 'd' || k === 'D') toggleAuto();
   else if (k === 'a' || k === 'A') { S.always = !S.always; toast(S.always ? 'Always-on: full strength, follows the pointer' : 'Fixation mode: hold still to grow a bloom'); }
   else if (k === 'c' || k === 'C') toggleCortex();
-  else if (k === 'p' || k === 'P') { S.pattern = (S.pattern + 1) % PATTERNS.length; if (S.mode !== 4) setMode(4); toast(`Form constant: ${PATTERNS[S.pattern]}`); showHud(); }
   else if (k === '[' || k === ']') { S.folds = Math.max(2, Math.min(24, S.folds + (k === ']' ? 1 : -1))); toast(`Kaleidoscope: ${S.folds} folds`); }
   else if (k === 'r' || k === 'R') { resetBlooms(); toast('Cleared'); }
   else if (k === 'h' || k === 'H' || k === '?') ui.help.hidden = !ui.help.hidden;
@@ -1507,7 +1634,6 @@ function frame(now) {
     } else slowFor = 0;
   }
   S.t += dt * (reduceMotion ? 0.5 : 1);
-  if (active && active.t0 === undefined) active.t0 = clock;
   updateBlooms(S.started ? dt : 0);
   render();
   updateHud(dt);
@@ -1525,7 +1651,6 @@ window.__psyTest = {
     const n = Math.max(1, Math.round(seconds * 60));
     for (let i = 0; i < n; i++) {
       S.t += 1 / 60;
-      if (active && active.t0 === undefined) active.t0 = clock;
       updateBlooms(1 / 60);
       if (i % 3 === 0 || i === n - 1) render();
     }
