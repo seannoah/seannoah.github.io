@@ -102,3 +102,20 @@ export function voicingFor(keyId, scaleId, shapeId, set, anchor, deg) {
 }
 
 export const anchorNote = (v, anchor) => (anchor === 'top' ? v.notes[v.notes.length - 1] : v.notes[0]);
+
+// The voicing whose top (or bottom) note is exactly this pitch, or null.
+export function voicingAt(keyId, scaleId, shapeId, set, anchor, midi) {
+  if (!set) return null;
+  return voicings(keyId, scaleId, shapeId, set).find((v) => anchorNote(v, anchor).midi === midi) || null;
+}
+
+// The Elevator as one column: one shape per floor, smallest to largest. The shell and
+// octave used are the ones charted first in The Elevator Sequence (pp. 3-4).
+export const ELEVATOR = ['unison', 'thirds', 'triads', 'shell.low', 'oct.low', 'drop2', 'drop3', 'drop24', 'dbl'];
+export const spanOf = (shapeId) => SHAPES[shapeId].steps[SHAPES[shapeId].steps.length - 1];
+
+// The string set that puts a shape's top note on a given string.
+export const setWithTop = (shapeId, string) => SHAPES[shapeId].sets.find((s) => s[s.length - 1] === string) || null;
+
+// Other shapes on the same floor (the other shell, the other octave chords).
+export const siblings = (shapeId) => FLOORS.find((f) => f.id === SHAPES[shapeId].floor).shapes;

@@ -14,7 +14,7 @@ import { KEYS, SCALES, SCALE_ORDER } from './theory.js';
 import { FLOORS, SHAPES, setLabel } from './floors.js';
 import * as sync from './sync.js';
 
-const VERSION = '0.1.1';
+const VERSION = '0.2.0';
 const view = document.getElementById('view');
 const sessionRoot = document.getElementById('session');
 const TABS = [['today', 'Today'], ['learn', 'Learn'], ['explore', 'Explore'], ['progress', 'Progress']];
@@ -42,9 +42,10 @@ function pickRow(label, options, value, onPick) {
 const PART_BLURB = {
   path: 'Steps, names, and walking a string',
   floors: 'Summoning shapes around a note',
+  motion: 'Two voices moving between floors',
   ear: 'Hearing on and off, degrees and floors',
 };
-const PART_ICON = { path: 'next', floors: 'progress', ear: 'ear' };
+const PART_ICON = { path: 'next', floors: 'progress', motion: 'motion', ear: 'ear' };
 
 function installHint() {
   const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -226,8 +227,9 @@ function unitStatus(unit) {
 function pageLearn() {
   const groups = [];
   for (const u of UNITS) {
-    let g = groups.find((x) => x.name === u.group);
-    if (!g) groups.push((g = { name: u.group, units: [] }));
+    // groups follow the order of the ladder, so a group name starts a new block each time it changes
+    let g = groups[groups.length - 1];
+    if (!g || g.name !== u.group) groups.push((g = { name: u.group, units: [] }));
     g.units.push(u);
   }
   return [
@@ -307,14 +309,18 @@ function elevator() {
       h('span', { class: 'floor-n' }, f.level), h('span', { class: 'floor-name' }, f.name),
       progressBar(ids.length ? got / ids.length : 0), h('span', { class: 'floor-count' }, `${got}/${ids.length}`));
   });
-  const ear = all.filter((id) => floorOfItem(id) === 'ear');
-  const earGot = ear.filter(isLearned).length;
+  const side = (key, label, ic) => {
+    const ids = all.filter((id) => floorOfItem(id) === key);
+    const got = ids.filter(isLearned).length;
+    return h('div', { class: 'floor ear' + (got ? ' lit' : '') }, h('span', { class: 'floor-n' }, icon(ic, 16)), h('span', { class: 'floor-name' }, label),
+      progressBar(ids.length ? got / ids.length : 0), h('span', { class: 'floor-count' }, `${got}/${ids.length}`));
+  };
   return h('section', { class: 'card' },
     h('h2', { class: 'card-title' }, 'The elevator'),
     h('p', { class: 'muted small' }, 'An item counts as learned once you have got it right on two different days.'),
     h('div', { class: 'elevator' }, rows),
-    h('div', { class: 'floor ear' + (earGot ? ' lit' : '') }, h('span', { class: 'floor-n' }, icon('ear', 16)), h('span', { class: 'floor-name' }, 'Ear'),
-      progressBar(ear.length ? earGot / ear.length : 0), h('span', { class: 'floor-count' }, `${earGot}/${ear.length}`)));
+    side('motion', 'Motion', 'motion'),
+    side('ear', 'Ear', 'ear'));
 }
 
 function calendar() {

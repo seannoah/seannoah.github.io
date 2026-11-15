@@ -3,7 +3,7 @@
 // to where Thomas Echols teaches it in his course materials.
 
 import { h } from './dom.js';
-import { scaleStrip, pathChips, pathCompare, shapeBrowser } from './widgets.js';
+import { scaleStrip, pathChips, pathCompare, shapeBrowser, elevatorRide } from './widgets.js';
 import { SCALES } from './theory.js';
 import { SHAPES, setLabel } from './floors.js';
 
@@ -125,6 +125,59 @@ const LESSONS = {
     read('The Elevator Sequence, pages 5 and 12, and Reference Library: Drop 2 and 4.'),
   ],
 };
+
+Object.assign(LESSONS, {
+  'motion.steps': () => [
+    p('So far each chord has stood alone. Now put two in a row and listen to the outside edges: the top note, which is your melody, and the bottom note, which is your bass. Between any two chords those two voices can do three things.'),
+    list(
+      [b('Parallel'), ': both move the same way.'],
+      [b('Contrary'), ': they move in opposite directions.'],
+      [b('Oblique'), ': one holds while the other moves. That is the next step on the ladder.'],
+    ),
+    p('When the two voices do different things, one guitar starts to sound like two players. That is what the Elevator is for.'),
+    head('One rule does all of it'),
+    p('Under the same melody note, each floor up puts the bass one chord note lower. A third reaches down a little, a triad further, a shell further still.'),
+    list(
+      ['Stay on the ', b('same floor'), ' and the bass follows the melody. Parallel.'],
+      ['Melody up a step and ', b('up a floor'), ': the bass steps down. Contrary.'],
+      ['Melody down a step and ', b('down a floor'), ': the bass steps up. Contrary.'],
+    ),
+    p('Try it. The melody stays on string 2. Faded notes show where you just were.'),
+    elevatorRide({ floor: 'thirds', deg: 2, max: 'shell.low' }),
+    p('Ride from a third out to a shell and back while the melody climbs and falls. The top line and the bottom line are each a small tune of their own.'),
+    head('How to practice it'),
+    list(
+      'Say the degree of the melody note first, as always.',
+      'Before you move, decide what you want the bass to do. Then choose the floor that does it.',
+      'Any shell will do when a shell is called for. Low and high shells have the same outside notes.',
+    ),
+    h('p', { class: 'note' }, 'A naming point: when both voices go the same way but by different amounts, some books call it "direct" motion. Here it is all called parallel, as in the course.'),
+    read('The Elevator Sequence, pages 1 to 2 and 6, and Foundations I, pages 37 to 41.'),
+  ],
+
+  'motion.oblique': () => [
+    p(b('Oblique motion'), ' is one voice staying put while another moves. On the guitar the most useful version is a held melody note with something walking beneath it.'),
+    p('Think of it as two floors added together: a single note that stays, plus a smaller floor that moves. A note with one note moving under it. A note with a third moving under it. A note with a shell moving under it.'),
+    head('In line, then out of line'),
+    p('When the moving part sits two scale steps under the held note, everything belongs to one chord and you are simply on a bigger floor. A third under a held note is a triad. A shell under a held note is an octave chord.'),
+    p('Step the lower part down the scale by one and it crosses to the other chord while the top stays behind. For a moment an ', off('off'), ' third sits under an ', on('on'), ' note, or the reverse. It sounds unsettled, and stepping back resolves it.'),
+    browser({ shape: 'triads', set: [4, 3, 2], start: 5 }),
+    p('In the drills you hold the top note of a shape like this one, and move only the lower part down a step and back.'),
+    say('"Fifth, on" for the note you hold. Then name the bottom note each time it moves.'),
+    p('This mixing of on and off notes is also the doorway to borrowing, which comes later.'),
+    read('The Elevator Sequence, page 7.'),
+  ],
+
+  'motion.wide': () => [
+    p('The rule you learned on the small floors carries all the way up. From a shell, a melody step up and a floor up gives an octave chord. Do it again and you reach drop 2. Each time the bass steps down while the melody steps up.'),
+    elevatorRide({ floor: 'shell.low', deg: 4, max: 'drop2' }),
+    head('The elevator of intervals'),
+    p('It helps to know each floor by the distance between its outside notes: a third, a fifth (the triad), a sixth (the shell), an octave. After that the pattern repeats an octave wider: drop 2 is a third plus an octave, and so on.'),
+    p('Knowing the outside distance lets you see a small floor inside a big one. The top three notes of a drop 2 are a low shell. Its middle two notes are a third.'),
+    p('Drop 2 is easy to treat as a destination. Try to hear it as one more stop on the way, between the octave chord and whatever comes next.'),
+    read('The Elevator Sequence, pages 4 and 7.'),
+  ],
+});
 
 const SCALE_INTRO = {
   min6: {

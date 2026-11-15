@@ -115,6 +115,21 @@ export function degOfMidi(keyId, scaleId, midi) {
 
 export const midiAt = (string, fret) => OPEN[string] + fret;
 
+// The pitch `steps` scale steps above (or below) a pitch that is in the scale.
+export function stepMidi(keyId, scaleId, midi, steps) {
+  const deg = degOfMidi(keyId, scaleId, midi);
+  return midi + semisAt(scaleId, deg + steps) - semisAt(scaleId, deg);
+}
+
+// How many scale steps apart two pitches of the scale are (positive when b is higher).
+export function stepsBetween(keyId, scaleId, a, b) {
+  const index = (midi) => {
+    const deg = degOfMidi(keyId, scaleId, midi);
+    return 8 * Math.round((midi - keyOf(keyId).pc - SCALES[scaleId].semis[deg]) / 12) + deg;
+  };
+  return index(b) - index(a);
+}
+
 // Every position of the scale on one string, from fret `lo` to `hi`.
 export function stringPath(keyId, scaleId, string, lo = 0, hi = MAX_FRET) {
   const out = [];

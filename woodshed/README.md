@@ -10,6 +10,7 @@ Plain HTML, CSS and JavaScript modules. There is no build step: what is in this 
 |---|---|
 | `js/theory.js` | The four scales of chords, note names, step sizes |
 | `js/floors.js` | The nine Elevator floors as rules, and where each shape sits on the neck |
+| `js/motion.js` | Two chords in a row: parallel, contrary and oblique motion between floors |
 | `js/curriculum.js` | The ladder of units, the practice items in each, and the session builder |
 | `js/drills.js` | One exercise per item kind, in "away" and "guitar in hand" forms |
 | `js/lessons.js` | The short reading for each unit |

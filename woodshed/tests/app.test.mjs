@@ -42,6 +42,7 @@ const cur = await import('../js/curriculum.js');
 const sync = await import('../js/sync.js');
 const { voicingFor } = await import('../js/floors.js');
 const { walkPath, walkStart } = await import('../js/theory.js');
+const { movePair, floorAfter } = await import('../js/motion.js');
 
 test('every item in the catalogue is well formed and playable in C', () => {
   const ids = cur.catalogue();
@@ -52,7 +53,30 @@ test('every item in the catalogue is well formed and playable in C', () => {
     assert.ok(cur.SECTION[it.kind], id);
     if (it.kind === 'sh') assert.ok(voicingFor('C', it.scale, it.shape, it.set, it.anchor, it.deg), id);
     if (it.kind === 'wk') assert.equal(walkPath('C', it.scale, it.string, walkStart('C', it.scale, it.string)).length, 9, id);
+    if (it.kind === 'mv') {
+      const m = movePair('C', it);
+      assert.ok(m, id);
+      const want = it.move === 'par' ? 'parallel' : it.move === 'con' ? 'contrary' : 'oblique';
+      assert.equal(m.motion, want, id);
+      assert.ok(Math.abs(m.top) <= 1 && Math.abs(m.bass) === 1, `${id}: outer voices move by step`);
+    }
+    if (it.kind === 'mq') assert.ok(floorAfter(it.floor, it.how), id);
   }
+});
+
+test('the motion units sit between the small floors and the four-note floors', () => {
+  const ids = cur.UNITS.map((u) => u.id);
+  assert.deepEqual(ids.slice(2, 10), ['thirds', 'triads', 'shells', 'motion.steps', 'motion.oblique', 'octaves', 'drop2', 'motion.wide']);
+  store.resetAll();
+  for (const u of cur.UNITS.slice(0, 5)) for (const id of u.core) store.grade(id, 'right');
+  assert.equal(cur.currentUnit().id, 'motion.steps');
+  const s = cur.buildSession('away', 10);
+  assert.ok(s.some((x) => x.id.startsWith('mq|')) && s.some((x) => x.id.startsWith('mv|')));
+  assert.ok(cur.buildSession('guitar', 10).every((x) => !x.id.startsWith('mq|')), 'the which-floor quiz is for away mode');
+  // a unit you have already started stays on even if units are added before it later
+  store.resetAll();
+  store.grade(cur.unitById('octaves').core[0], 'right');
+  assert.ok(cur.isActive(cur.unitById('octaves')));
 });
 
 test('walks start on the root when it sits low, otherwise on an on-chord note', () => {

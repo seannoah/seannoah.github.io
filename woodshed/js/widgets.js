@@ -3,8 +3,9 @@
 import { h, icon } from './dom.js';
 import { neck, windowFor } from './neck.js';
 import * as audio from './audio.js';
-import { SCALES, SCALE_ORDER, scaleNotes, chordName, stepSize, walkPath, mod } from './theory.js';
-import { SHAPES, voicings, setLabel } from './floors.js';
+import { SCALES, SCALE_ORDER, scaleNotes, chordName, stepSize, walkPath, stepMidi, mod } from './theory.js';
+import { SHAPES, ELEVATOR, voicings, voicingAt, voicingFor, setWithTop, setLabel, floorOf } from './floors.js';
+import { describeMove, moveWords, TOP_STRING } from './motion.js';
 
 const kindOf = (deg) => (deg % 2 === 0 ? 'on' : 'off');
 export const labelOf = (scale, deg) => SCALES[scale].labels[deg];
@@ -112,4 +113,65 @@ export function shapeBrowser(init) {
       list.slice(0, 9).forEach((v, k) => audio.chord(v.notes.map((n) => n.midi), k * 0.62, 0.02, 0.5));
     },
   };
+}
+
+// Ride the elevator: keep a melody note on string 2 and change what the melody and the
+// floor do, one step at a time. The caption says what the outer voices did.
+export function elevatorRide(init = {}) {
+  const cfg = { key: 'C', scale: 'maj6', floor: 'triads', deg: 4, max: 'drop24', ...init };
+  const column = ELEVATOR.slice(0, ELEVATOR.indexOf(cfg.max) + 1);
+  const at = (shapeId, topMidi) => voicingAt(cfg.key, cfg.scale, shapeId, setWithTop(shapeId, TOP_STRING), 'top', topMidi);
+  let floor = cfg.floor;
+  let cur = voicingFor(cfg.key, cfg.scale, floor, setWithTop(floor, TOP_STRING), 'top', cfg.deg);
+  let prev = null;
+  let note = 'Use the buttons to move the melody, change floor, or do both at once.';
+  const root = h('figure', { class: 'fig browser ride' });
+  const topOf = (v) => v.notes[v.notes.length - 1];
+
+  function go(floorStep, melodyStep) {
+    const nextFloor = column[column.indexOf(floor) + floorStep];
+    const next = nextFloor ? at(nextFloor, stepMidi(cfg.key, cfg.scale, topOf(cur).midi, melodyStep)) : null;
+    if (!next) {
+      note = floorStep && !nextFloor ? (floorStep > 0 ? 'That is the top floor here.' : 'That is the ground floor.') : 'That runs off the neck. Try the other direction.';
+      return render();
+    }
+    prev = cur; cur = next;
+    const from = floorOf(floor).name; const to = floorOf(nextFloor).name;
+    floor = nextFloor;
+    const d = describeMove(cfg.key, cfg.scale, prev, cur);
+    note = `${from === to ? `${from}, same floor` : `${from} to ${to.toLowerCase()}`}. ${moveWords(d)}`;
+    audio.stopAll();
+    audio.chord(prev.notes.map((n) => n.midi), 0, 0.03, 0.5);
+    audio.chord(cur.notes.map((n) => n.midi), 0.9, 0.03, 0.55);
+    render();
+  }
+
+  function render() {
+    const all = [...cur.notes, ...(prev ? prev.notes : [])].map((n) => n.fret);
+    const fretted = all.filter((f) => f > 0);
+    const low = fretted.length ? Math.min(...fretted) : 1;
+    const lo = all.includes(0) || low <= 2 ? 0 : low - 1;
+    const hi = Math.max(Math.max(...all, 1) + 1, (lo || 1) + 7);
+    const ghosts = prev ? prev.notes.filter((n) => !cur.notes.some((c) => c.string === n.string && c.fret === n.fret)).map((n) => ({ string: n.string, fret: n.fret, kind: 'from', label: labelOf(cfg.scale, n.deg) })) : [];
+    const board = neck({
+      lo, hi, focus: [...new Set([...cur.notes, ...(prev ? prev.notes : [])].map((n) => n.string))],
+      marks: [...ghosts, ...cur.notes.map((n) => ({ string: n.string, fret: n.fret, kind: kindOf(n.deg), label: labelOf(cfg.scale, n.deg) }))],
+      onTap: (s, f) => { const n = cur.notes.find((p) => p.string === s && p.fret === f); if (n) audio.note(n.midi); },
+    });
+    const btn = (label, fs, ms) => h('button', { class: 'pill', onclick: () => go(fs, ms) }, label);
+    root.replaceChildren(
+      h('div', { class: 'browser-title' },
+        h('span', { class: `tag ${cur.on ? 'on' : 'off'}` }, cur.on ? 'on' : 'off'),
+        h('strong', null, chordName(cfg.key, cfg.scale, cur.on)),
+        h('span', { class: 'muted' }, floor === 'unison' ? ` the ${SCALES[cfg.scale].say[topOf(cur).deg]} alone` : ` ${floorOf(floor).name.toLowerCase()} beneath the ${SCALES[cfg.scale].say[topOf(cur).deg]}`)),
+      board.el,
+      h('div', { class: 'ride-grid' },
+        h('span', { class: 'ride-label' }, 'Same floor'), btn('Melody down', 0, -1), btn('Melody up', 0, 1),
+        h('span', { class: 'ride-label' }, 'Contrary'), btn('In: floor down', -1, -1), btn('Out: floor up', 1, 1),
+        h('span', { class: 'ride-label' }, 'Melody holds'), btn('Floor down', -1, 0), btn('Floor up', 1, 0)),
+      h('figcaption', null, note),
+    );
+  }
+  render();
+  return root;
 }

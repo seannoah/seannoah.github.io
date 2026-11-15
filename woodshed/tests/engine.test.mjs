@@ -156,3 +156,66 @@ test('every shape has a voicing for every degree on its primary set, in every sc
     }
   }
 });
+
+// ---- moving between floors ----
+import { movePair, describeMove, moveWords, floorAfter } from '../js/motion.js';
+import { scaleNotes as sn } from '../js/theory.js';
+
+const spell = (key, scale, chord) => chord.notes.map((n) => sn(key, scale)[n.deg].name).join(' ');
+const mv = (move, floor, dir, deg, scale = 'min6') => movePair('C', { scale, move, floor, dir, deg });
+
+test('contrary motion: unison, third, triad under C D E♭ (The Elevator Sequence p. 2, bar 2)', () => {
+  const a = mv('con', 'unison', 1, 0);
+  assert.equal(spell('C', 'min6', a.from), 'C');
+  assert.equal(spell('C', 'min6', a.to), 'B D');
+  assert.deepEqual([a.top, a.bass, a.motion], [1, -1, 'contrary']);
+  const b = mv('con', 'thirds', 1, 1);
+  assert.equal(spell('C', 'min6', b.from), 'B D');
+  assert.equal(spell('C', 'min6', b.to), 'A C E♭');
+  assert.deepEqual([b.top, b.bass, b.motion], [1, -1, 'contrary']);
+  // and back in again: melody down, bass up
+  const c = mv('con', 'triads', -1, 2);
+  assert.equal(spell('C', 'min6', c.to), 'B D');
+  assert.deepEqual([c.top, c.bass, c.motion], [-1, 1, 'contrary']);
+});
+
+test('parallel motion: triads under C D E♭ (The Elevator Sequence p. 2, bar 5)', () => {
+  const a = mv('par', 'triads', 1, 0);
+  assert.equal(spell('C', 'min6', a.from), 'G A C');
+  assert.equal(spell('C', 'min6', a.to), 'G♯ B D');
+  assert.deepEqual([a.top, a.bass, a.motion], [1, 1, 'parallel']);
+  assert.equal(moveWords(a), 'The melody stepped up, the bass stepped up: parallel motion.');
+});
+
+test('"parallel then contrary": triad to third makes the bass leap up (p. 2, bar 6)', () => {
+  const tri = mv('par', 'triads', 1, 0).from;                // G A C
+  const third = mv('con', 'unison', 1, 0).to;                // B D
+  const d = describeMove('C', 'min6', tri, third);
+  assert.deepEqual([d.top, d.bass, d.motion], [1, 3, 'parallel']);  // G up to B is three steps of this eight-note scale
+});
+
+test('oblique motion: G held while thirds step down beneath it (The Elevator Sequence p. 7)', () => {
+  const a = mv('obl', 'thirds', -1, 4);
+  assert.equal(spell('C', 'min6', a.from), 'C E♭ G');        // lines up as a triad, all on
+  assert.equal(a.from.mixed, false);
+  assert.equal(spell('C', 'min6', a.to), 'B D G');           // an off third under an on note
+  assert.equal(a.to.mixed, true);
+  assert.deepEqual([a.top, a.bass, a.motion], [0, -1, 'oblique']);
+  const back = mv('obl', 'thirds', 1, 4);
+  assert.equal(spell('C', 'min6', back.to), 'C E♭ G');
+  // a single note moving under a held note, and a shell under a held note making an octave chord
+  assert.equal(spell('C', 'min6', mv('obl', 'unison', -1, 4).from), 'E♭ G');
+  const sh = mv('obl', 'shell.low', -1, 4).from;
+  assert.equal(sh.notes[3].midi - sh.notes[0].midi, 12);
+});
+
+test('each floor up, under the same melody note, drops the bass one chord-note', () => {
+  assert.equal(floorAfter('triads', 'out'), 'shell.low');
+  assert.equal(floorAfter('triads', 'in'), 'thirds');
+  assert.equal(floorAfter('triads', 'par'), 'triads');
+  assert.equal(floorAfter('unison', 'in'), null);
+  // shells accept either shell: both have the same outer voices
+  const toShell = mv('con', 'triads', 1, 4, 'maj6');
+  assert.equal(toShell.accept.length, 2);
+  assert.equal(mv('con', 'shell.low', 1, 4, 'maj6').accept.length >= 1, true);
+});
