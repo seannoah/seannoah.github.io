@@ -76,7 +76,7 @@ export const UNITS = [
   {
     id: 'wide', title: 'The wide floors', blurb: 'Drop 3, drop 2 and 4, double octaves', group: 'Wider voicings',
     core: ['drop3', 'drop24', 'dbl'].flatMap((x) => primary('maj6', x)),
-    extra: ['el|maj6|drop3', 'el|maj6|drop24', ...others('maj6', 'drop3'), ...others('maj6', 'drop24')],
+    extra: ['el|maj6|drop3', 'el|maj6|drop24', ...primary('maj6', 'dbl.alt'), ...others('maj6', 'drop3'), ...others('maj6', 'drop24')],
   },
 ];
 

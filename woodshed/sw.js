@@ -3,7 +3,7 @@
 // and fall back to the saved copy when there is no connection.
 // Bump VERSION whenever the list of files changes.
 
-const VERSION = 'woodshed-0.1.0';
+const VERSION = 'woodshed-0.1.1';
 const FILES = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css',
   'js/app.js', 'js/audio.js', 'js/curriculum.js', 'js/dom.js', 'js/drills.js', 'js/floors.js',

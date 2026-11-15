@@ -14,7 +14,7 @@ import { KEYS, SCALES, SCALE_ORDER } from './theory.js';
 import { FLOORS, SHAPES, setLabel } from './floors.js';
 import * as sync from './sync.js';
 
-const VERSION = '0.1.0';
+const VERSION = '0.1.1';
 const view = document.getElementById('view');
 const sessionRoot = document.getElementById('session');
 const TABS = [['today', 'Today'], ['learn', 'Learn'], ['explore', 'Explore'], ['progress', 'Progress']];

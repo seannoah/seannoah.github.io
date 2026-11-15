@@ -91,16 +91,56 @@ test('the wide floors match the example diagrams (Foundations I fig. 11)', () =>
   assert.deepEqual(at('drop24', [6, 5, 3, 2]), [5, 7, 5, 8]);
 });
 
-test('double octaves and the 5-string sets (fig. 11 and Reference Library p. 4)', () => {
-  const c = voicings('C', 'maj6', 'dbl', [6, 4, 3, 1]).find((v) => v.notes[0].fret === 3);
+test('alternate double octave and the 5-string sets (fig. 11 and Reference Library p. 4)', () => {
+  const c = voicings('C', 'maj6', 'dbl.alt', [6, 4, 3, 1]).find((v) => v.notes[0].fret === 3);
   assert.deepEqual(frets(c), [3, 2, 2, 3]);
-  const g = voicings('G', 'maj6', 'dbl', [6, 4, 3, 1]).find((v) => v.notes[0].fret === 3);
+  const g = voicings('G', 'maj6', 'dbl.alt', [6, 4, 3, 1]).find((v) => v.notes[0].fret === 3);
   assert.deepEqual(frets(g), [3, 2, 4, 3]);
   assert.equal(g.notes[3].midi - g.notes[0].midi, 24);
   const d3 = voicings('G', 'maj6', 'drop3', [5, 3, 2, 1]).find((v) => v.notes[0].fret === 5);
   assert.deepEqual(frets(d3), [5, 4, 5, 3]);
   const d24 = voicings('G', 'maj6', 'drop24', [5, 4, 2, 1]).find((v) => v.notes[0].fret === 2);
   assert.deepEqual(frets(d24), [2, 2, 3, 3]);
+});
+
+// The Elevator Sequence (Episode 16), p. 5: each floor harmonises a top line that climbs
+// from C through one octave of C minor 6 diminished. Frets read off the chord diagrams.
+const chart = (shape, set, bottomFret) => frets(voicings('C', 'min6', shape, set).find((v) => v.notes[0].fret === bottomFret));
+
+test('drop 3 matches the full chart (The Elevator Sequence p. 5)', () => {
+  const low = { 3: [3, 1, 2, 1], 4: [4, 3, 4, 3], 5: [5, 5, 5, 4], 7: [7, 6, 7, 6], 8: [8, 7, 8, 8], 10: [10, 9, 10, 9] };
+  for (const [fret, want] of Object.entries(low)) assert.deepEqual(chart('drop3', [6, 4, 3, 2], +fret), want);
+  const high = { 6: [6, 5, 8, 5], 8: [8, 7, 9, 7], 10: [10, 8, 10, 8] };
+  for (const [fret, want] of Object.entries(high)) assert.deepEqual(chart('drop3', [5, 3, 2, 1], +fret), want);
+  // the top line really is C D E♭ F G A♭ on the first six
+  assert.deepEqual(voicings('C', 'min6', 'drop3', [6, 4, 3, 2]).filter((v) => [3, 4, 5, 7, 8, 10].includes(v.notes[0].fret)).map((v) => v.topDeg), [0, 1, 2, 3, 4, 5]);
+});
+
+test('drop 2 and 4 matches the full chart (The Elevator Sequence p. 5)', () => {
+  // The second chord is printed with "fr. 7", but the notes written beside it (F B A♭ D)
+  // sit at the first fret; the shape is the same either way.
+  const low = { 1: [1, 2, 1, 3], 3: [3, 3, 2, 4], 4: [4, 5, 4, 6], 5: [5, 6, 5, 8], 7: [7, 8, 7, 9], 8: [8, 10, 8, 10] };
+  for (const [fret, want] of Object.entries(low)) assert.deepEqual(chart('drop24', [6, 5, 3, 2], +fret), want);
+  const high = { 5: [5, 6, 6, 7], 6: [6, 7, 8, 8] };
+  for (const [fret, want] of Object.entries(high)) assert.deepEqual(chart('drop24', [5, 4, 2, 1], +fret), want);
+});
+
+test('double octave matches the full chart, and the alternate matches its ossia (The Elevator Sequence p. 5)', () => {
+  const main = { 1: [1, 1, 0, 1], 3: [3, 2, 1, 3], 4: [4, 4, 3, 4], 5: [5, 5, 4, 5], 7: [7, 7, 6, 7], 8: [8, 8, 8, 8] };
+  for (const [fret, want] of Object.entries(main)) assert.deepEqual(chart('dbl', [6, 3, 2, 1], +fret), want);
+  assert.deepEqual(chart('dbl.alt', [6, 4, 3, 1], 1), [1, 0, 1, 1]);
+  assert.deepEqual(chart('dbl.alt', [6, 4, 3, 1], 3), [3, 1, 2, 3]);
+  for (const id of ['dbl', 'dbl.alt']) {
+    for (const v of voicings('C', 'min6', id, SHAPES[id].primary)) assert.equal(v.notes[3].midi - v.notes[0].midi, 24);
+  }
+});
+
+test('the mirror: the wide floors span the small floors plus an octave (The Elevator Sequence p. 12)', () => {
+  const span = (id) => SHAPES[id].steps[SHAPES[id].steps.length - 1];
+  assert.equal(span('drop2'), span('thirds') + 8);
+  assert.equal(span('drop3'), span('triads') + 8);
+  assert.equal(span('drop24'), span('shell.low') + 8);
+  assert.equal(span('dbl'), span('oct.triad') + 8);
 });
 
 test('every shape has a voicing for every degree on its primary set, in every scale', () => {

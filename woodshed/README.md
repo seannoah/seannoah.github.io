@@ -48,4 +48,4 @@ In the browser console, `woodshed.run(['sh|maj6|shell.low|432|t|4'], 'guitar')` 
 
 Explanations in `lessons.js` are original to this app and point to pages of the course materials rather than reproducing them. The course PDFs are not part of this repository and should stay out of it.
 
-Drop 3 and double octaves are derived from their definitions and checked against two example diagrams each; they are flagged `derived` in `floors.js` until a full chart is available to compare with.
+All nine floors are checked against the course charts (see the note at the top of `js/floors.js`). The double octave has two versions, `dbl` and `dbl.alt`.

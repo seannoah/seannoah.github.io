@@ -4,11 +4,17 @@
 // alternate, two scale steps is "the next note of the same chord", so every shape
 // here is made of even numbers and stays inside one chord (all on, or all off).
 //
-// Thirds, triads, shells, octaves and drop 2 were checked against the charts in the
-// Elevator short lessons; drop 2 and 4 against the Reference Library. Drop 3 and
-// double octaves have no full chart in the materials, so they are derived from the
-// voicing definitions and checked against the two example diagrams of each
-// (Foundations I fig. 11 and Reference Library p. 4). They are marked `derived`.
+// Every floor has been checked against Thomas Echols's charts: thirds, triads, shells,
+// octaves and drop 2 against the Elevator short lessons; drop 3, drop 2 and 4 and both
+// double octaves against "The Elevator Sequence" (Episode 16), p. 5. The tests in
+// tests/engine.test.mjs hold the fret numbers read from those charts.
+//
+// Two naming notes. Octave chords are named here for their lowest three notes, as in
+// the Octave Chords short lesson (The Elevator Sequence names the same three voicings
+// by their top three notes). The double octave has two versions, both "three notes of
+// a drop 2 on the top four strings, plus a bass note": the one charted in The Elevator
+// Sequence (`dbl`), and the one it calls the alternate voicing, which is also the one
+// drawn in Foundations I fig. 11 and the Reference Library (`dbl.alt`).
 
 import { OPEN, MAX_FRET, SCALES, keyOf, mod, semisAt, isOn } from './theory.js';
 
@@ -27,7 +33,7 @@ export const FLOORS = [
   { id: 'drop2', name: 'Drop 2', level: 6, shapes: ['drop2'] },
   { id: 'drop3', name: 'Drop 3', level: 7, shapes: ['drop3'] },
   { id: 'drop24', name: 'Drop 2 and 4', level: 8, shapes: ['drop24'] },
-  { id: 'dbl', name: 'Double octaves', level: 9, shapes: ['dbl'] },
+  { id: 'dbl', name: 'Double octaves', level: 9, shapes: ['dbl', 'dbl.alt'] },
 ];
 
 export const SHAPES = {
@@ -40,9 +46,10 @@ export const SHAPES = {
   'oct.low': { id: 'oct.low', floor: 'octaves', name: 'Octave (low shell)', a: 'an octave chord with a low shell below', steps: [0, 2, 6, 8], sets: adj(4), primary: [5, 4, 3, 2] },
   'oct.high': { id: 'oct.high', floor: 'octaves', name: 'Octave (high shell)', a: 'an octave chord with a high shell below', steps: [0, 4, 6, 8], sets: adj(4), primary: [5, 4, 3, 2] },
   drop2: { id: 'drop2', floor: 'drop2', name: 'Drop 2', a: 'a drop 2', steps: [0, 4, 6, 10], sets: adj(4), primary: [5, 4, 3, 2] },
-  drop3: { id: 'drop3', floor: 'drop3', name: 'Drop 3', a: 'a drop 3', steps: [0, 6, 10, 12], sets: [[6, 4, 3, 2], [5, 3, 2, 1]], primary: [6, 4, 3, 2], derived: true },
+  drop3: { id: 'drop3', floor: 'drop3', name: 'Drop 3', a: 'a drop 3', steps: [0, 6, 10, 12], sets: [[6, 4, 3, 2], [5, 3, 2, 1]], primary: [6, 4, 3, 2] },
   drop24: { id: 'drop24', floor: 'drop24', name: 'Drop 2 and 4', a: 'a drop 2 and 4', steps: [0, 4, 10, 14], sets: [[6, 5, 3, 2], [5, 4, 2, 1]], primary: [6, 5, 3, 2] },
-  dbl: { id: 'dbl', floor: 'dbl', name: 'Double octave', a: 'a double octave', steps: [0, 6, 10, 16], sets: [[6, 4, 3, 1]], primary: [6, 4, 3, 1], derived: true },
+  dbl: { id: 'dbl', floor: 'dbl', name: 'Double octave', a: 'a double octave', steps: [0, 10, 12, 16], sets: [[6, 3, 2, 1]], primary: [6, 3, 2, 1] },
+  'dbl.alt': { id: 'dbl.alt', floor: 'dbl', name: 'Double octave (alternate)', a: 'an alternate double octave', steps: [0, 6, 10, 16], sets: [[6, 4, 3, 1]], primary: [6, 4, 3, 1] },
 };
 
 export const setKey = (set) => set.join('');

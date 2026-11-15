@@ -59,7 +59,7 @@ const LESSONS = {
     head('Beneath and above'),
     p('The drills ask for a third two ways: ', em('beneath'), ' a note (you hold the top and add the lower one) and ', em('above'), ' a note (you hold the bottom and add the upper one). Both matter. A melody note usually sits on top, so "beneath" is the one chord melody leans on.'),
     say('Name the note you are holding first. "Fifth, on." Then add the other.'),
-    read('Thirds (short lesson), and Foundations I, pages 31 and 39.'),
+    read('Thirds (short lesson), The Elevator Sequence, page 1, and Foundations I, pages 31 and 39.'),
   ],
 
   triads: () => [
@@ -69,7 +69,7 @@ const LESSONS = {
     p('Hold the bottom note on string 4 and say its name as you step through. That bottom voice is walking the path while the shape above it changes.'),
     head('Thirds inside triads'),
     p('Every triad contains two thirds. Moving between the thirds floor and the triads floor is the first taste of two voices going their own way, which is what the Elevator is for.'),
-    read('Triads (short lesson), and Foundations I, page 39.'),
+    read('Triads (short lesson), The Elevator Sequence, pages 1 to 2, and Foundations I, page 39.'),
   ],
 
   shells: () => [
@@ -82,7 +82,7 @@ const LESSONS = {
     browser({ shape: 'shell.high', set: [4, 3, 2], start: 2 }),
     p('Shells are wider than triads, so the top and bottom voices are further apart and easier to hear as two lines. This word is used in a broader sense here than the usual jazz "shell voicing".'),
     p('It is tempting to think of a shell as a piece of a bigger chord you already know. Learn each one as its own thing instead. You will reach it faster.'),
-    read('Shell Chords (short lesson).'),
+    read('Shell Chords (short lesson), and The Elevator Sequence, page 3.'),
   ],
 
   octaves: () => [
@@ -93,7 +93,8 @@ const LESSONS = {
     browser({ shape: 'oct.low', set: [5, 4, 3, 2], start: 2 }),
     browser({ shape: 'oct.high', set: [5, 4, 3, 2], start: 2 }),
     p('Because they contain thirds, triads and shells, octave chords are where the earlier floors start to feel like one connected thing.'),
-    read('Octave Chords (short lesson).'),
+    h('p', { class: 'note' }, 'A naming wrinkle: the Octave Chords lesson names these by their lowest three notes, as this app does. The Elevator Sequence names the same three chords by their top three notes, so its "triad on top" is the "high shell" version here.'),
+    read('Octave Chords (short lesson), and The Elevator Sequence, pages 3 to 4.'),
   ],
 
   drop2: () => [
@@ -102,7 +103,7 @@ const LESSONS = {
     p('This is the classic way to play the whole scale in chords: four shapes of C6 alternating with one diminished shape that repeats every three frets.'),
     p('A drop 2 holds the smaller floors inside it. Its top three notes are a low shell. Its bottom three are a high shell. Its middle two are a third.'),
     say('As you step up, name the top note, then go again naming the bottom note.'),
-    read('Drop 2 Chords (short lesson), and Foundations I, page 11.'),
+    read('Drop 2 Chords (short lesson), The Elevator Sequence, page 4, and Foundations I, page 11.'),
   ],
 
   wide: () => [
@@ -110,13 +111,18 @@ const LESSONS = {
     list(
       [b('Drop 3'), ': the third note from the top is dropped an octave. One string is skipped above the bass.'],
       [b('Drop 2 and 4'), ': the second and fourth notes from the top are dropped. The gap falls in the middle.'],
-      [b('Double octave'), ': the top note is doubled two octaves below, with two chord notes between.'],
+      [b('Double octave'), ': the top note is doubled two octaves below in the bass, with two chord notes between.'],
     ),
     browser({ shape: 'drop3', set: [6, 4, 3, 2], start: 2 }),
     browser({ shape: 'drop24', set: [6, 5, 3, 2], start: 2 }),
-    browser({ shape: 'dbl', set: [6, 4, 3, 1], start: 2 }),
-    h('p', { class: 'note' }, 'Drop 3 and double octaves have no full chart in the materials this app was built from. Their shapes are worked out from the definitions and agree with the example diagrams in Foundations I (page 31) and the Reference Library (page 4). Treat them as provisional until checked against a full chart.'),
-    read('Reference Library: Drop 2 and 4.'),
+    head('Two double octaves'),
+    p('The double octave comes in more than one version. Both of these are three notes of a drop 2 on the top four strings, with the bass note added on string 6. The first is the one to start with: a low shell on strings 3, 2 and 1 over the bass.'),
+    browser({ shape: 'dbl', set: [6, 3, 2, 1], start: 2 }),
+    p('The alternate leaves out string 2 instead of string 4.'),
+    browser({ shape: 'dbl.alt', set: [6, 4, 3, 1], start: 2 }),
+    head('The mirror'),
+    p('Look at the distance between the top and bottom notes. Drop 2 spans a third plus an octave, drop 3 a fifth plus an octave, drop 2 and 4 a sixth plus an octave, and the double octave two octaves. Those are the spans of thirds, triads, shells and octaves again, one octave wider. That echo becomes useful later for pivoting.'),
+    read('The Elevator Sequence, pages 5 and 12, and Reference Library: Drop 2 and 4.'),
   ],
 };
 
