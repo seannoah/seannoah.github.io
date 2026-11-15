@@ -15,6 +15,7 @@
 //   mq|scale|floor|how      which floor comes next for this kind of step? (how: out, in, par)
 //   mv|scale|move|floor|u/d|deg   play the next chord: move is par, con or obl (see motion.js)
 //   em|scale|motion         ear: parallel, contrary or oblique? (motion: par, con, obl)
+//   sc|family|how           reading a chart: which scale of chords for this chord? (see harmony.js)
 
 import { SCALES, KEY_ORDER } from './theory.js';
 import { SHAPES, setKey } from './floors.js';
@@ -107,6 +108,11 @@ export const UNITS = [
   ...scaleUnits('dom7', 'Dominant 7'),
   ...scaleUnits('dom7b5', 'Dominant 7♭5'),
   {
+    id: 'chart', title: 'Reading a chart', blurb: 'Which scale of chords goes with each chord symbol', group: 'Tunes',
+    core: ['sc|min7|same', 'sc|hdim|same', 'sc|dom|on5', 'sc|dom|tm', 'sc|maj|on5', 'sc|dom|tt'],
+    extra: [],
+  },
+  {
     id: 'wide', title: 'The wide floors', blurb: 'Drop 3, drop 2 and 4, double octaves', group: 'Wider voicings',
     core: ['drop3', 'drop24', 'dbl'].flatMap((x) => primary('maj6', x)),
     extra: [
@@ -124,7 +130,6 @@ export const PLANNED = [
   { title: 'Substitution', blurb: 'Minor 6 on the 5, the tritone’s minor, and friends' },
   { title: 'Transformation', blurb: 'Families, tall siblings, and ii–V–I by feel' },
   { title: 'The chromatic scale', blurb: 'Filling the whole steps, leaping the half steps' },
-  { title: 'Tunes', blurb: 'Putting it to work over real changes' },
 ];
 
 export const unitById = (id) => UNITS.find((u) => u.id === id);
@@ -139,14 +144,15 @@ export function parse(id) {
   if (kind === 'mq') return { ...base, floor: p[2], how: p[3] };
   if (kind === 'mv') return { ...base, move: p[2], floor: p[3], dir: p[4] === 'u' ? 1 : -1, deg: +p[5] };
   if (kind === 'em') return { ...base, motion: p[2] };
+  if (kind === 'sc') return { id, kind, fam: p[1], how: p[2] };
   if (kind === 'sh') return { ...base, shape: p[2], set: p[3].split('').map(Number), anchor: p[4] === 't' ? 'top' : 'bottom', deg: +p[5] };
   return { ...base, deg: +p[2] };
 }
 
-export const SECTION = { oo: 'path', st: 'path', nm: 'path', wk: 'path', sh: 'floors', mq: 'motion', mv: 'motion', eo: 'ear', ed: 'ear', ef: 'ear', ei: 'ear', el: 'ear', em: 'ear' };
-export const SECTION_NAME = { path: 'The path', floors: 'Floors', motion: 'Motion', ear: 'Ear' };
+export const SECTION = { oo: 'path', st: 'path', nm: 'path', wk: 'path', sh: 'floors', mq: 'motion', mv: 'motion', sc: 'tunes', eo: 'ear', ed: 'ear', ef: 'ear', ei: 'ear', el: 'ear', em: 'ear' };
+export const SECTION_NAME = { path: 'The path', floors: 'Floors', motion: 'Motion', tunes: 'Tunes', ear: 'Ear' };
 const kindOf = (id) => id.slice(0, 2);
-const AWAY_ONLY = new Set(['oo', 'mq']);
+const AWAY_ONLY = new Set(['oo', 'mq', 'sc']);
 const supports = (id, mode) => mode === 'away' || !AWAY_ONLY.has(kindOf(id));
 
 // ---- unit progress ----
@@ -236,7 +242,7 @@ export function buildSession(mode, minutes, only = null) {
   take(fresh, room());
   take(seen.slice().sort((a, b) => rec(a).b - rec(b).b || rec(a).t - rec(b).t), room());
 
-  const bySection = { path: [], floors: [], motion: [], ear: [] };
+  const bySection = { path: [], floors: [], motion: [], tunes: [], ear: [] };
   for (const id of picked) bySection[SECTION[kindOf(id)]].push(id);
   const out = [];
   out.push(...shuffle(bySection.path).map((id) => ({ id })));
@@ -245,12 +251,13 @@ export function buildSession(mode, minutes, only = null) {
   out.push(...newShapes.map((id) => ({ id, study: true })));
   out.push(...shuffle(bySection.floors).map((id) => ({ id })));
   out.push(...shuffle(bySection.motion).map((id) => ({ id })));
+  out.push(...shuffle(bySection.tunes).map((id) => ({ id })));
   out.push(...shuffle(bySection.ear).map((id) => ({ id })));
   return out;
 }
 
 export function summarize(session) {
-  const counts = { path: { n: 0, fresh: 0 }, floors: { n: 0, fresh: 0 }, motion: { n: 0, fresh: 0 }, ear: { n: 0, fresh: 0 } };
+  const counts = { path: { n: 0, fresh: 0 }, floors: { n: 0, fresh: 0 }, motion: { n: 0, fresh: 0 }, tunes: { n: 0, fresh: 0 }, ear: { n: 0, fresh: 0 } };
   for (const it of session) {
     if (it.study) continue;
     const c = counts[SECTION[kindOf(it.id)]];
@@ -269,6 +276,7 @@ export function floorOfItem(id) {
   if (k === 'sh') return SHAPES[id.split('|')[2]].floor;
   if (SECTION[k] === 'ear') return 'ear';
   if (SECTION[k] === 'motion') return 'motion';
+  if (SECTION[k] === 'tunes') return 'tunes';
   return 'unison';
 }
 export const scaleName = (s) => SCALES[s].name;

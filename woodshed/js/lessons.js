@@ -179,6 +179,31 @@ Object.assign(LESSONS, {
   ],
 });
 
+LESSONS.chart = () => [
+  p('A chord chart names one chord per bar or half bar. In this method you do not play those chords as written. For each one you pick a ', b('scale of chords'), ' that covers it, and then everything you have practiced inside that scale is available: its floors, its path, its moves.'),
+  p('Often the scale is built on a different note from the chord. That is ', b('substitution'), ', and a handful of rules covers almost every chart.'),
+  head('Chords that are something else in disguise'),
+  list(
+    [b('Minor 7'), ': play the major 6 a minor third up. Dm7 has the notes D, F, A, C. So does F6. Dm7 is played with F major 6 diminished.'],
+    [b('Half-diminished'), ': play the minor 6 a minor third up. Dm7♭5 has the same notes as Fm6.'],
+    [b('Major'), ': the major 6 on the same root. For more color, the major 6 on its fifth: G6 over C.'],
+    [b('Minor'), ' as a home chord: the minor 6 on the same root.'],
+  ),
+  head('Dominant chords: a choice'),
+  p('A dominant chord is tension that wants to resolve, and there is more than one way to play that tension. For G7:'),
+  list(
+    [b('Minor 6 on the 5'), ': D minor 6. The fifth of G is D.'],
+    [b('Tritone’s minor'), ': A♭ minor 6, a half step above the root. The darkest and most colorful, and a favorite when the chord resolves.'],
+    [b('True dominant'), ': G dominant 7 diminished, the chord itself.'],
+    [b('Dominant 7♭5'), ' and the ', b('tritone substitute'), ' (D♭7) are the other two.'],
+  ),
+  p('In the Songs tab each dominant starts on a sensible choice: the tritone’s minor when it resolves down a fifth, the minor 6 on the 5 when it does not. Tap a chord there to hear and try the others.'),
+  head('Melody notes become degrees'),
+  p('Once a bar has its scale, every melody note in it is simply a degree of that scale: "fifth, on" or "second, off". You already know shapes that have the fifth on top. That is how a melody gets harmonized without stopping to think about chord names.'),
+  p('An off note in the melody is not a wrong note. It is a borrowed one, and it gets its own stage later.'),
+  read('Foundations I, pages 42 to 47, and 5 Chord Melody Games.'),
+];
+
 const SCALE_INTRO = {
   min6: {
     what: 'Lower the third of the major 6 chord by a half step and you have a minor 6 chord. In C: C, E♭, G, A.',

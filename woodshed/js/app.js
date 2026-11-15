@@ -1,6 +1,6 @@
 // app.js — the four pages (Today, Learn, Explore, Progress) and the session runner.
 
-import { h, icon } from './dom.js';
+import { h, icon, segmented, pickRow } from './dom.js';
 import * as audio from './audio.js';
 import { state, save, setSetting, markUnit, grade, streak, dayTotal, dayKey, isNew, isLearned, resetAll } from './store.js';
 import {
@@ -13,39 +13,26 @@ import { shapeBrowser, scaleStrip } from './widgets.js';
 import { KEYS, SCALES, SCALE_ORDER } from './theory.js';
 import { FLOORS, SHAPES, setLabel } from './floors.js';
 import * as sync from './sync.js';
+import { pageSongs, pageSong, pageSongEdit, attachSongs } from './songsui.js';
+import { songById } from './songs.js';
 
-const VERSION = '0.2.0';
+const VERSION = '0.3.0';
 const view = document.getElementById('view');
 const sessionRoot = document.getElementById('session');
-const TABS = [['today', 'Today'], ['learn', 'Learn'], ['explore', 'Explore'], ['progress', 'Progress']];
+const TABS = [['today', 'Today'], ['learn', 'Learn'], ['songs', 'Songs'], ['explore', 'Explore'], ['progress', 'Progress']];
 
 // ---------- small shared pieces ----------
 const progressBar = (ratio, cls = '') => h('div', { class: 'meter ' + cls }, h('i', { style: `width:${Math.round(Math.min(1, ratio) * 100)}%` }));
-
-function segmented(options, value, onPick, cls = '') {
-  return h('div', { class: 'seg ' + cls, role: 'group' }, options.map(([val, label, ic]) =>
-    h('button', { class: val === value ? 'sel' : '', 'aria-pressed': val === value ? 'true' : 'false', onclick: () => onPick(val) }, ic ? icon(ic, 18) : null, label)));
-}
-
-function pickRow(label, options, value, onPick) {
-  const row = h('div', { class: 'pick-row' }, options.map(([val, text]) =>
-    h('button', { class: 'pick-btn' + (val === value ? ' sel' : ''), onclick: () => onPick(val) }, text)));
-  // keep the chosen option in view when the row is wider than the screen
-  requestAnimationFrame(() => {
-    const sel = row.querySelector('.sel');
-    if (sel) row.scrollLeft = sel.offsetLeft - row.clientWidth / 2 + sel.clientWidth / 2;
-  });
-  return h('div', { class: 'pick' }, h('div', { class: 'pick-label' }, label), row);
-}
 
 // ---------- Today ----------
 const PART_BLURB = {
   path: 'Steps, names, and walking a string',
   floors: 'Summoning shapes around a note',
   motion: 'Two voices moving between floors',
+  tunes: 'Reading chord charts',
   ear: 'Hearing on and off, degrees and floors',
 };
-const PART_ICON = { path: 'next', floors: 'progress', motion: 'motion', ear: 'ear' };
+const PART_ICON = { path: 'next', floors: 'progress', motion: 'motion', tunes: 'songs', ear: 'ear' };
 
 function installHint() {
   const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -93,6 +80,14 @@ function pageToday() {
       n ? h('button', { class: 'primary wide', onclick: () => runSession(session, mode) }, done.n ? 'Practice again' : 'Start') : null,
       h('div', { class: 'length' }, h('span', { class: 'muted' }, 'Minutes'),
         segmented([[5, '5'], [10, '10'], [15, '15'], [20, '20']], state.settings.minutes, (v) => { setSetting('minutes', v); route(); }, 'small'))),
+    (() => {
+      const tune = songById(state.settings.lastSong);
+      return h('a', { class: 'card lesson-card', href: tune ? `#/songs/${encodeURIComponent(tune.id)}` : '#/songs' },
+        h('span', { class: 'eyebrow' }, tune ? 'Your tune' : 'Songs'),
+        h('strong', null, tune ? tune.title : 'Practice on a tune'),
+        h('span', { class: 'muted' }, tune ? 'Pick up where you left off' : 'Charts read the way the method reads them'),
+        h('span', { class: 'go' }, icon('next', 20)));
+    })(),
     h('section', { class: 'where' },
       h('div', { class: 'eyebrow' }, 'You are working on'),
       h('a', { class: 'where-unit', href: `#/learn/${unit.id}` }, unit.title, icon('next', 18)),
@@ -134,6 +129,7 @@ function runSession(list, mode, unitBefore = currentUnit()) {
 
   const fill = h('i');
   const count = h('span', { class: 'count' });
+  const tagLine = h('div', { class: 'session-tag' });
   const body = h('div', { class: 'session-body' });
   const foot = h('div', { class: 'session-foot' });
   const close = () => {
@@ -157,7 +153,7 @@ function runSession(list, mode, unitBefore = currentUnit()) {
       h('button', { class: 'round', 'aria-label': 'End session', onclick: close }, icon('close', 20)),
       h('div', { class: 'meter slim' }, fill), count,
       mode === 'guitar' ? metronomeControl() : null),
-    body, foot);
+    tagLine, body, foot);
   sessionRoot.hidden = false;
   document.body.classList.add('in-session');
 
@@ -169,12 +165,14 @@ function runSession(list, mode, unitBefore = currentUnit()) {
     const entry = queue[i];
     fill.style.width = `${(i / queue.length) * 100}%`;
     count.textContent = `${i + 1} of ${queue.length}`;
+    tagLine.textContent = entry.tag || '';
     foot.replaceChildren();
     const started = Date.now();
     let finished = false;
     const ctx = {
       mode,
-      key: keyFor(entry.id),
+      key: entry.key || keyFor(entry.id),
+      symbol: entry.symbol, at: entry.at,
       bpm: () => state.settings.bpm,
       foot: (node) => foot.replaceChildren(...(node ? [node] : [])),
       finish(result, advance) {
@@ -184,7 +182,7 @@ function runSession(list, mode, unitBefore = currentUnit()) {
           if (isNew(entry.id)) tally.fresh++;
           grade(entry.id, result, (Date.now() - started) / 1000);
           tally[result]++;
-          if (result === 'wrong' && !repeated.has(entry.id)) { repeated.add(entry.id); queue.push({ id: entry.id }); }
+          if (result === 'wrong' && !repeated.has(entry)) { repeated.add(entry); const again = { ...entry }; repeated.add(again); queue.push(again); }
         }
         if (advance === 'now') return next();
         foot.replaceChildren(nextButton());
@@ -199,6 +197,7 @@ function runSession(list, mode, unitBefore = currentUnit()) {
     audio.stopAll(); audio.stopMetronome();
     fill.style.width = '100%';
     count.textContent = '';
+    tagLine.textContent = '';
     const total = tally.right + tally.wrong + tally.shaky;
     const nowUnit = currentUnit();
     const moved = nowUnit.id !== unitBefore.id;
@@ -284,7 +283,7 @@ function pageExplore() {
   const browser = shapeBrowser({ key: explore.key, scale: explore.scale, shape: explore.shape, set, names: explore.names });
   return [
     h('div', { class: 'page-head' }, h('p', { class: 'eyebrow' }, 'Any key, any floor'), h('h1', null, 'Explore')),
-    pickRow('Key', KEYS.map((k) => [k.id, k.id]), explore.key, (v) => refresh({ key: v })),
+    pickRow('Key', KEYS.slice(0, 12).map((k) => [k.id, k.id]), explore.key, (v) => refresh({ key: v })),
     pickRow('Scale', SCALE_ORDER.map((s) => [s, SCALES[s].short]), explore.scale, (v) => refresh({ scale: v })),
     pickRow('Floor', FLOORS.filter((f) => f.id !== 'unison').flatMap((f) => f.shapes.map((id) => [id, SHAPES[id].name])), explore.shape, (v) => refresh({ shape: v, set: null })),
     pickRow('Strings', shape.sets.map((s) => [s.join(), s.join('-')]), set.join(), (v) => refresh({ set: v.split(',').map(Number) })),
@@ -320,6 +319,7 @@ function elevator() {
     h('p', { class: 'muted small' }, 'An item counts as learned once you have got it right on two different days.'),
     h('div', { class: 'elevator' }, rows),
     side('motion', 'Motion', 'motion'),
+    side('tunes', 'Tunes', 'songs'),
     side('ear', 'Ear', 'ear'));
 }
 
@@ -402,8 +402,12 @@ function pageProgress() {
 // ---------- routing ----------
 function route() {
   if (!sessionRoot.hidden) return;
-  const [, name = 'today', arg] = location.hash.split('/');
+  const [, name = 'today', arg, arg2] = location.hash.split('/');
+  const songPage = () => (!arg ? pageSongs()
+    : ['new', 'edit', 'copy'].includes(arg) ? pageSongEdit(arg, arg2 ? decodeURIComponent(arg2) : '')
+    : pageSong(decodeURIComponent(arg)));
   const page = name === 'learn' ? (arg ? pageLesson(decodeURIComponent(arg)) : pageLearn())
+    : name === 'songs' ? songPage()
     : name === 'explore' ? pageExplore()
     : name === 'progress' ? pageProgress()
     : pageToday();
@@ -413,7 +417,7 @@ function route() {
 
 let lastHash = '';
 window.addEventListener('hashchange', () => {
-  const changed = location.hash.split('/')[1] !== lastHash.split('/')[1] || location.hash.split('/')[2] !== lastHash.split('/')[2];
+  const changed = location.hash !== lastHash;
   lastHash = location.hash;
   route();
   if (changed) window.scrollTo(0, 0);
@@ -429,6 +433,7 @@ document.getElementById('tabs').append(...TABS.map(([id, label]) => {
 //   woodshed.run(['sh|maj6|shell.low|432|t|4'], 'guitar')
 window.woodshed = { run: (ids, mode = 'away') => runSession(ids.map((id) => (typeof id === 'string' ? { id } : id)), mode) };
 
+attachSongs({ runSession, route });
 audio.setEnabled(state.settings.sound !== false);
 document.addEventListener('pointerdown', () => audio.unlock(), { once: true });
 sync.onStatus((st) => {

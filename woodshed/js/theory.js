@@ -24,6 +24,9 @@ export const KEYS = [
   { id: 'A', pc: 9, letter: 5 },
   { id: 'B♭', pc: 10, letter: 6, flat: true },
   { id: 'B', pc: 11, letter: 6 },
+  // an alternative spelling of F♯, used when a tune is written in flats (kept last so
+  // the first twelve entries stay in chromatic order)
+  { id: 'G♭', pc: 6, letter: 4, flat: true },
 ];
 // The order keys are introduced in practice: start in C, then widen.
 export const KEY_ORDER = ['C', 'G', 'F', 'D', 'B♭', 'A', 'E♭', 'E', 'A♭', 'B', 'D♭', 'F♯'];
@@ -57,6 +60,15 @@ export const SCALES = {
     labels: ['R', '2', '3', '4', '♭5', '♯5', '♭7', '7'],
     say: ['root', 'second', 'third', 'fourth', 'flat five', 'sharp five', 'flat seven', 'major seven'],
   },
+};
+// A fifth scale of chords, used over diminished chords in tunes: the on chord is a
+// diminished 7th and the off notes sit a half step below each of its notes (Foundations
+// IV, pp. 61-65). It is not part of the ladder, so it is kept out of SCALE_ORDER.
+SCALES.dim = {
+  id: 'dim', name: 'Diminished', short: 'diminished', suffix: '°7', whole: true,
+  semis: [0, 2, 3, 5, 6, 8, 9, 11], letters: [0, 1, 2, 3, 4, 5, 5, 6],
+  labels: ['R', '2', '♭3', '4', '♭5', '♭6', '6', '7'],
+  say: ['root', 'second', 'minor third', 'fourth', 'flat five', 'flat six', 'sixth', 'major seven'],
 };
 export const SCALE_ORDER = ['maj6', 'min6', 'dom7', 'dom7b5'];
 
@@ -104,7 +116,7 @@ export function chordName(keyId, scaleId, on = true) {
 }
 
 export function scaleTitle(keyId, scaleId) {
-  return `${keyId} ${SCALES[scaleId].short} diminished`;
+  return SCALES[scaleId].whole ? `${keyId} ${SCALES[scaleId].short} scale` : `${keyId} ${SCALES[scaleId].short} diminished`;
 }
 
 // Which scale degree (0-7) a MIDI note is in this key and scale, or -1.

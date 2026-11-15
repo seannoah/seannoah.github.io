@@ -32,6 +32,9 @@ const ICONS = {
   next: '<path d="M9 5l7 7-7 7"/>',
   ear: '<path d="M7 9a5 5 0 0110 0c0 3-2.5 3.5-3 6-.4 2-1.5 3-3 3a3 3 0 01-3-3"/><path d="M10 10a2 2 0 014 0"/>',
   motion: '<path d="M8 4l-3 3 3 3M5 7h10"/><path d="M16 14l3 3-3 3M19 17H9"/>',
+  songs: '<path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/>',
+  edit: '<path d="M4 20h4l10-10-4-4L4 16z"/><path d="M13 7l4 4"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
   metro: '<path d="M8 20h8l-2.5-15h-3z"/><path d="M12 15l5-8"/>',
   check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
   guitar: '<path d="M14.5 9.5l5-5M18 3l3 3"/><path d="M13 8c-2 0-2.5 2-4.500 2.500S4 12.500 4 15.500 6.500 20 9 20s4.500-1.500 5-3.500S16 14 16 11z"/><circle cx="10" cy="14" r="1.6"/>',
@@ -45,4 +48,22 @@ export function icon(name, size = 22) {
   span.setAttribute('aria-hidden', 'true');
   span.innerHTML = `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${ICONS[name] || ''}</svg>`;
   return span;
+}
+
+// A row of mutually exclusive buttons.
+export function segmented(options, value, onPick, cls = '') {
+  return h('div', { class: 'seg ' + cls, role: 'group' }, options.map(([val, label, ic]) =>
+    h('button', { class: val === value ? 'sel' : '', 'aria-pressed': val === value ? 'true' : 'false', onclick: () => onPick(val) }, ic ? icon(ic, 18) : null, label)));
+}
+
+// A labelled row of choices that scrolls sideways on a phone.
+export function pickRow(label, options, value, onPick) {
+  const row = h('div', { class: 'pick-row' }, options.map(([val, text]) =>
+    h('button', { class: 'pick-btn' + (val === value ? ' sel' : ''), onclick: () => onPick(val) }, text)));
+  // keep the chosen option in view when the row is wider than the screen
+  requestAnimationFrame(() => {
+    const sel = row.querySelector('.sel');
+    if (sel) row.scrollLeft = sel.offsetLeft - row.clientWidth / 2 + sel.clientWidth / 2;
+  });
+  return h('div', { class: 'pick' }, h('div', { class: 'pick-label' }, label), row);
 }

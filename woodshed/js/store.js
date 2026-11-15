@@ -16,6 +16,7 @@ const blank = () => ({
   items: {},  // id -> { b: box, d: due day number, n: times seen, r: times right, t: last seen (ms) }
   units: {},  // id -> { read: ms, on: ms }
   days: {},   // 'YYYY-MM-DD' -> { [device]: { n, ok, s } }
+  songs: {},  // id -> { title, key, chart, melody, prefs, t } for your own tunes; { prefs, t } for built-in ones
 });
 
 function load() {
@@ -125,6 +126,7 @@ export function resetAll() {
   fresh.settings = { ...state.settings };
   fresh.settingsAt = state.settingsAt || 0;
   fresh.resetAt = Date.now();
+  fresh.songs = state.songs || {}; // erasing practice progress keeps your tunes
   for (const k of Object.keys(state)) delete state[k];
   Object.assign(state, fresh);
   save();
@@ -154,6 +156,9 @@ export function merge(a, b) {
         if (!target[dev] || d.n > target[dev].n) target[dev] = { ...d };
       }
     }
+    for (const [id, song] of Object.entries(src.songs || {})) {
+      if (!out.songs[id] || (song.t || 0) > (out.songs[id].t || 0)) out.songs[id] = song;
+    }
     for (const [id, u] of Object.entries(src.units || {})) {
       for (const [field, ts] of Object.entries(u)) {
         if (ts < resetAt) continue;
@@ -176,5 +181,5 @@ export function canonical(s) {
   const sortKeys = (o) => (o && typeof o === 'object' && !Array.isArray(o)
     ? Object.keys(o).sort().reduce((acc, k) => { acc[k] = sortKeys(o[k]); return acc; }, {})
     : o);
-  return JSON.stringify(sortKeys({ v: 1, settings: s.settings, settingsAt: s.settingsAt || 0, resetAt: s.resetAt || 0, items: s.items || {}, units: s.units || {}, days: s.days || {} }));
+  return JSON.stringify(sortKeys({ v: 1, settings: s.settings, settingsAt: s.settingsAt || 0, resetAt: s.resetAt || 0, items: s.items || {}, units: s.units || {}, days: s.days || {}, songs: s.songs || {} }));
 }

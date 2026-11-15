@@ -198,3 +198,62 @@ test('sync: a clash with another device is retried, and bad setups are explained
   sync.setConfig({ repo: 'someone/woodshed-data', token: '' });
   assert.equal(await sync.syncNow(), false);
 });
+
+// ---- songs ----
+const songs = await import('../js/songs.js');
+const { TUNES } = await import('../js/tunes.js');
+const { parseChart } = await import('../js/harmony.js');
+
+test('every built-in tune reads cleanly and can be played through', () => {
+  assert.ok(TUNES.length >= 3);
+  for (const tune of TUNES) {
+    const read = songs.readSong(tune);
+    assert.ok(read.bars.length >= 4, tune.id);
+    const typed = tune.chart.replace(/^\s*[A-Z]\s*\|/gm, '|').split(/[|\s]+/).filter((t) => t && t !== '%').length;
+    const repeats = (tune.chart.match(/%/g) || []).length;
+    assert.ok(read.chords.length >= typed + repeats, `${tune.id}: every chord symbol was understood`);
+    for (const shape of ['thirds', 'triads', 'shell.low', 'drop2']) {
+      const steps = songs.playThrough(read, shape);
+      const missing = steps.filter((s) => s.note && s.note.deg >= 0 && !s.voicing).length;
+      assert.ok(missing <= steps.length * 0.1, `${tune.id} ${shape}: ${missing} of ${steps.length} steps have no shape`);
+    }
+    if (tune.melody) {
+      assert.equal(tune.melody.length, read.bars.length, `${tune.id}: one melody line per bar`);
+      const outside = read.melody.filter((n) => n.deg < 0).length;
+      assert.ok(outside <= read.melody.length * 0.25, `${tune.id}: ${outside} of ${read.melody.length} melody notes fall outside the chosen scales`);
+      tune.melody.forEach((line, i) => {
+        const total = line.trim().split(/\s+/).filter(Boolean).reduce((sum, t) => sum + (parseFloat(t.split(':')[1]) || 0), 0);
+        if (line.includes(':')) assert.ok(Math.abs(total - (tune.beats || 4)) < 0.01 || tune.pickup === i, `${tune.id} bar ${i + 1}: lengths add up to ${total}`);
+      });
+    }
+  }
+});
+
+test('a melody is read as degrees of each bar\'s scale and gets a shape beneath it', () => {
+  // All the Things You Are, bar 1 as taught in "5 Chord Melody Games": A♭ held over Fm7,
+  // read as the root of A♭ major 6.
+  const read = songs.readSong({ id: 'x', key: 'Ab', beats: 4, chart: '| Fm7 | Bbm7 |', melody: ['Ab4:4', 'Db5:4'] });
+  assert.equal(read.chords[0].use.label, 'A♭ major 6');
+  assert.equal(read.melody[0].say, 'root');
+  assert.equal(read.melody[0].on, true);
+  const v = songs.shapeUnder(read.chords[0].use, 'thirds', read.melody[0].midi);
+  assert.deepEqual(v.notes.map((n) => n.midi), [65, 68]);    // F and A♭, the third beneath the melody note
+  assert.equal(v.notes[1].string <= 2, true);                // with the melody on one of the top two strings
+  assert.equal(read.melody[1].say, 'root');                 // D♭ over B♭m7 = D♭ major 6
+  // note names alone share the bar, taking the nearest octave to the note before
+  const loose = songs.parseMelody(['G A B', 'C5:4'], 3);
+  assert.deepEqual(loose.map((n) => [n.midi, n.dur]), [[67, 1], [69, 1], [71, 1], [72, 4]]);
+});
+
+test('your own tunes and choices are stored, merged between devices, and survive an erase', () => {
+  const id = songs.saveOwnSong(null, { title: 'Mine', key: 'C', chart: '| Dm7 | G7 | C6 |' });
+  assert.ok(songs.songById(id));
+  songs.setPrefs(id, { shift: 2 });
+  assert.equal(songs.readSong(songs.songById(id)).chords[0].text, 'Em7');
+  const other = { songs: { [id]: { title: 'Mine, edited elsewhere', key: 'C', chart: '| C6 |', t: Date.now() + 1000 } }, items: {}, units: {}, days: {} };
+  assert.equal(store.merge(store.state, other).songs[id].title, 'Mine, edited elsewhere');
+  store.resetAll();
+  assert.ok(songs.songById(id), 'erasing progress keeps your tunes');
+  songs.deleteOwnSong(id);
+  assert.equal(songs.songById(id), null);
+});

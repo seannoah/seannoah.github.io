@@ -219,3 +219,78 @@ test('each floor up, under the same melody note, drops the bass one chord-note',
   assert.equal(toShell.accept.length, 2);
   assert.equal(mv('con', 'shell.low', 1, 4, 'maj6').accept.length >= 1, true);
 });
+
+// ---- reading a chart ----
+import { parseChord, scaleOptions, parseChart, readChart, transposeChart } from '../js/harmony.js';
+const use = (sym, resolves = true, pick = 0) => { const o = scaleOptions(parseChord(sym), resolves)[pick]; return `${o.label} (${o.how})`; };
+
+test('chord symbols sort into families', () => {
+  const fam = (s) => parseChord(s).family;
+  assert.deepEqual(['Cmaj7', 'C6', 'C', 'C6/9', 'Bb/F', 'CΔ'].map(fam), ['maj', 'maj', 'maj', 'maj', 'maj', 'maj']);
+  assert.deepEqual(['Dm7', 'D-7', 'Dm9', 'Dmin7'].map(fam), ['min7', 'min7', 'min7', 'min7']);
+  assert.deepEqual(['Cm', 'Cm6', 'Cm(maj7)', 'CmMaj7'].map(fam), ['min6', 'min6', 'min6', 'min6']);
+  assert.deepEqual(['Em7b5', 'Eø', 'Em7(b5)'].map(fam), ['hdim', 'hdim', 'hdim']);
+  assert.deepEqual(['G7', 'G9', 'G13', 'G7b9', 'G7#5', 'G7sus', 'G7alt'].map(fam), ['dom', 'dom', 'dom', 'dom', 'dom', 'dom', 'dom']);
+  assert.deepEqual(['Dbdim7', 'Db°7', 'Dbdim', 'G7b5'].map(fam), ['dim', 'dim', 'dim', 'dom7b5']);
+  assert.equal(parseChord('F#m7b5').root, 6);
+  assert.equal(parseChord('Bb/F').root, 10);
+  assert.equal(parseChord('hello'), null);
+});
+
+test('chart chords map to the scales of chords the course assigns', () => {
+  // Foundations I pp. 42-46 (Take the A Train): F6 = Dm7; A minor 6 on the 5 for D7; Ab minor 6 as tritone's minor for G7
+  assert.equal(use('Dm7'), 'F major 6 (same four notes)');
+  assert.equal(use('D7', false), 'A minor 6 (minor 6 on the 5)');
+  assert.equal(use('G7'), "A♭ minor 6 (tritone's minor)");
+  // Foundations I pp. 51-53 (Blue Bossa): F minor 6 = Dm7b5
+  assert.equal(use('Dm7b5'), 'F minor 6 (same four notes)');
+  // 5 Chord Melody Games p. 14 (Body and Soul): the table of "Chart says" against "Scale of Chords"
+  assert.equal(use('Dbmaj7'), 'D♭ major 6 (true major)');
+  assert.equal(use('Gb7', false), 'D♭ minor 6 (minor 6 on the 5)');
+  assert.equal(use('Fm7'), 'A♭ major 6 (same four notes)');
+  assert.equal(use('Edim7'), 'E diminished (diminished scale)');
+  assert.equal(use('Ebm7'), 'G♭ major 6 (same four notes)');
+  assert.equal(use('Cm7b5'), 'E♭ minor 6 (same four notes)');
+  assert.equal(use('F7'), "G♭ minor 6 (tritone's minor)");
+  assert.equal(use('D#m7'), 'F♯ major 6 (same four notes)');
+  assert.equal(names('G♭', 'maj6'), 'G♭ A♭ B♭ C♭ D♭ D E♭ F');
+  // Stella 4.2 p. 6: B minor 6 as tritone's minor for Bb7; Eb minor 6 as minor 6 on the 5 for Ab7
+  assert.equal(use('Bb7'), "B minor 6 (tritone's minor)");
+  assert.equal(use('Ab7', false), 'E♭ minor 6 (minor 6 on the 5)');
+  // the other choices are still offered
+  assert.deepEqual(scaleOptions(parseChord('G7')).map((o) => o.how), ["tritone's minor", 'minor 6 on the 5', 'true dominant', 'dominant 7♭5', 'tritone substitute']);
+  assert.equal(use('Cmaj7', true, 1), 'G major 6 (major 6 on the 5)');
+  assert.equal(use('G7', true, 4), 'D♭ dominant 7 (tritone substitute)');
+});
+
+test('a chart is parsed into bars, read with movements, and transposed', () => {
+  const chart = 'A | Cm7 | F7 | Fm7 | Bb7 |\n  | Ebmaj7 | Ab7 | Bbmaj7 | % |\n  | Em7b5 A7 | Dm7 Dbdim7 | Cm7 F7 | Bb6 |';
+  const bars = parseChart(chart);
+  assert.equal(bars.length, 12);
+  assert.equal(bars[0].section, 'A');
+  assert.deepEqual(bars[7].chords.map((c) => c.text), ['B♭maj7']);
+  assert.deepEqual(bars[8].chords.map((c) => c.text), ['Em7♭5', 'A7']);
+  const read = readChart(bars);
+  assert.equal(read[0].use.label, 'E♭ major 6');
+  assert.equal(read[0].movement.name, 'Major ii–V7');
+  assert.equal(read[1].resolves, false);                    // F7 goes on to Fm7, not to Bb
+  assert.equal(read[3].resolves, true);                     // Bb7 resolves to Eb
+  assert.equal(read[3].use.how, "tritone's minor");
+  assert.equal(read[5].movement.name, 'Minor iv');          // Eb, Ab7, Bb: the back-door dominant
+  assert.equal(read[5].use.label, 'E♭ minor 6');
+  assert.equal(read[8].movement.name, 'Minor iiø–V7');
+  assert.equal(read[11].movement.name, 'Flat-3 diminished');
+  assert.equal(read[11].use.label, 'D♭ diminished');
+  // choosing another option for one chord
+  assert.equal(readChart(bars, (i) => (i === 3 ? 1 : 0))[3].use.how, 'minor 6 on the 5');
+  // up a whole step, section letter untouched
+  const up = transposeChart(chart, 2, false).split('\n');
+  assert.equal(up[0], 'A | Dm7 | G7 | Gm7 | C7 |');
+  assert.equal(up[2].trim(), '| F#m7b5 B7 | Em7 D#dim7 | Dm7 G7 | C6 |');
+  assert.equal(transposeChart('| Bb/F | Cm7/F F7 |', 2, true), '| C/G | Dm7/G G7 |');
+});
+
+test('the diminished scale of chords keeps the usual off chord', () => {
+  assert.equal(names('C', 'dim'), 'C D E♭ F G♭ A♭ A B');
+  assert.ok(voicingFor('C', 'dim', 'drop2', [5, 4, 3, 2], 'top', 4));
+});

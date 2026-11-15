@@ -6,7 +6,8 @@ import { h, cap, icon } from './dom.js';
 import { neck, windowFor } from './neck.js';
 import * as audio from './audio.js';
 import { SCALES, OPEN, keyOf, scaleNotes, chordName, scaleTitle, stepSize, walkPath, walkStart, stringPath, mod } from './theory.js';
-import { SHAPES, FLOORS, ELEVATOR, voicingFor, voicings, anchorNote, setLabel, floorOf } from './floors.js';
+import { SHAPES, FLOORS, ELEVATOR, voicingFor, voicingAt, voicings, anchorNote, setLabel, floorOf } from './floors.js';
+import { parseChord, scaleOptions, scaleKey } from './harmony.js';
 import { movePair, moveWords, floorAfter, shapeName } from './motion.js';
 import { parse, unitById, isActive } from './curriculum.js';
 import { isNew } from './store.js';
@@ -288,7 +289,9 @@ function walkGuitar(it, ctx) {
 const whereWord = (anchor) => (anchor === 'top' ? 'beneath' : 'above');
 
 function shapeInfo(it, ctx) {
-  const v = voicingFor(ctx.key, it.scale, it.shape, it.set, it.anchor, it.deg);
+  // In a tune the melody note is a definite pitch (ctx.at); otherwise any comfortable position will do.
+  const v = (ctx.at != null && voicingAt(ctx.key, it.scale, it.shape, it.set, it.anchor, ctx.at))
+    || voicingFor(ctx.key, it.scale, it.shape, it.set, it.anchor, it.deg);
   const a = anchorNote(v, it.anchor);
   const all = v.notes.map((n) => n.fret);
   const fretted = all.filter((f) => f > 0);
@@ -732,6 +735,38 @@ function earMotion(it, ctx) {
   });
 }
 
+// ---- reading a chart: which scale of chords goes with this chord symbol? ----
+const SC_SUFFIX = { min7: 'm7', hdim: 'm7♭5', maj: 'maj7', dom: '7' };
+const SC_HOW = { same: () => 'same four notes', on5: (fam) => (fam === 'maj' ? 'major 6 on the 5' : 'minor 6 on the 5'), tm: () => "tritone's minor", tt: () => 'tritone substitute' };
+const SC_ASK = {
+  same: 'Which scale of chords do you play over it?',
+  on5: (fam) => `Which scale is its ${fam === 'maj' ? 'major' : 'minor'} 6 on the 5?`,
+  tm: "Which scale is its tritone's minor?",
+  tt: 'Which dominant is its tritone substitute?',
+};
+function scaleChoice(it, ctx) {
+  const chord = parseChord(ctx.symbol || `${ctx.key}${SC_SUFFIX[it.fam]}`);
+  const options = scaleOptions(chord, true);
+  const answer = options.find((o) => o.how === SC_HOW[it.how](it.fam)) || options[0];
+  const label = (root) => `${scaleKey(root, chord.sharp)} ${SCALES[answer.scale].short}`;
+  // wrong answers: the same kind of scale on other likely roots, never one of the chord's real choices
+  const real = new Set(options.filter((o) => o.scale === answer.scale).map((o) => o.root));
+  const others = [0, 5, 7, 10, 8, 2, 9, 3, 1].map((n) => mod(chord.root + n, 12)).filter((r) => !real.has(r));
+  const picks = [answer.root, ...others.slice(0, 3)].sort(() => Math.random() - 0.5);
+  const onNotes = scaleNotes(answer.key, answer.scale).filter((n) => n.on).map((n) => n.name).join(', ');
+  const fb = feedback();
+  const ask = typeof SC_ASK[it.how] === 'function' ? SC_ASK[it.how](it.fam) : SC_ASK[it.how];
+  const ch = choices(picks.map((r) => ({ value: r, label: r === answer.root ? answer.label : label(r) })), (val) => {
+    const ok = val === answer.root;
+    ch.resolve(answer.root, val);
+    fb.show(ok, `${answer.label}: ${cap(answer.why)}. Its on chord is ${answer.on} (${onNotes}).`);
+    audio.stopAll();
+    audio.line(chordMidis(answer.key, answer.scale, true), 0.13);
+    ctx.finish(ok ? 'right' : 'wrong', ok ? 'auto' : 'tap');
+  }, 'two');
+  return frame({ kicker: 'Reading a chart', prompt: ['The chart says ', h('span', { class: 'sym' }, chord.text), '.'], hint: ask, body: ch.el, fb: fb.el });
+}
+
 export function mountDrill(entry, ctx) {
   audio.stopAll();
   const it = parse(entry.id);
@@ -751,6 +786,7 @@ export function mountDrill(entry, ctx) {
     case 'mq': return motionQuiz(it, ctx);
     case 'mv': return g ? moveGuitar(it, ctx) : moveTap(it, ctx);
     case 'em': return earMotion(it, ctx);
+    case 'sc': return scaleChoice(it, ctx);
     default: return h('div', null, 'Unknown exercise');
   }
 }
