@@ -7,9 +7,10 @@ import * as audio from './audio.js';
 import { SCALES, chordName } from './theory.js';
 import { SHAPES, FLOORS, setKey, setLabel } from './floors.js';
 import { parseChart, keyName } from './harmony.js';
-import { allSongs, songById, readSong, prefsOf, setPrefs, saveOwnSong, deleteOwnSong, playThrough } from './songs.js';
+import { allSongs, songById, readSong, prefsOf, setPrefs, saveOwnSong, deleteOwnSong, playThrough, formulasAt, songMoves } from './songs.js';
 import { WANTED } from './tunes.js';
 import { state, setSetting } from './store.js';
+import { unitById, isActive } from './curriculum.js';
 
 let hooks = { runSession: () => {}, route: () => {} };
 export const attachSongs = (h2) => { hooks = h2; };
@@ -66,6 +67,18 @@ function chartGrid(read, cursor, onPick) {
   return grid;
 }
 
+// The transformation formulas into and out of a chord, when both ends are 6th chords.
+function formulaLine(read, chord) {
+  const f = formulasAt(read, chord);
+  if (!f.sixth) {
+    return chord.options.some((o) => o.scale === 'maj6' || o.scale === 'min6')
+      ? h('p', { class: 'muted small' }, 'Formulas join 6th chords. Choose a major 6 or minor 6 for this chord to see how it connects to its neighbors.') : null;
+  }
+  const part = (word, x) => (x ? h('span', null, `${word} ${x.chord.use.on} `, h('span', { class: 'formula' }, x.text)) : null);
+  const parts = [part('From', f.from), part('To', f.to)].filter(Boolean);
+  return parts.length ? h('div', { class: 'detail-formulas' }, parts) : null;
+}
+
 function chordDetail(read, chord, redraw) {
   const { song } = read;
   const pick = (i) => { setPrefs(song.id, { picks: { ...read.prefs.picks, [chord.index]: i } }); redraw(); };
@@ -73,7 +86,8 @@ function chordDetail(read, chord, redraw) {
     h('div', { class: 'detail-head' }, h('span', { class: 'eyebrow' }, `Bar ${chord.bar + 1} · chart says`), h('strong', null, chord.text)),
     h('div', { class: 'opts' }, chord.options.map((o, i) => h('button', { class: 'opt' + (i === chord.pick ? ' sel' : ''), onclick: () => pick(i) },
       h('strong', null, `${o.label}${SCALES[o.scale].whole ? ' scale' : ' diminished'}`), h('span', null, o.how)))),
-    h('p', { class: 'muted small' }, `${cap(chord.use.why)}. On chord ${chord.use.on}, off chord ${chordName(chord.use.key, chord.use.scale, false)}.`));
+    h('p', { class: 'muted small' }, `${cap(chord.use.why)}. On chord ${chord.use.on}, off chord ${chordName(chord.use.key, chord.use.scale, false)}.`),
+    formulaLine(read, chord));
 }
 
 function stepper(read, steps, redraw) {
@@ -133,6 +147,10 @@ function songSession(read, steps, mode) {
       out.push({ id: `sc|${fam}|${how}`, key: keyName(c.root), symbol: c.text, tag: tag(c.bar) });
       if (out.length >= 5) break;
     }
+  }
+  // the tune's own transformations, once that stage of the ladder has been started
+  for (const m of isActive(unitById('tr.major')) ? songMoves(read) : []) {
+    out.push({ id: `tx|${m.move}|${m.role}`, key: keyName(m.tonic), note: `On the chart this is ${m.from.text} to ${m.to.text}.`, tag: tag(m.from.bar) });
   }
   const usable = steps.filter((s) => s.voicing && s.voicing.notes.length > 1);
   const want = 10;

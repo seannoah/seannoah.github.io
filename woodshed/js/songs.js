@@ -11,6 +11,7 @@ import { parseChart, readChart, transposeChart, parseChord, prefersFlats } from 
 import { state, save } from './store.js';
 import { TUNES } from './tunes.js';
 import { underBorrowed } from './borrow.js';
+import { ROLES, chord as sixth, isSixth, formulaBetween, formulaText, namedMove } from './transform.js';
 
 export { TUNES };
 
@@ -167,4 +168,45 @@ export function playThrough(read, shapeId, borrow = false) {
     }
   }
   return steps;
+}
+
+// ---- transformation between the chords of a tune ----
+// The chord before or after this one that is played with a different scale (a chord held
+// over several bars counts once).
+function neighbor(read, chord, step) {
+  let k = chord.index + step;
+  while (read.chords[k] && read.chords[k].use.scale === chord.use.scale && read.chords[k].use.root === chord.use.root) k += step;
+  return read.chords[k] || null;
+}
+const asSixth = (c) => (c && isSixth(c.use.scale) ? sixth(c.use.root, c.use.scale) : null);
+
+// The formulas into and out of a chord, where both ends are played as 6th chords:
+// { sixth, from: { chord, text } | null, to: { chord, text } | null }.
+export function formulasAt(read, chord) {
+  const here = asSixth(chord);
+  if (!here) return { sixth: false, from: null, to: null };
+  const before = neighbor(read, chord, -1);
+  const after = neighbor(read, chord, 1);
+  return {
+    sixth: true,
+    from: asSixth(before) ? { chord: before, text: formulaText(formulaBetween(asSixth(before), here)) } : null,
+    to: asSixth(after) ? { chord: after, text: formulaText(formulaBetween(here, asSixth(after))) } : null,
+  };
+}
+
+// Practice items for the tune's own transformations: each kind of move once, each from a
+// different bass note.
+export function songMoves(read, max = 4) {
+  const out = [];
+  const seen = new Set();
+  for (const c of read.chords) {
+    const next = neighbor(read, c, 1);
+    if (!asSixth(c) || !asSixth(next)) continue;
+    const named = namedMove(asSixth(c), asSixth(next));
+    if (!named || seen.has(named.id)) continue;
+    seen.add(named.id);
+    out.push({ move: named.id, tonic: named.tonic, role: ROLES[out.length % 4].id, from: c, to: next });
+    if (out.length >= max) break;
+  }
+  return out;
 }

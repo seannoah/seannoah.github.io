@@ -10,6 +10,7 @@ import { SHAPES, FLOORS, ELEVATOR, voicingFor, voicingAt, voicings, anchorNote, 
 import { parseChord, scaleOptions, scaleKey } from './harmony.js';
 import { borrowPair, underBorrowed, borrowIn, borrowWords, voiceName } from './borrow.js';
 import { movePair, moveWords, floorAfter, shapeName } from './motion.js';
+import { ROLES, chord as sixth, chordLabel, formulaText, formulaWords, tallRoles, sixthVoicing, transformPair, movesText, moveIn, chainIn } from './transform.js';
 import { parse, unitById, isActive } from './curriculum.js';
 import { isNew } from './store.js';
 import { pill } from './widgets.js';
@@ -932,6 +933,263 @@ function scaleChoice(it, ctx) {
   return frame({ kicker: 'Reading a chart', prompt: ['The chart says ', h('span', { class: 'sym' }, chord.text), '.'], hint: ask, body: ch.el, fb: fb.el });
 }
 
+// ---- transformation ----
+const SET52 = [5, 4, 3, 2];
+// A window of at most eight frets, so the whole move shows on a phone without scrolling.
+const gripFrame = (notes) => {
+  const all = notes.map((n) => n.fret);
+  const min = Math.min(...all);
+  const max = Math.max(...all);
+  if (min === 0) return { lo: 0, hi: Math.max(max + 1, 6) };
+  const lo = Math.max(1, min - 1);
+  return { lo, hi: Math.max(max + 1, lo + 6) };
+};
+const sym = (text) => h('span', { class: 'sym' }, text);
+const formulaTag = (f) => h('span', { class: 'formula' }, formulaText(f));
+const roleMarks = (v, scale, kind = 'on') => v.notes.map((n, i) => ({ string: n.string, fret: n.fret, kind: kind === 'on' && i === 0 ? 'on anchor' : kind, label: lab(scale, n.deg) }));
+const lowToHigh = (v, scale) => `Low to high: ${v.notes.map((n) => say(scale, n.deg)).join(', ')}.`;
+const strum = (v, at = 0) => audio.chord(v.notes.map((n) => n.midi), at, 0.03, 0.55);
+const playPair = (p) => { audio.stopAll(); strum(p.from); strum(p.to, 1.15); };
+// The answer on the neck: the new chord, with the old one faded wherever a voice moved.
+const pairMarks = (p) => [
+  ...p.from.notes.filter((n, i) => p.moves[i] !== 0).map((n) => ({ string: n.string, fret: n.fret, kind: 'from', label: lab(p.fromChord.scale, n.deg) })),
+  ...roleMarks(p.to, p.toChord.scale),
+];
+
+// What is in the bass of this chord?
+function bassInfo(it, ctx) {
+  const c = sixth(keyOf(ctx.key).pc, it.scale);
+  const v = sixthVoicing(c, it.role, SET52, 5);
+  return { c, v, win: gripFrame(v.notes) };
+}
+
+function bassQuiz(it, ctx) {
+  const { c, v, win } = bassInfo(it, ctx);
+  const board = neck({ lo: win.lo, hi: win.hi, focus: SET52, marks: v.notes.map((n, i) => ({ string: n.string, fret: n.fret, kind: i === 0 ? 'q' : 'on', label: i === 0 ? '?' : '' })) });
+  const fb = feedback();
+  setTimeout(() => { audio.stopAll(); strum(v); }, 250);
+  const ch = choices(ROLES.map((r, i) => ({ value: i, label: cap(r.name) })), (val) => {
+    const ok = val === it.role;
+    ch.resolve(it.role, val);
+    board.draw(roleMarks(v, it.scale));
+    audio.stopAll();
+    audio.line(v.notes.map((n) => n.midi), 0.3);
+    fb.show(ok, `The ${ROLES[it.role].name} is in the bass. ${lowToHigh(v, it.scale)}`);
+    ctx.finish(ok ? 'right' : 'wrong', ok ? 'auto' : 'tap');
+  }, 'grid');
+  return frame({
+    kicker: 'Brothers and sisters · drop 2 on strings 5 to 2',
+    prompt: ['This is ', sym(chordLabel(c)), '. What is in the bass?'],
+    hint: 'A drop 2 chord has four shapes, one for each note that can be on the bottom. Know each by its lowest note.',
+    body: [board.el, ch.el], fb: fb.el,
+  });
+}
+
+function bassGuitar(it, ctx) {
+  const { c, v, win } = bassInfo(it, ctx);
+  const board = neck({ lo: win.lo, hi: win.hi, focus: SET52, marks: [] });
+  const fb = feedback();
+  revealThenRate(ctx, () => { board.draw(roleMarks(v, it.scale)); audio.stopAll(); strum(v); return lowToHigh(v, it.scale); }, fb);
+  return frame({
+    kicker: 'Brothers and sisters · drop 2 on strings 5 to 2',
+    prompt: ['Play ', sym(chordLabel(c)), ` with the ${ROLES[it.role].name} in the bass.`],
+    hint: 'Find the bass note on string 5 first and say what it is. Then summon the shape above it.',
+    body: board.el, fb: fb.el,
+  });
+}
+
+// The family circle: forward, backward or across.
+function circleInfo(it, ctx) {
+  const c = sixth(keyOf(ctx.key).pc, it.scale);
+  const p = transformPair(c, it.role, { dir: it.dir, family: null, quality: null });
+  return { p, win: gripFrame([...p.from.notes, ...p.to.notes]) };
+}
+function circleText(it, p) {
+  const from = ROLES[p.fromRole].name;
+  const to = ROLES[p.toRole].name;
+  const tall = tallRoles(it.scale);
+  const bass = p.moves[0];
+  const why = bass > 0 ? `The bass steps up a fret, because the ${to} is a tall one.`
+    : bass < 0 ? `The bass steps down a fret, because the ${from} was a tall one.`
+    : tall.includes(to) ? `The bass does not move: the ${from} and the ${to} are both tall.`
+    : 'The bass does not move. Only what you call it changes.';
+  return `${cap(it.dir)} from the ${from} is the ${to}: ${chordLabel(p.fromChord)} becomes ${chordLabel(p.toChord)}. ${why}`;
+}
+
+function circleQuiz(it, ctx) {
+  const { p, win } = circleInfo(it, ctx);
+  const board = neck({ lo: win.lo, hi: win.hi, focus: SET52, marks: roleMarks(p.from, it.scale) });
+  const fb = feedback();
+  setTimeout(() => { audio.stopAll(); strum(p.from); }, 250);
+  const ch = choices(ROLES.map((r, i) => ({ value: i, label: cap(r.name) })), (val) => {
+    const ok = val === p.toRole;
+    ch.resolve(p.toRole, val);
+    board.draw(pairMarks(p));
+    playPair(p);
+    fb.show(ok, circleText(it, p));
+    ctx.finish(ok ? 'right' : 'wrong', ok ? 'auto' : 'tap');
+  }, 'grid');
+  return frame({
+    kicker: `The circle · ${SCALES[it.scale].short} family`,
+    prompt: [sym(chordLabel(p.fromChord)), ` has the ${ROLES[it.role].name} in the bass. Move ${it.dir}. What is in the bass now?`],
+    hint: 'Round the circle the order is root, third, fifth, sixth. Forward is the next one, backward the one before, across the one opposite.',
+    body: [board.el, ch.el], fb: fb.el,
+  });
+}
+
+function circleGuitar(it, ctx) {
+  const { p, win } = circleInfo(it, ctx);
+  const board = neck({ lo: win.lo, hi: win.hi, focus: SET52, marks: roleMarks(p.from, it.scale) });
+  const fb = feedback();
+  revealThenRate(ctx, () => { board.draw(pairMarks(p)); playPair(p); return circleText(it, p); }, fb);
+  return frame({
+    kicker: `The circle · ${SCALES[it.scale].short} family`,
+    prompt: ['Play ', sym(chordLabel(p.fromChord)), ` with the ${ROLES[it.role].name} in the bass. Then move ${it.dir === 'across' ? 'across the circle' : `${it.dir} round the circle`}.`],
+    hint: 'Keep your hand where it is. Say what is in the bass of each chord: move the bass note first if it has to move, then summon the shape above it.',
+    body: board.el, fb: fb.el,
+  });
+}
+
+// Which formula makes this move?
+const DIRS = ['forward', 'backward', 'across', null];
+const FAMILIES = ['up', 'down', null];
+function formulaDecoys(f) {
+  const answer = formulaText(f);
+  const near = [];
+  const far = [];
+  for (const dir of DIRS) for (const family of FAMILIES) {
+    const text = formulaText({ dir, family, quality: f.quality });
+    if (text === answer || text === '[Stay]') continue;
+    ((dir === f.dir) !== (family === f.family) ? near : far).push(text);
+  }
+  const mix = (a) => a.sort(() => Math.random() - 0.5);
+  return [...mix(near), ...mix(far)].slice(0, 3);
+}
+
+function formulaQuiz(it, ctx) {
+  const m = moveIn(it.move, keyOf(ctx.key).pc);
+  const answer = formulaText(m.formula);
+  const options = [answer, ...formulaDecoys(m.formula)].sort(() => Math.random() - 0.5);
+  const p = transformPair(m.fromChord, rand([0, 1, 2, 3]), m.formula);
+  const fb = feedback();
+  const slot = h('div');
+  const ch = choices(options.map((text) => ({ value: text, label: text })), (val) => {
+    const ok = val === answer;
+    ch.resolve(answer, val);
+    const win = gripFrame([...p.from.notes, ...p.to.notes]);
+    slot.replaceChildren(neck({ lo: win.lo, hi: win.hi, focus: SET52, marks: pairMarks(p) }).el);
+    playPair(p);
+    fb.show(ok, `${answer}: ${formulaWords(m.formula)}. Here, ${chordLabel(m.fromChord)} to ${chordLabel(m.toChord)}.`);
+    ctx.finish(ok ? 'right' : 'wrong', ok ? 'auto' : 'tap');
+  }, 'stack');
+  return frame({
+    kicker: `Formulas · ${cap(m.context.replace(/^(a|the) /, ''))}`,
+    prompt: `From ${m.fromName} to ${m.toName}.`,
+    hint: 'Which formula makes that move?',
+    body: [ch.el, slot], fb: fb.el,
+  });
+}
+
+// Play a transformation, starting with a given note in the bass.
+function transformInfo(it, ctx) {
+  const m = moveIn(it.move, keyOf(ctx.key).pc);
+  const p = transformPair(m.fromChord, it.role, m.formula);
+  return { m, p, win: gripFrame([...p.from.notes, ...p.to.notes]) };
+}
+const transformText = (p) => {
+  const still = p.moves.every((x) => x === 0);
+  return `${chordLabel(p.toChord)} with the ${ROLES[p.toRole].name} in the bass. ${still ? 'No voice moved.' : `In frets, low string to high, the voices moved ${movesText(p.moves)}.`}`;
+};
+// In a tune the move is named by its chart chords (ctx.note); otherwise by its usual setting.
+const transformHint = (m, p, ctx) => `${ctx.note || `In ${m.context}, this takes ${m.fromName} to ${m.toName}.`} You start with the ${ROLES[p.fromRole].name} in the bass.`;
+const transformKicker = (m, ctx) => (ctx.note ? 'Transformation' : `Transformation · ${cap(m.context.replace(/^(a|the) /, ''))}`);
+
+function transformTap(it, ctx) {
+  const { m, p, win } = transformInfo(it, ctx);
+  const fromMarksNow = () => p.from.notes.map((n) => ({ string: n.string, fret: n.fret, kind: 'from', label: lab(p.fromChord.scale, n.deg) }));
+  const picks = {};
+  let done = false;
+  const fb = feedback();
+  const draw = () => board.draw([
+    ...fromMarksNow().filter((x) => picks[x.string] !== x.fret),
+    ...Object.entries(picks).map(([s, f]) => ({ string: +s, fret: f, kind: 'pick', label: '' })),
+  ]);
+  const board = neck({
+    lo: win.lo, hi: win.hi, focus: SET52, marks: fromMarksNow(),
+    onTap: (string, fret) => {
+      if (done || !SET52.includes(string)) return;
+      if (picks[string] === fret) delete picks[string]; else picks[string] = fret;
+      audio.note(OPEN[string] + fret, 0, 0.5, 1.2);
+      draw();
+    },
+  });
+  setTimeout(() => { audio.stopAll(); strum(p.from); }, 250);
+  const check = () => {
+    const missing = SET52.filter((s2) => picks[s2] == null);
+    if (missing.length) { fb.show(null, `Place a note on string${missing.length > 1 ? 's' : ''} ${missing.join(', ')} first. A voice that does not move still needs a tap.`); return; }
+    done = true;
+    const ok = p.to.notes.every((n) => picks[n.string] === n.fret);
+    const marks = pairMarks(p).map((x) => (ok || x.kind === 'from' ? x : { ...x, kind: picks[x.string] === x.fret ? 'on' : 'ghost' }));
+    if (!ok) for (const n of p.to.notes) if (picks[n.string] !== n.fret) marks.push({ string: n.string, fret: picks[n.string], kind: 'wrong', label: '' });
+    board.draw(marks);
+    playPair(p);
+    fb.show(ok, transformText(p));
+    ctx.finish(ok ? 'right' : 'wrong', ok ? 'auto' : 'tap');
+  };
+  ctx.foot(h('button', { class: 'primary wide', onclick: check }, 'Check'));
+  return frame({
+    kicker: transformKicker(m, ctx),
+    prompt: ['From ', sym(chordLabel(p.fromChord)), ', move ', formulaTag(m.formula)],
+    hint: `${transformHint(m, p, ctx)} Tap the four notes of the chord you land on. The faded notes are where you are now.`,
+    body: [board.el, h('div', { class: 'pills center' }, pill('Hear the first chord', () => { audio.stopAll(); strum(p.from); }, 'play'))],
+    fb: fb.el,
+  });
+}
+
+function transformGuitar(it, ctx) {
+  const { m, p, win } = transformInfo(it, ctx);
+  const board = neck({ lo: win.lo, hi: win.hi, focus: SET52, marks: roleMarks(p.from, p.fromChord.scale) });
+  const fb = feedback();
+  revealThenRate(ctx, () => { board.draw(pairMarks(p)); playPair(p); return transformText(p); }, fb);
+  return frame({
+    kicker: transformKicker(m, ctx),
+    prompt: ['Play ', sym(chordLabel(p.fromChord)), ', then move ', formulaTag(m.formula)],
+    hint: `${transformHint(m, p, ctx)} Say what will be in the bass before you move.`,
+    body: board.el, fb: fb.el,
+  });
+}
+
+// Ear: which V chord was that?
+function earResolution(it, ctx) {
+  const tonic = keyOf(ctx.key).pc;
+  const answer = rand(['major-on5', 'major-tm']);
+  const steps = chainIn(answer, tonic, rand([0, 1, 2, 3]));
+  const play = () => { audio.stopAll(); steps.forEach((st, k) => strum(st.voicing, k * 1.25)); };
+  play();
+  const fb = feedback();
+  const slot = h('div');
+  const ch = choices([
+    { value: 'major-on5', label: 'Inside', sub: 'minor 6 on the 5' },
+    { value: 'major-tm', label: 'Outside', sub: 'tritone’s minor' },
+  ], (val) => {
+    const ok = val === answer;
+    ch.resolve(answer, val);
+    const v = steps[1];
+    const win = gripFrame(steps.flatMap((st) => st.voicing.notes));
+    slot.replaceChildren(neck({ lo: win.lo, hi: win.hi, focus: SET52, marks: roleMarks(v.voicing, v.chord.scale) }).el);
+    fb.show(ok, answer === 'major-on5'
+      ? `Inside. The V chord was ${chordLabel(v.chord)}, the minor 6 on the 5: every note belongs to the key, and one voice moved to reach it.`
+      : `Outside. The V chord was ${chordLabel(v.chord)}, the tritone’s minor: it has notes from outside the key, which is where the darker color comes from.`);
+    ctx.finish(ok ? 'right' : 'wrong', ok ? 'auto' : 'tap');
+  }, 'two');
+  return frame({
+    kicker: `Ear · ii–V–I in ${ctx.key}`,
+    prompt: 'Which V chord was that?',
+    hint: `Three chords: ${steps.map((st) => st.says).join(', ')}. Listen to the middle one. Does it stay inside the key, or step outside it?`,
+    body: [again(play), ch.el, slot], fb: fb.el,
+  });
+}
+
 export function mountDrill(entry, ctx) {
   audio.stopAll();
   const it = parse(entry.id);
@@ -955,6 +1213,11 @@ export function mountDrill(entry, ctx) {
     case 'bw': return g ? borrowGuitar(it, ctx) : borrowTap(it, ctx);
     case 'bm': return g ? underGuitar(it, ctx) : underTap(it, ctx);
     case 'eb': return earBorrow(it, ctx);
+    case 'tb': return g ? bassGuitar(it, ctx) : bassQuiz(it, ctx);
+    case 'tw': return g ? circleGuitar(it, ctx) : circleQuiz(it, ctx);
+    case 'tf': return formulaQuiz(it, ctx);
+    case 'tx': return g ? transformGuitar(it, ctx) : transformTap(it, ctx);
+    case 'et': return earResolution(it, ctx);
     default: return h('div', null, 'Unknown exercise');
   }
 }

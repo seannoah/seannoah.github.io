@@ -12,6 +12,7 @@ Plain HTML, CSS and JavaScript modules. There is no build step: what is in this 
 | `js/floors.js` | The nine Elevator floors as rules, and where each shape sits on the neck |
 | `js/borrow.js` | Borrowing: one voice of a chord stepping to its neighbor, and on chords beneath off melody notes |
 | `js/motion.js` | Two chords in a row: parallel, contrary and oblique motion between floors |
+| `js/transform.js` | Transformation: the family circle, formulas between 6th chords, and the named moves of ii–V–I and friends |
 | `js/harmony.js` | Reading a chord chart: chord symbol to scale of chords, movements, transposition |
 | `js/tunes.js`, `js/songs.js`, `js/songsui.js` | The built-in tunes, what is worked out about each, and the Songs pages |
 | `js/curriculum.js` | The ladder of units, the practice items in each, and the session builder |

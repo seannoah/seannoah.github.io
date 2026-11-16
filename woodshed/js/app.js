@@ -16,7 +16,7 @@ import * as sync from './sync.js';
 import { pageSongs, pageSong, pageSongEdit, attachSongs } from './songsui.js';
 import { songById } from './songs.js';
 
-const VERSION = '0.4.0';
+const VERSION = '0.5.0';
 const view = document.getElementById('view');
 const sessionRoot = document.getElementById('session');
 const TABS = [['today', 'Today'], ['learn', 'Learn'], ['songs', 'Songs'], ['explore', 'Explore'], ['progress', 'Progress']];
@@ -30,10 +30,11 @@ const PART_BLURB = {
   floors: 'Summoning shapes around a note',
   borrow: 'One voice stepping to its neighbor',
   motion: 'Two voices moving between floors',
+  transform: 'One chord into another by formula',
   tunes: 'Reading chord charts',
   ear: 'Hearing on and off, degrees and floors',
 };
-const PART_ICON = { path: 'next', floors: 'progress', borrow: 'repeat', motion: 'motion', tunes: 'songs', ear: 'ear' };
+const PART_ICON = { path: 'next', floors: 'progress', borrow: 'repeat', motion: 'motion', transform: 'turn', tunes: 'songs', ear: 'ear' };
 
 function installHint() {
   const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -173,7 +174,7 @@ function runSession(list, mode, unitBefore = currentUnit()) {
     const ctx = {
       mode,
       key: entry.key || keyFor(entry.id),
-      symbol: entry.symbol, at: entry.at,
+      symbol: entry.symbol, at: entry.at, note: entry.note,
       bpm: () => state.settings.bpm,
       foot: (node) => foot.replaceChildren(...(node ? [node] : [])),
       finish(result, advance) {
@@ -321,6 +322,7 @@ function elevator() {
     h('div', { class: 'elevator' }, rows),
     side('borrow', 'Borrowing', 'repeat'),
     side('motion', 'Motion', 'motion'),
+    side('transform', 'Transformation', 'turn'),
     side('tunes', 'Tunes', 'songs'),
     side('ear', 'Ear', 'ear'));
 }

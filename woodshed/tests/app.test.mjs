@@ -44,6 +44,7 @@ const { voicingFor } = await import('../js/floors.js');
 const { walkPath, walkStart } = await import('../js/theory.js');
 const { movePair, floorAfter } = await import('../js/motion.js');
 const { borrowPair, underBorrowed } = await import('../js/borrow.js');
+const { MOVES } = await import('../js/transform.js');
 
 test('every item in the catalogue is well formed and playable in C', () => {
   const ids = cur.catalogue();
@@ -62,6 +63,9 @@ test('every item in the catalogue is well formed and playable in C', () => {
       assert.ok(Math.abs(m.top) <= 1 && Math.abs(m.bass) === 1, `${id}: outer voices move by step`);
     }
     if (it.kind === 'mq') assert.ok(floorAfter(it.floor, it.how), id);
+    if (it.kind === 'tb' || it.kind === 'tw' || it.kind === 'tx') assert.ok(it.role >= 0 && it.role < 4, id);
+    if (it.kind === 'tw') assert.ok(['forward', 'backward', 'across'].includes(it.dir), id);
+    if (it.kind === 'tf' || it.kind === 'tx') assert.ok(MOVES[it.move], id);
     if (it.kind === 'bw') {
       const b = borrowPair('C', it);
       assert.ok(b, id);
@@ -336,4 +340,39 @@ test('Stella by Starlight is read the way Standards Series Unit 4 reads it', () 
   for (const [bar, label] of Object.entries(want)) assert.equal(at(+bar), label, `bar ${bar}`);
   const moves = read.chords.filter((c) => c.movement && c.movement.start).map((c) => `${c.bar + 1} ${c.movement.name}`);
   assert.ok(moves.includes('1 Flat-3 diminished') && moves.includes('3 Major ii–V7') && moves.includes('25 Minor iiø–V7'));
+});
+
+test('transformation comes after reading a chart, and its formula quiz is for away mode', () => {
+  const ids = cur.UNITS.map((u) => u.id);
+  const at = ids.indexOf('chart');
+  assert.deepEqual(ids.slice(at, at + 5), ['chart', 'tr.family', 'tr.major', 'tr.minor', 'wide']);
+  assert.ok(!cur.PLANNED.some((x) => x.title === 'Transformation'));
+  store.resetAll();
+  const family = cur.unitById('tr.family');
+  const away = cur.buildSession('away', 10, family);
+  assert.ok(away.every((x) => cur.SECTION[x.id.slice(0, 2)] === 'transform'));
+  assert.ok(away.some((x) => x.id.startsWith('tb|')));
+  const major = cur.unitById('tr.major');
+  assert.ok(cur.buildSession('away', 10, major).some((x) => x.id.startsWith('tf|')));
+  const guitar = cur.buildSession('guitar', 20, major);
+  assert.ok(guitar.length && guitar.every((x) => !x.id.startsWith('tf|')), 'naming a formula is for away mode');
+  assert.ok(guitar.some((x) => x.id.startsWith('tx|')));
+  assert.equal(cur.summarize(away).transform.n, away.length);
+});
+
+test('the formulas between the chords of Stella match the Standards Series (4.1 and 4.5)', () => {
+  const read = songs.readSong(TUNES.find((t) => t.id === 'stella'));
+  const chordsIn = (bar) => read.chords.filter((c) => c.bar === bar - 1);
+  const into = (bar, k = 0) => songs.formulasAt(read, chordsIn(bar)[k]).from.text;
+  assert.equal(into(4), '[Backward, Minor]');        // "the ii-V7 by going BACKWARDS and MINOR"
+  assert.equal(into(6), '[Backward, Minor]');
+  assert.equal(into(8), '[Minor]');                  // the minor iv
+  assert.equal(into(10), '[Forward, Minor]');        // the movement to iii: "lowering the 5th of a major 6 chord"
+  assert.equal(into(11), '[Across, Up, Major]');
+  assert.equal(into(12, 1), '[Forward, Minor]');     // the minor iv again
+  assert.equal(into(13), '[Across, Up, Major]');
+  assert.equal(songs.formulasAt(read, chordsIn(1)[0]).sixth, false, 'a diminished bar has no formula');
+  const moves = songs.songMoves(read);
+  assert.ok(moves.length >= 3 && moves.every((m) => MOVES[m.move]));
+  assert.equal(new Set(moves.map((m) => m.move)).size, moves.length);
 });

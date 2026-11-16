@@ -7,6 +7,8 @@ import { SCALES, SCALE_ORDER, scaleNotes, chordName, stepSize, walkPath, stepMid
 import { SHAPES, ELEVATOR, voicings, voicingAt, voicingFor, setWithTop, setLabel, floorOf } from './floors.js';
 import { describeMove, moveWords, TOP_STRING } from './motion.js';
 import { borrowIn, borrowWords, voiceName } from './borrow.js';
+import { ROLES, chord as sixth, chordLabel, applyFormula, formulaText, formulaWords, roleAfter, tallRoles, sixthVoicing, follow, movesText, chainById, chainIn } from './transform.js';
+import { pickRow } from './dom.js';
 
 const kindOf = (deg) => (deg % 2 === 0 ? 'on' : 'off');
 export const labelOf = (scale, deg) => SCALES[scale].labels[deg];
@@ -215,6 +217,135 @@ export function borrowDemo(init = {}) {
       h('div', { class: 'pills center' }, h('button', { class: 'pill', onclick: () => { cur = null; note = 'Given back: all on again.'; audio.stopAll(); sound(base); render(); } }, 'Give it back')),
       h('figcaption', null, note),
     );
+  }
+  render();
+  return root;
+}
+
+// ---- transformation ----
+const SET52 = [5, 4, 3, 2];
+const NODE_AT = [[52, 16], [88, 52], [52, 88], [16, 52]];
+// The family circle: root, third, fifth, sixth, clockwise. Tall siblings get a gold ring.
+function familyCircle(scale, now, was = null) {
+  const tall = tallRoles(scale);
+  const nodes = ROLES.map((r, i) => {
+    const cls = ['node', i === now ? 'now' : '', i === was && was !== now ? 'was' : '', tall.includes(r.name) ? 'tall' : ''].filter(Boolean).join(' ');
+    return `<g class="${cls}"><circle cx="${NODE_AT[i][0]}" cy="${NODE_AT[i][1]}" r="13"/><text x="${NODE_AT[i][0]}" y="${NODE_AT[i][1]}">${i === 0 ? 'R' : r.id}</text></g>`;
+  }).join('');
+  return h('div', {
+    class: 'circle', role: 'img', 'aria-label': `The family circle: root, third, fifth, sixth, clockwise. The ${ROLES[now].name} is in the bass.`,
+    html: `<svg viewBox="0 0 104 104" width="104" height="104"><circle class="ring" cx="52" cy="52" r="36"/><path class="arrow" d="M62 52a10 10 0 1 1-10-10"/><path class="arrow" d="M48.500 38.500l3.500 3.500-3.500 3.500"/>${nodes}</svg>`,
+  });
+}
+
+const sixthMarks = (v, scale, prev = null) => [
+  ...(prev ? prev.notes.filter((n, i) => n.fret !== v.notes[i].fret).map((n) => ({ string: n.string, fret: n.fret, kind: 'from', label: '' })) : []),
+  ...v.notes.map((n, i) => ({ string: n.string, fret: n.fret, kind: i === 0 ? 'on anchor' : 'on', label: labelOf(scale, n.deg) })),
+];
+// At most eight frets wide, so the figure never scrolls sideways on a phone.
+const sixthWindow = (voicings) => {
+  const all = voicings.flatMap((v) => v.notes.map((n) => n.fret));
+  const min = Math.min(...all);
+  const max = Math.max(...all);
+  if (min === 0) return { lo: 0, hi: Math.max(max + 1, 6) };
+  const lo = Math.max(1, min - 1);
+  return { lo, hi: Math.max(max + 1, lo + 6) };
+};
+
+// Turn one 6th chord into another, one move at a time, and watch what the bass becomes.
+// With `full`, the family (up, down) and kind (major, minor) moves are there too.
+export function transformLab(init = {}) {
+  const cfg = { root: 5, scale: 'min6', role: 0, around: 6, full: false, ...init };
+  const start = sixth(cfg.root, cfg.scale);
+  let cur = { chord: start, role: cfg.role, voicing: sixthVoicing(start, cfg.role, SET52, cfg.around) };
+  let prev = null;
+  let note = cfg.full ? 'Each button is one part of a formula. Try two or three in a row.' : 'Move round the circle and watch the bass note.';
+  const root = h('figure', { class: 'fig browser ride' });
+
+  function go(f) {
+    const target = applyFormula(cur.chord, f);
+    const role = roleAfter(cur.role, f.dir);
+    const v = follow(cur.voicing, target, role, SET52);
+    if (!v || v.lowFret === 0 || v.maxFret > 15) { note = 'That runs off the neck. Try the other direction.'; return render(); }
+    prev = cur;
+    cur = { chord: target, role, voicing: v };
+    const moves = v.notes.map((n, i) => n.midi - prev.voicing.notes[i].midi);
+    const bass = moves[0] === 0 ? 'The bass note stays.' : `The bass moves ${Math.abs(moves[0]) === 1 ? 'a fret' : `${Math.abs(moves[0])} frets`} ${moves[0] > 0 ? 'up' : 'down'}.`;
+    note = `${chordLabel(prev.chord)} becomes ${chordLabel(cur.chord)}, with the ${ROLES[role].name} in the bass. ${bass} Voices, low to high: ${movesText(moves)}.`;
+    audio.stopAll();
+    audio.chord(prev.voicing.notes.map((n) => n.midi), 0, 0.03, 0.5);
+    audio.chord(v.notes.map((n) => n.midi), 0.9, 0.03, 0.55);
+    render();
+  }
+
+  function render() {
+    const win = sixthWindow(prev ? [cur.voicing, prev.voicing] : [cur.voicing]);
+    const board = neck({
+      lo: win.lo, hi: win.hi, focus: SET52, marks: sixthMarks(cur.voicing, cur.chord.scale, prev && prev.voicing),
+      onTap: (s, f) => { const n = cur.voicing.notes.find((x) => x.string === s && x.fret === f); if (n) audio.note(n.midi); },
+    });
+    const btn = (label, f) => h('button', { class: 'pill', onclick: () => go({ dir: null, family: null, quality: null, ...f }) }, label);
+    const isTall = tallRoles(cur.chord.scale).includes(ROLES[cur.role].name);
+    const major = cur.chord.scale === 'maj6';
+    root.replaceChildren(
+      h('div', { class: 'lab-top' },
+        familyCircle(cur.chord.scale, cur.role, prev ? prev.role : null),
+        h('div', { class: 'browser-title' },
+          h('strong', null, chordLabel(cur.chord)),
+          h('span', { class: 'muted' }, `${ROLES[cur.role].name} in the bass`),
+          isTall ? h('span', { class: 'tag off' }, 'tall') : null)),
+      board.el,
+      h('div', { class: 'lab-grid' },
+        h('span', { class: 'ride-label' }, 'Circle'), btn('Forward', { dir: 'forward' }), btn('Backward', { dir: 'backward' }), btn('Across', { dir: 'across' }),
+        ...(cfg.full ? [
+          h('span', { class: 'ride-label' }, 'Family'), btn('Down', { family: 'down' }), btn('Up', { family: 'up' }), h('span'),
+          h('span', { class: 'ride-label' }, 'Kind'), btn(major ? 'Minor' : 'Major', { quality: major ? 'minor' : 'major' }), h('span'), h('span'),
+        ] : [])),
+      h('figcaption', null, note),
+    );
+  }
+  render();
+  return root;
+}
+
+// Step through a whole progression as a chain of formulas, from any starting bass note.
+export function chainPlayer(init = {}) {
+  const cfg = { chains: ['major-on5', 'major-tm'], tonic: 10, role: 0, ...init };
+  let chainId = cfg.chains[0];
+  let role = cfg.role;
+  let i = 0;
+  const root = h('figure', { class: 'fig browser ride' });
+  const sound = (v, at = 0) => audio.chord(v.notes.map((n) => n.midi), at, 0.03, 0.55);
+
+  function render() {
+    const chain = chainById(chainId);
+    const steps = chainIn(chainId, cfg.tonic, role);
+    i = Math.min(i, steps.length - 1);
+    const st = steps[i];
+    const win = sixthWindow(steps.map((x) => x.voicing));
+    const board = neck({
+      lo: win.lo, hi: win.hi, focus: SET52, marks: sixthMarks(st.voicing, st.chord.scale, i > 0 ? steps[i - 1].voicing : null),
+      onTap: (s, f) => { const n = st.voicing.notes.find((x) => x.string === s && x.fret === f); if (n) audio.note(n.midi); },
+    });
+    const jump = (k) => { i = k; render(); audio.stopAll(); sound(steps[k].voicing); };
+    const row = h('div', { class: 'chain' });
+    steps.forEach((x, k) => {
+      if (k > 0) row.append(h('span', { class: 'chain-arrow' }, h('span', { class: 'formula' }, formulaText(x.formula)), '→'));
+      row.append(h('button', { class: 'chain-step' + (k === i ? ' sel' : ''), onclick: () => jump(k) }, h('small', null, x.says), chordLabel(x.chord)));
+    });
+    const caption = i === 0
+      ? `${chain.long}. Start on ${chordLabel(st.chord)} with the ${ROLES[st.role].name} in the bass.`
+      : `${chordLabel(steps[i - 1].chord)} to ${chordLabel(st.chord)}: ${formulaWords(st.formula)}. Now the ${ROLES[st.role].name} is in the bass. Voices, low to high: ${movesText(st.moves)}.`;
+    root.replaceChildren(...[
+      cfg.chains.length > 1 ? pickRow('Path', cfg.chains.map((id) => [id, chainById(id).name]), chainId, (v) => { chainId = v; i = 0; render(); }) : null,
+      pickRow('Start with', ROLES.map((r, k) => [k, `${r.name} in the bass`]), role, (v) => { role = v; i = 0; render(); audio.stopAll(); sound(chainIn(chainId, cfg.tonic, role)[0].voicing); }),
+      row, board.el,
+      h('div', { class: 'browser-controls' },
+        h('button', { class: 'round', 'aria-label': 'Previous chord', onclick: () => jump(mod(i - 1, steps.length)) }, icon('back', 20)),
+        h('button', { class: 'pill', onclick: () => { audio.stopAll(); steps.forEach((x, k) => sound(x.voicing, k * 1.2)); } }, icon('play', 16), 'Play it through'),
+        h('button', { class: 'round', 'aria-label': 'Next chord', onclick: () => jump(mod(i + 1, steps.length)) }, icon('next', 20))),
+      h('figcaption', null, caption),
+    ].filter(Boolean));
   }
   render();
   return root;

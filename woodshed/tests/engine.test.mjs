@@ -352,3 +352,119 @@ test('borrowing archetypes: the chord diagrams in Standards 4.4', () => {
   // 3. a borrowed fourth: B♭6 x-1-3-0-3-x with the third on top raised (bar 9)
   assert.deepEqual(under('B♭', 'maj6', [5, 4, 3, 2], -1, 3, 59 + 4), [1, 3, 0, 4]);
 });
+
+// ---- transformation ----
+import { chord, chordLabel, formulaBetween, applyFormula, formulaText, roleAfter, roleOf, tallRoles, sixthVoicing, transformPair, transformChain, follow, movesText, MOVES, MOVE_IDS, moveIn, namedMove, CHAINS, chainIn, ROLES } from '../js/transform.js';
+
+const PCS = { C: 0, Db: 1, D: 2, Eb: 3, E: 4, F: 5, Gb: 6, G: 7, Ab: 8, A: 9, Bb: 10, B: 11 };
+const six = (name) => { const m = /^([A-G]b?)(m?)6$/.exec(name); return chord(PCS[m[1]], m[2] ? 'min6' : 'maj6'); };
+const formula = (a, b) => formulaText(formulaBetween(six(a), six(b)));
+const ROOT = 0, THIRD = 1, FIFTH = 2, SIXTH = 3;
+
+test('transformation formulas (Foundations IV, pp. 13-32, 50-51, 67, 75, 86)', () => {
+  // the ii chord of B♭ is Cm7 = E♭6; F7 is played as Cm6 (minor 6 on the 5) or G♭m6 (tritone's minor)
+  assert.equal(formula('Eb6', 'Cm6'), '[Forward, Minor]');
+  assert.equal(formula('Eb6', 'Gbm6'), '[Backward, Minor]');
+  assert.equal(formula('Cm6', 'Gbm6'), '[Across]');
+  // resolving to the major 6 on the 5 of the tonic (F6 for B♭)
+  assert.equal(formula('Cm6', 'F6'), '[Across, Down, Major]');
+  assert.equal(formula('Gbm6', 'F6'), '[Down, Major]');
+  // resolving to the true major
+  assert.equal(formula('Cm6', 'Bb6'), '[Forward, Up, Major]');
+  assert.equal(formula('Gbm6', 'Bb6'), '[Backward, Up, Major]');
+  // minor ii–V–i in G minor: Am7♭5 = Cm6, D7 as E♭m6, then Gm6
+  assert.equal(formula('Cm6', 'Ebm6'), '[Backward]');
+  assert.equal(formula('Ebm6', 'Gm6'), '[Backward, Up]');
+  // the minor iv in B♭: E♭6, E♭m6, then B♭6 or F6
+  assert.equal(formula('Eb6', 'Ebm6'), '[Minor]');
+  assert.equal(formula('Ebm6', 'Bb6'), '[Across, Up, Major]');
+  assert.equal(formula('Ebm6', 'F6'), '[Backward, Down, Major]');
+  // I to ii through the flat-3 diminished, and the movement to iii
+  assert.equal(formula('Bb6', 'Eb6'), '[Across, Down]');
+  assert.equal(formula('Bb6', 'Gm6'), '[Forward, Minor]');
+  assert.equal(formula('C6', 'C6'), '[Stay]');
+});
+
+test('any two 6th chords are related by exactly one formula', () => {
+  const all = [];
+  for (let r = 0; r < 12; r++) for (const s of ['maj6', 'min6']) all.push(chord(r, s));
+  for (const a of all) {
+    const seen = new Set();
+    for (const b of all) {
+      const f = formulaBetween(a, b);
+      assert.deepEqual(applyFormula(a, f), b);
+      seen.add(formulaText(f));
+    }
+    assert.equal(seen.size, 24);
+  }
+});
+
+test('the family circle: what is in the bass (Foundations I, pp. 48-49)', () => {
+  assert.equal(roleAfter(FIFTH, 'backward'), THIRD);   // "5th in the bass to the 3rd in the bass: backwards"
+  assert.equal(roleAfter(THIRD, 'across'), SIXTH);     // "3rd in the bass to the 6th in the bass: across"
+  assert.equal(roleAfter(SIXTH, 'forward'), ROOT);     // minor 6 on the 5 to the true major (Foundations IV p. 30)
+  assert.equal(roleAfter(SIXTH, 'backward'), FIFTH);   // iiø to the tritone's minor (p. 50)
+  assert.deepEqual(tallRoles('min6'), ['fifth']);
+  assert.deepEqual(tallRoles('maj6'), ['third', 'fifth']);
+  // the family of D minor 6 on strings 5-4-3-2: the bass is on fret 2, except the fifth, on fret 3
+  const fam = [['Dm6', SIXTH], ['Bm6', ROOT], ['Abm6', THIRD], ['Fm6', FIFTH]].map(([n, role]) => sixthVoicing(six(n), role, [5, 4, 3, 2], 2).notes[0].fret);
+  assert.deepEqual(fam, [2, 2, 2, 3]);
+  // and the two tall siblings of a major 6 family
+  const maj = [['F6', ROOT], ['D6', THIRD], ['B6', FIFTH], ['Ab6', SIXTH]].map(([n, role]) => sixthVoicing(six(n), role, [5, 4, 3, 2], 8).notes[0].fret);
+  assert.deepEqual(maj, [8, 9, 9, 8]);
+});
+
+test('transformations on the neck', () => {
+  // "A♭ minor 6 with the 5th in the bass to C major 6 with the 3rd in the bass: up, backward, major" (fr. 4, fr. 5)
+  const p = transformPair(six('Abm6'), FIFTH, formulaBetween(six('Abm6'), six('C6')));
+  assert.deepEqual(frets(p.from), [6, 6, 4, 6]);
+  assert.deepEqual(frets(p.to), [7, 7, 5, 8]);
+  assert.equal(ROLES[p.toRole].name, 'third');
+  // ii to the minor 6 on the 5 is one voice: the fifth of the major 6 drops a half step
+  for (let role = 0; role < 4; role++) {
+    const q = transformPair(six('Eb6'), role, formulaBetween(six('Eb6'), six('Cm6')));
+    assert.equal(q.moves.filter((m) => m !== 0).length, 1);
+    assert.equal(q.moves.reduce((a, b) => a + b, 0), -1);
+  }
+  // E♭ minor 6 to G minor 6: "one voice stays still, two move up a semitone, one moves up two"
+  const r = transformPair(six('Ebm6'), FIFTH, formulaBetween(six('Ebm6'), six('Gm6')));
+  assert.deepEqual(r.moves.slice().sort(), [0, 1, 1, 2]);
+  assert.equal(movesText([1, 0, -2, 0]), '+1, 0, −2, 0');
+});
+
+test('every named move is playable from every bass note, in every key', () => {
+  for (const set of [[5, 4, 3, 2], [4, 3, 2, 1], [6, 5, 4, 3]]) {
+    for (let tonic = 0; tonic < 12; tonic++) {
+      for (const id of MOVE_IDS) {
+        const m = moveIn(id, tonic);
+        for (let role = 0; role < 4; role++) {
+          const p = transformPair(m.fromChord, role, m.formula, set);
+          assert.ok(p, `${id} ${tonic} ${role}`);
+          assert.equal(roleOf(p.from), role);
+          assert.equal(roleOf(p.to), roleAfter(role, m.formula.dir));
+          assert.ok(Math.abs(p.moves[0]) <= 3 && p.moves.every((x) => Math.abs(x) <= 3));
+          assert.deepEqual(follow(p.from, m.toChord, p.toRole, set), p.to);
+        }
+      }
+    }
+  }
+  assert.equal(chordLabel(moveIn('ii-tm', PCS.Bb).toChord), 'G♭m6');
+});
+
+test('chains of moves stay in one place on the neck', () => {
+  for (const c of CHAINS) {
+    for (const tonic of [0, 5, 10, 3, 7]) {
+      for (let role = 0; role < 4; role++) {
+        const steps = chainIn(c.id, tonic, role);
+        assert.ok(steps, `${c.id} ${tonic} ${role}`);
+        assert.equal(steps.length, c.steps.length + 1);
+        const all = steps.flatMap((s) => s.voicing.notes.map((n) => n.fret));
+        assert.ok(Math.max(...all) - Math.min(...all) <= 7, `${c.id} ${tonic} ${role} spans ${Math.min(...all)}-${Math.max(...all)}`);
+      }
+    }
+  }
+  // a pair of chords from a tune is matched to the move it is an instance of
+  assert.deepEqual(namedMove(six('Eb6'), six('Gbm6')), { id: 'ii-tm', tonic: PCS.Bb });
+  assert.deepEqual(namedMove(six('Ab6'), six('Fm6')), { id: 'ii-on5', tonic: PCS.Eb });
+  assert.equal(namedMove(six('C6'), six('Db6')), null);
+});

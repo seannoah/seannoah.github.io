@@ -19,11 +19,17 @@
 //   bw|scale|shape|set|voice|u/d|deg   borrow above or below one voice of a chord (voice 0 = top)
 //   bm|scale|shape|set|a/b|deg         an on chord beneath an off melody note, borrowed from above or below
 //   eb|scale|x              ear: is one note of this chord borrowed?
+//   tb|scale|role           what is in the bass of this drop 2 6th chord? (role: r, 3, 5, 6)
+//   tw|scale|role|f/b/a     the family circle: move forward, backward or across from this bass note
+//   tf|move                 which formula makes this move? (see MOVES in transform.js)
+//   tx|move|role            play the transformation, starting with this role in the bass
+//   et|scale|v              ear: which V chord was that, inside or outside?
 
 import { SCALES, KEY_ORDER } from './theory.js';
 import { SHAPES, setKey } from './floors.js';
 import { movePair } from './motion.js';
 import { borrowPair, underBorrowed } from './borrow.js';
+import { ROLES, roleIndex } from './transform.js';
 import { state, isNew, isDue, box, everRight, rec, unitFlag } from './store.js';
 
 const DEGS = [0, 1, 2, 3, 4, 5, 6, 7];
@@ -53,6 +59,11 @@ const bw = (s, shape, set, voices, degs = ON) => degs
 const bm = (s, shape, set, degs = [1, 7, 3, 5]) => degs
   .flatMap((d) => ['a', 'b'].map((from) => `bm|${s}|${shape}|${setKey(set)}|${from}|${d}`))
   .filter((id) => underBorrowed('C', parse(id)));
+const ROLE_IDS = ROLES.map((r) => r.id);
+const tb = (s) => ROLE_IDS.map((r) => `tb|${s}|${r}`);
+const tw = (s) => ['f', 'b', 'a'].flatMap((d) => ROLE_IDS.map((r) => `tw|${s}|${r}|${d}`));
+const tf = (moves) => moves.map((m) => `tf|${m}`);
+const tx = (moves) => moves.flatMap((m) => ROLE_IDS.map((r) => `tx|${m}|${r}`));
 const mq = (floors, hows = ['out', 'par', 'in']) => floors.flatMap((f) => hows.map((how) => `mq|maj6|${f}|${how}`));
 
 const floorUnit = (id, title, blurb, shapes, floorId, group) => ({
@@ -133,6 +144,21 @@ export const UNITS = [
     extra: [],
   },
   {
+    id: 'tr.family', title: 'Brothers and sisters', blurb: 'Four chords under one hand, named by the bass', group: 'Transformation',
+    core: [...tb('min6'), ...tw('min6'), ...tb('maj6')],
+    extra: [...tw('maj6')],
+  },
+  {
+    id: 'tr.major', title: 'The major ii–V–I by formula', blurb: 'Round the circle, up or down, major or minor', group: 'Transformation',
+    core: [...tf(['ii-on5', 'ii-tm', 'on5-I', 'tm-I']), ...tx(['ii-on5', 'ii-tm', 'on5-I', 'tm-I'])],
+    extra: ['et|maj6|v', ...tf(['on5-tm', 'tm-I5', 'on5-I5']), ...tx(['on5-tm', 'tm-I5', 'on5-I5'])],
+  },
+  {
+    id: 'tr.minor', title: 'Minor ii–V–i and the minor iv', blurb: 'The same few moves in new places', group: 'Transformation',
+    core: [...tf(['iio-tm', 'tm-i', 'IV-iv', 'iv-I']), ...tx(['iio-tm', 'tm-i', 'IV-iv', 'iv-I'])],
+    extra: [...tf(['I-ii', 'iv-I5', 'I-iii']), ...tx(['I-ii', 'iv-I5'])],
+  },
+  {
     id: 'wide', title: 'The wide floors', blurb: 'Drop 3, drop 2 and 4, double octaves', group: 'Wider voicings',
     core: ['drop3', 'drop24', 'dbl'].flatMap((x) => primary('maj6', x)),
     extra: [
@@ -147,7 +173,6 @@ export const PLANNED = [
   { title: 'Leaps, and floors within floors', blurb: 'Patterns that skip floors, and small floors inside big ones' },
   { title: 'Pivoting', blurb: 'Through the mirror: trading a floor for its reflection' },
   { title: 'Substitution', blurb: 'Minor 6 on the 5, the tritone’s minor, and friends' },
-  { title: 'Transformation', blurb: 'Families, tall siblings, and ii–V–I by feel' },
   { title: 'The chromatic scale', blurb: 'Filling the whole steps, leaping the half steps' },
 ];
 
@@ -166,14 +191,18 @@ export function parse(id) {
   if (kind === 'sc') return { id, kind, fam: p[1], how: p[2] };
   if (kind === 'bw') return { ...base, shape: p[2], set: p[3].split('').map(Number), voice: +p[4], dir: p[5] === 'u' ? 1 : -1, deg: +p[6] };
   if (kind === 'bm') return { ...base, shape: p[2], set: p[3].split('').map(Number), from: p[4] === 'a' ? 1 : -1, deg: +p[5] };
+  if (kind === 'tb') return { ...base, role: roleIndex(p[2]) };
+  if (kind === 'tw') return { ...base, role: roleIndex(p[2]), dir: { f: 'forward', b: 'backward', a: 'across' }[p[3]] };
+  if (kind === 'tf') return { id, kind, move: p[1] };
+  if (kind === 'tx') return { id, kind, move: p[1], role: roleIndex(p[2]) };
   if (kind === 'sh') return { ...base, shape: p[2], set: p[3].split('').map(Number), anchor: p[4] === 't' ? 'top' : 'bottom', deg: +p[5] };
   return { ...base, deg: +p[2] };
 }
 
-export const SECTION = { oo: 'path', st: 'path', nm: 'path', wk: 'path', sh: 'floors', bw: 'borrow', bm: 'borrow', mq: 'motion', mv: 'motion', sc: 'tunes', eb: 'ear', eo: 'ear', ed: 'ear', ef: 'ear', ei: 'ear', el: 'ear', em: 'ear' };
-export const SECTION_NAME = { path: 'The path', floors: 'Floors', borrow: 'Borrowing', motion: 'Motion', tunes: 'Tunes', ear: 'Ear' };
+export const SECTION = { oo: 'path', st: 'path', nm: 'path', wk: 'path', sh: 'floors', bw: 'borrow', bm: 'borrow', mq: 'motion', mv: 'motion', tb: 'transform', tw: 'transform', tf: 'transform', tx: 'transform', sc: 'tunes', et: 'ear', eb: 'ear', eo: 'ear', ed: 'ear', ef: 'ear', ei: 'ear', el: 'ear', em: 'ear' };
+export const SECTION_NAME = { path: 'The path', floors: 'Floors', borrow: 'Borrowing', motion: 'Motion', transform: 'Transformation', tunes: 'Tunes', ear: 'Ear' };
 const kindOf = (id) => id.slice(0, 2);
-const AWAY_ONLY = new Set(['oo', 'mq', 'sc']);
+const AWAY_ONLY = new Set(['oo', 'mq', 'sc', 'tf']);
 const supports = (id, mode) => mode === 'away' || !AWAY_ONLY.has(kindOf(id));
 
 // ---- unit progress ----
@@ -263,7 +292,7 @@ export function buildSession(mode, minutes, only = null) {
   take(fresh, room());
   take(seen.slice().sort((a, b) => rec(a).b - rec(b).b || rec(a).t - rec(b).t), room());
 
-  const bySection = { path: [], floors: [], borrow: [], motion: [], tunes: [], ear: [] };
+  const bySection = { path: [], floors: [], borrow: [], motion: [], transform: [], tunes: [], ear: [] };
   for (const id of picked) bySection[SECTION[kindOf(id)]].push(id);
   const out = [];
   out.push(...shuffle(bySection.path).map((id) => ({ id })));
@@ -273,13 +302,14 @@ export function buildSession(mode, minutes, only = null) {
   out.push(...shuffle(bySection.floors).map((id) => ({ id })));
   out.push(...shuffle(bySection.borrow).map((id) => ({ id })));
   out.push(...shuffle(bySection.motion).map((id) => ({ id })));
+  out.push(...shuffle(bySection.transform).map((id) => ({ id })));
   out.push(...shuffle(bySection.tunes).map((id) => ({ id })));
   out.push(...shuffle(bySection.ear).map((id) => ({ id })));
   return out;
 }
 
 export function summarize(session) {
-  const counts = { path: { n: 0, fresh: 0 }, floors: { n: 0, fresh: 0 }, borrow: { n: 0, fresh: 0 }, motion: { n: 0, fresh: 0 }, tunes: { n: 0, fresh: 0 }, ear: { n: 0, fresh: 0 } };
+  const counts = { path: { n: 0, fresh: 0 }, floors: { n: 0, fresh: 0 }, borrow: { n: 0, fresh: 0 }, motion: { n: 0, fresh: 0 }, transform: { n: 0, fresh: 0 }, tunes: { n: 0, fresh: 0 }, ear: { n: 0, fresh: 0 } };
   for (const it of session) {
     if (it.study) continue;
     const c = counts[SECTION[kindOf(it.id)]];
@@ -299,6 +329,7 @@ export function floorOfItem(id) {
   if (SECTION[k] === 'ear') return 'ear';
   if (SECTION[k] === 'motion') return 'motion';
   if (SECTION[k] === 'borrow') return 'borrow';
+  if (SECTION[k] === 'transform') return 'transform';
   if (SECTION[k] === 'tunes') return 'tunes';
   return 'unison';
 }

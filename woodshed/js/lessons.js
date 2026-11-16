@@ -3,7 +3,7 @@
 // to where Thomas Echols teaches it in his course materials.
 
 import { h } from './dom.js';
-import { scaleStrip, pathChips, pathCompare, shapeBrowser, elevatorRide, borrowDemo } from './widgets.js';
+import { scaleStrip, pathChips, pathCompare, shapeBrowser, elevatorRide, borrowDemo, transformLab, chainPlayer } from './widgets.js';
 import { SCALES } from './theory.js';
 import { SHAPES, setLabel } from './floors.js';
 
@@ -243,6 +243,86 @@ LESSONS.chart = () => [
   p('An off note in the melody is not a wrong note. It can be treated as a borrowed one, which the Borrowing lessons cover.'),
   read('Foundations I, pages 42 to 47, and 5 Chord Melody Games.'),
 ];
+
+const f = (text) => h('span', { class: 'formula' }, text);
+
+Object.assign(LESSONS, {
+  'tr.family': () => [
+    p(b('Transformation'), ' is turning one chord into another by the shortest route, so that a chord change becomes a small move of the hand and not a new chord to look up. It works on the two 6th chords, major 6 and minor 6, and it is practiced on one floor first: drop 2.'),
+    head('Four chords under one hand'),
+    p('Take a diminished 7 chord in drop 2. Raise any one of its notes by a fret and you have a minor 6 chord. The note you raised is that chord’s fifth. There are four notes you could raise, so one diminished shape gives four minor 6 chords, a minor third apart, all within a fret of each other.'),
+    p('Barry Harris called these four ', b('brothers and sisters'), '. F minor 6, D minor 6, B minor 6 and A♭ minor 6 are one family. They live in the same place on the neck.'),
+    head('Know each one by its bass'),
+    p('In that one place, what tells the four apart is which note of the chord is on the bottom: the ', b('root'), ', the ', b('third'), ', the ', b('fifth'), ' or the ', b('sixth'), '. So you do not ask "what chord is next?" You ask "what is in the bass now, and what should it become?"'),
+    p('Put the four in a circle, in that order. Moving ', b('forward'), ' takes you to the next one round, ', b('backward'), ' to the one before, and ', b('across'), ' to the one opposite.'),
+    transformLab({ root: 5, scale: 'min6', role: 0 }),
+    p('Step forward four times and you are back where you began, having played all four members of the family. Notice how little the hand moves.'),
+    head('Tall siblings'),
+    p('Watch the bass note on string 5 as you go round. For three of the four minor 6 chords it sits on the same fret. Only when the bass is the ', b('fifth'), ' is it one fret higher. That one is the tall sibling, ringed in gold on the circle. It is tall because the fifth is the note that was raised out of the diminished chord.'),
+    p('A major 6 chord is a minor 6 with its third raised, so a major 6 family has two tall siblings: the ', b('third'), ' and the ', b('fifth'), '.'),
+    transformLab({ root: 5, scale: 'maj6', role: 0 }),
+    head('How to practice it'),
+    list(
+      'Bass first. On string 5 alone, play the four bass notes of a family and say "root, third, fifth, sixth". Move up a fret for a tall one, and back.',
+      'Then summon. Play the bass note, say what it is, and add the shape above it.',
+      'Go round forward, then backward, then across.',
+    ),
+    say('"Fifth." Move backward. "Third." The bass comes down a fret, and the shape above it changes.'),
+    read('Foundations I, pages 48 to 50, and Foundations IV, pages 15 to 20.'),
+  ],
+
+  'tr.major': () => [
+    p('Going round the circle keeps you inside one family. To reach every other 6th chord you need two more moves, and that is all.'),
+    list(
+      [b('Round the circle'), ': forward, backward or across. This changes what is in the bass.'],
+      [b('Up or down a family'), ': the same shape, one fret higher or lower. There are only three families, so another one is never more than a fret away.'],
+      [b('Major or minor'), ': the third is raised or lowered.'],
+    ),
+    p('Written in brackets, these make a ', b('formula'), ', such as ', f('[Backward, Up, Major]'), '. Any two 6th chords are joined by exactly one formula, and the formula is the same in every key. Learn a handful and you can play most chord changes without thinking of a single chord name.'),
+    transformLab({ root: 3, scale: 'maj6', role: 0, full: true }),
+    head('The ii–V–I'),
+    p('From Reading a chart you know how these three chords are played. In B♭: the ii chord, Cm7, is ', b('E♭6'), '. The V chord, F7, is the minor 6 on the 5, ', b('Cm6'), ', or the tritone’s minor, ', b('G♭m6'), '. The I chord is ', b('B♭6'), '. That gives two paths.'),
+    list(
+      [b('Inside'), ': ', f('[Forward, Minor]'), ' then ', f('[Forward, Up, Major]'), '. The first move is one voice: the fifth of the major 6 drops a fret. Every note stays in the key.'],
+      [b('Outside'), ': ', f('[Backward, Minor]'), ' then ', f('[Backward, Up, Major]'), '. Three voices move a fret each, and the V chord borrows notes from outside the key.'],
+    ),
+    p('Forward for the inside path, backward for the outside one. To use both minors over the V chord, the move between them is simply ', f('[Across]'), '.'),
+    chainPlayer({ chains: ['major-on5', 'major-tm', 'major-both', 'major-soft'], tonic: 10, role: 0 }),
+    p('Try each path from all four starting bass notes. The frets change. The formula does not.'),
+    head('A softer landing'),
+    p('The I chord can also be played as the major 6 on its 5: F6 over B♭. From the tritone’s minor that is the easiest resolution there is, ', f('[Down, Major]'), ': slide the shape down a fret and raise its third. It is the last path in the figure above.'),
+    head('How to practice it'),
+    list(
+      'One floor, one set of strings, four starting points.',
+      'Say the formula. Say what will be in the bass. Then move.',
+      'When a move feels slow, do the parts one at a time: round the circle, then up or down, then major or minor.',
+    ),
+    read('Foundations IV, pages 13 to 32, and Foundations I, pages 49 to 50.'),
+  ],
+
+  'tr.minor': () => [
+    p('Nothing new is needed here. The same three kinds of move, put together differently, cover the minor ii–V–i and several other progressions that turn up in nearly every tune.'),
+    head('Minor ii–V–i'),
+    p('In G minor: the ii chord, Am7♭5, is ', b('Cm6'), '. The V chord, D7, is played as its tritone’s minor, ', b('E♭m6'), '. The i chord is ', b('Gm6'), '.'),
+    list(
+      ['ii to V: ', f('[Backward]'), '. Both chords are minor 6 and both are in the same family, so this is the easiest transformation of all.'],
+      ['V to i: ', f('[Backward, Up]'), '. Backward again, and up a fret.'],
+    ),
+    chainPlayer({ chains: ['minor'], tonic: 7, role: 3 }),
+    head('The minor iv'),
+    p('A major IV chord that turns minor before going home is one of the prettiest sounds in a ballad. In B♭: ', b('E♭6'), ', then ', b('E♭m6'), ', then ', b('B♭6'), '.'),
+    list(
+      ['IV to minor iv: ', f('[Minor]'), '. One voice, the third, drops a fret.'],
+      ['Minor iv to I: ', f('[Across, Up, Major]'), '. All three parts at once, so it takes the longest to learn. It comes back in turnarounds, which makes it worth the time.'],
+    ),
+    p('When a chart shows A♭7 going to B♭, the "back-door" dominant, play the same E♭m6 and the same move home.'),
+    chainPlayer({ chains: ['minor-iv', 'to-ii'], tonic: 10, role: 0 }),
+    head('The same move in different places'),
+    p('From the I chord to the ii chord is ', f('[Across, Down]'), ', the second path in the figure above. And ', f('[Forward, Minor]'), ', which took the ii chord to its V, is also how Stella by Starlight gets from B♭ to Em7♭5 in bars 9 and 10. One practiced move, two uses.'),
+    p('In the Songs tab, tap any chord in a chart. When it and its neighbor are both played as 6th chords, the formula between them is shown. Once you have started this stage, "Practice this tune" also drills the tune’s own moves.'),
+    read('Foundations IV, pages 50 to 52, 67, 73 to 76 and 86, and Foundations I, pages 51 to 53.'),
+  ],
+});
 
 const SCALE_INTRO = {
   min6: {
