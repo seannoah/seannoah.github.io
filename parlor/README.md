@@ -18,6 +18,20 @@ Parlor is separate from Woodshed. It started from copies of Woodshed's engine fi
 - **Sound**: a synth voice each for pads, strings and bass, four drum kits, a mixer, and shared chorus, delay and reverb.
 - **Tune**: load a tune's changes and the pads retune chord by chord, the way the method reads a chart.
 
+## The two-hands prototype
+
+`hands.html` is a second, experimental way of playing, built after the first rounds of testing. It lives beside the main app (linked from the guide) so the two can be compared, and it shares the engine, sounds and tunes.
+
+The idea: the right hand plays the melody, the left hand plays the bass, and the Elevator fills in whatever belongs between them. So the distance between the hands is the floor; parallel, contrary and oblique motion are what the hands do; and thumbs on different colours make a borrowed melody. Each hand sounds only its own notes. A Mirror key drops the bass an octave for the wide floors.
+
+Its keys are anchored to pitch, not to the root: the bottom key is the on note of the current chord nearest a fixed pitch. A change of harmony therefore moves each key by a semitone or two at most, and a chord left on the same keys is carried to the new harmony by the shortest route.
+
+| File | What it holds |
+|---|---|
+| `js/frame.js` | The rules: rows, what the left hand sounds for a given bass and melody, names, motion. Pure and tested (`tests/frame.test.mjs`) |
+| `js/hands.js` | The page: the two hands, the beads between them, the strip of stations or chord changes, the trail |
+| `css/hands.css` | Its surface. Colours and shared controls come from `css/app.css` |
+
 ## Layout
 
 | File | What it holds |

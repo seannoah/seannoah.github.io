@@ -15,7 +15,7 @@ import { Drums } from './drums.js';
 import { KITS } from './rhythms.js';
 import { LANES } from './seq.js';
 
-export const VERSION = '0.2.1';
+export const VERSION = '0.3.0';
 
 const state = load();
 const events = bus();
@@ -147,6 +147,7 @@ function guide() {
     const k = (t) => h('kbd', null, t);
     fill(body,
       p('An instrument for the scales of chords. You practise in the woodshed. This is where you play.'),
+      h('p', null, h('a', { href: 'hands.html', class: 'lab-link' }, 'Try the two-hands prototype'), ': the melody under one thumb, the bass under the other.'),
       sec('The pads',
         p('Eight pads are the eight notes of the scale. The top row is the ', on('on'), ' chord: root, third, fifth, sixth. The bottom row is the ', off('off'), ' chord, a diminished chord: second, fourth, sharp five, major seven. Zig-zag across them and you walk the scale.'),
         p('Each pad plays its note as the melody, with a chord built beneath it. Slide a finger from pad to pad to walk. Say the name as you land: "fifth, on".')),

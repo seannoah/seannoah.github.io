@@ -382,6 +382,7 @@ input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; border-radius
 .weave-n b { font-size: 14px; line-height: 1.1; }
 .weave-n i { font-style: normal; font-size: 10px; color: var(--ink-3); }
 .weave-c { margin-left: auto; font-weight: 600; font-size: 14px; }
+.lab-link { font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
 .guide-sec { display: flex; flex-direction: column; gap: 6px; }
 .guide-sec h3 { margin-top: 4px; }
 .sheet-body p { font-size: 15px; line-height: 1.5; }

@@ -1,0 +1,115 @@
+/* hands.css — the two-hands prototype. It borrows Parlor's paper, inks and controls
+   (css/app.css) and adds only its own surface. */
+
+body.hands { --r: clamp(27px, calc((100dvh - 262px) / 10), 40px); }
+
+.hd-top {
+  flex: none; display: flex; align-items: center; gap: 8px; min-height: 40px;
+  padding: calc(4px + env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) 0 max(10px, env(safe-area-inset-left));
+  width: 100%; max-width: 760px; margin: 0 auto;
+}
+.hd-back { flex: none; font: italic 600 15px/1 var(--serif); color: var(--ink-2); padding: 8px 4px; }
+.hd-title { flex: 1; min-width: 0; display: flex; align-items: baseline; justify-content: center; gap: 7px; padding: 6px 0; }
+.hd-scale { font: 600 17px/1.2 var(--serif); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.hd-more { flex: none; font-size: 11px; font-weight: 600; color: var(--ink-3); text-decoration: underline; text-underline-offset: 3px; }
+.hd-top .icon-b { font: 600 16px/1 var(--sans); border: 1px solid var(--line-2); width: 30px; height: 30px; }
+.hd-link { text-decoration: underline; text-underline-offset: 3px; }
+
+/* what is sounding, over a picture of the last few seconds */
+.hd-display { flex: 1 1 auto; min-height: 78px; position: relative; width: 100%; max-width: 760px; margin: 0 auto; overflow: hidden; }
+.hd-trail { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0.32; }
+.hd-read { position: relative; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 2px; padding: 0 14px; text-align: center; pointer-events: none; }
+.hd-name { font: 600 25px/1.15 var(--serif); letter-spacing: -0.01em; }
+.hd-notes { font-size: 14px; color: var(--ink-2); line-height: 1.3; }
+.hd-moved { font-size: 12.5px; color: var(--ink-2); min-height: 17px; }
+
+/* the surface: a hand on each side, the notes between them in the middle */
+.hd-surface {
+  flex: none; position: relative; display: grid; grid-template-columns: var(--hand) minmax(0, 1fr) var(--hand);
+  --hand: clamp(124px, 34vw, 210px);
+  height: calc(10 * var(--r)); width: 100%; max-width: 760px; margin: 0 auto;
+  padding: 0 max(8px, env(safe-area-inset-right)) 0 max(8px, env(safe-area-inset-left));
+}
+.hd-hand { position: relative; height: 100%; touch-action: none; }
+.hk {
+  position: absolute; top: calc((8 - var(--k)) * var(--r) + 2px); height: calc(2 * var(--r) - 4px);
+  border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  background: var(--card); border: 1.5px solid var(--on); color: var(--on-2);
+  box-shadow: 0 2px 0 var(--on); touch-action: none;
+  transition: transform 0.04s ease, background 0.08s ease;
+}
+.hk.off { border-color: var(--off); color: var(--off-2); box-shadow: 0 2px 0 var(--off); }
+.hk.on { width: 51%; }
+.hk.off { width: 45%; }
+/* on notes at the outside edge, off notes toward the middle, in both hands */
+.left .hk.on { left: 0; } .left .hk.off { right: 0; }
+.right .hk.on { right: 0; } .right .hk.off { left: 0; }
+.hk-deg { font: 600 20px/1 var(--serif); pointer-events: none; }
+.hk-note { font-size: 11px; font-weight: 500; color: var(--ink-3); pointer-events: none; }
+.hk.root::after { content: ""; position: absolute; top: 6px; left: 6px; width: 6px; height: 6px; border-radius: 50%; background: var(--gold); pointer-events: none; }
+.hk.held { transform: translateY(2px); background: var(--on); color: var(--card); box-shadow: none; }
+.hk.off.held { background: var(--off); }
+.hk.held .hk-note { color: rgba(255, 253, 248, 0.82); }
+.hk.ring { background: var(--on-soft); }
+.hk.off.ring { background: var(--off-soft); }
+
+/* the four free corners of the zig-zag */
+.hc {
+  position: absolute; width: 45%; height: calc(var(--r) - 5px); border-radius: 10px;
+  border: 1px dashed var(--line-2); color: var(--ink-2); font-size: 11px; font-weight: 600; touch-action: none;
+}
+.left .hc { right: 0; } .right .hc { left: 0; }
+.hc.top { top: 2px; } .hc.bottom { top: calc(9 * var(--r) + 2px); }
+.hc:active { background: var(--paper-2); }
+.hc.sel { background: var(--gold-soft); border: 1px solid var(--gold); color: var(--ink); }
+
+.hd-center { position: relative; height: 100%; touch-action: none; }
+.hd-band { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+.hd-band line { stroke: var(--ink-3); stroke-width: 1.5; stroke-dasharray: 2 4; stroke-linecap: round; }
+.bead {
+  position: absolute; width: 42px; height: 42px; margin: -21px 0 0 -21px; border-radius: 50%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1;
+  background: var(--card); border: 1.5px solid var(--on); color: var(--on-2); cursor: ns-resize; touch-action: none;
+}
+.bead.off { border-color: var(--off); color: var(--off-2); }
+.bead b { font: 600 16px/1 var(--serif); pointer-events: none; }
+.bead i { font-style: normal; font-size: 10px; color: var(--ink-3); pointer-events: none; }
+.bead.lean { background: var(--gold-soft); border-color: var(--gold); }
+
+/* the strip at the bottom: stations, or the chord changes of a tune */
+.hd-foot { flex: none; width: 100%; max-width: 760px; margin: 0 auto; padding: 4px max(8px, env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left)); }
+.hd-cap { font-size: 11.5px; line-height: 1.3; color: var(--ink-2); min-height: 30px; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; padding: 0 2px 3px; }
+.hd-strip { display: flex; gap: 4px; align-items: stretch; }
+.hs-chip {
+  flex: 1 1 0; min-width: 0; height: 46px; border-radius: 10px; border: 1px solid var(--line-2); background: var(--card);
+  font-size: 12.5px; font-weight: 600; white-space: nowrap; overflow: hidden; touch-action: none;
+}
+.hs-chip.dom { border-style: dashed; }
+.hs-chip.sel { background: var(--ink); color: var(--paper); border: 1px solid var(--ink); }
+.hs-chip:active { background: var(--paper-2); }
+.hs-step, .hs-now, .hs-next { height: 54px; border-radius: 12px; border: 1px solid var(--line-2); background: var(--card); touch-action: none; }
+.hs-step { flex: none; width: 46px; color: var(--ink-2); font-size: 13px; }
+.hs-now { flex: 1.2 1 0; min-width: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 9px; align-items: center; text-align: left; padding: 0 11px; }
+.hs-sym { font-size: 19px; font-weight: 600; line-height: 1.1; white-space: nowrap; }
+.hs-now .hs-sym { grid-row: span 2; }
+.hs-as { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hs-how { font-size: 10.5px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hs-next { flex: 1 1 0; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.hs-next .hs-how { color: var(--paper-3); }
+.hs-go { font-size: 13px; }
+.hs-next:active { transform: translateY(1px); }
+
+@media (min-width: 700px) {
+  .hk-deg { font-size: 23px; }
+  .hd-name { font-size: 30px; }
+  .hs-chip { font-size: 14px; }
+}
+/* a phone on its side: less height, so the readout shrinks before the keys do */
+@media (max-height: 480px) {
+  body.hands { --r: clamp(22px, calc((100dvh - 150px) / 10), 34px); }
+  .hd-display { min-height: 34px; }
+  .hd-notes, .hd-moved, .hd-cap { display: none; }
+  .hd-name { font-size: 18px; }
+  .hs-chip { height: 36px; } .hs-step, .hs-now, .hs-next { height: 40px; }
+  .hk-note { display: none; }
+}
