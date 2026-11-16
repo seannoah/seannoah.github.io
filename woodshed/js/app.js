@@ -1,4 +1,5 @@
-// app.js — the four pages (Today, Learn, Explore, Progress) and the session runner.
+// app.js — the pages (Today, Learn, Explore, Progress), the tab bar and the session runner.
+// Songs and Ear have their own files.
 
 import { h, icon, segmented, pickRow } from './dom.js';
 import * as audio from './audio.js';
@@ -15,11 +16,13 @@ import { FLOORS, SHAPES, setLabel } from './floors.js';
 import * as sync from './sync.js';
 import { pageSongs, pageSong, pageSongEdit, attachSongs } from './songsui.js';
 import { songById } from './songs.js';
+import { pageEar, pageEarGame, attachEar } from './earui.js';
 
-const VERSION = '0.7.0';
+const VERSION = '0.8.0';
 const view = document.getElementById('view');
 const sessionRoot = document.getElementById('session');
-const TABS = [['today', 'Today'], ['learn', 'Learn'], ['songs', 'Songs'], ['explore', 'Explore'], ['progress', 'Progress']];
+// Progress is not a tab: it is reached from Today.
+const TABS = [['today', 'Today'], ['learn', 'Learn'], ['ear', 'Ear'], ['songs', 'Songs'], ['explore', 'Explore']];
 
 // ---------- small shared pieces ----------
 const progressBar = (ratio, cls = '') => h('div', { class: 'meter ' + cls }, h('i', { style: `width:${Math.round(Math.min(1, ratio) * 100)}%` }));
@@ -68,9 +71,11 @@ function pageToday() {
       h('span', { class: 'part-count' }, c.n, c.fresh ? h('em', null, `${c.fresh} new`) : null)));
 
   return [
-    h('div', { class: 'page-head' },
-      h('p', { class: 'eyebrow' }, new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })),
-      h('h1', null, 'Today')),
+    h('div', { class: 'page-head with-link' },
+      h('div', null,
+        h('p', { class: 'eyebrow' }, new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })),
+        h('h1', null, 'Today')),
+      h('a', { class: 'pill', href: '#/progress' }, icon('progress', 16), 'Progress')),
     segmented([['guitar', 'Guitar in hand', 'guitar'], ['away', 'Away', 'phone']], mode, (m) => { setSetting('mode', m); route(); }, 'mode'),
     installHint(),
     lesson ? h('a', { class: 'card lesson-card', href: `#/learn/${lesson.id}` },
@@ -92,6 +97,11 @@ function pageToday() {
         h('span', { class: 'muted' }, tune ? 'Pick up where you left off' : 'Charts read the way the method reads them'),
         h('span', { class: 'go' }, icon('next', 20)));
     })(),
+    h('a', { class: 'card lesson-card', href: '#/ear' },
+      h('span', { class: 'eyebrow' }, 'Ear'),
+      h('strong', null, 'A quick round by ear'),
+      h('span', { class: 'muted' }, 'Ten questions, about two minutes, or pick a game'),
+      h('span', { class: 'go' }, icon('next', 20))),
     h('section', { class: 'where' },
       h('div', { class: 'eyebrow' }, 'You are working on'),
       h('a', { class: 'where-unit', href: `#/learn/${unit.id}` }, unit.title, icon('next', 18)),
@@ -101,6 +111,7 @@ function pageToday() {
       h('div', { class: 'tile' }, h('b', null, days), h('span', null, days === 1 ? 'day in a row' : 'days in a row')),
       h('div', { class: 'tile' }, h('b', null, done.n), h('span', null, 'exercises today')),
       h('div', { class: 'tile' }, h('b', null, Object.keys(state.items).filter(isLearned).length), h('span', null, 'items learned'))),
+    h('a', { class: 'link center', href: '#/progress' }, 'Progress, sync and settings'),
   ];
 }
 
@@ -393,6 +404,7 @@ function syncCard() {
 function pageProgress() {
   const week = [0, 1, 2, 3, 4, 5, 6].reduce((sum, d) => sum + dayTotal(dayKey(Date.now() - d * 86400000)).s, 0);
   return [
+    h('a', { class: 'back', href: '#/today' }, icon('back', 18), 'Today'),
     h('div', { class: 'page-head' }, h('p', { class: 'eyebrow' }, 'Where you stand'), h('h1', null, 'Progress')),
     h('section', { class: 'tiles' },
       h('div', { class: 'tile' }, h('b', null, streak()), h('span', null, 'day streak')),
@@ -420,6 +432,7 @@ function route() {
     : pageSong(decodeURIComponent(arg)));
   const page = name === 'learn' ? (arg ? pageLesson(decodeURIComponent(arg)) : pageLearn())
     : name === 'songs' ? songPage()
+    : name === 'ear' ? (arg ? pageEarGame(decodeURIComponent(arg)) : pageEar())
     : name === 'explore' ? pageExplore()
     : name === 'progress' ? pageProgress()
     : pageToday();
@@ -446,6 +459,7 @@ document.getElementById('tabs').append(...TABS.map(([id, label]) => {
 window.woodshed = { run: (ids, mode = 'away') => runSession(ids.map((id) => (typeof id === 'string' ? { id } : id)), mode) };
 
 attachSongs({ runSession, route });
+attachEar({ route });
 audio.setEnabled(state.settings.sound !== false);
 document.addEventListener('pointerdown', () => audio.unlock(), { once: true });
 sync.onStatus((st) => {

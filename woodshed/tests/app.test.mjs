@@ -457,3 +457,115 @@ test('a tune\'s dominants are read from their center', () => {
   const you = songs.songCenters(songs.readSong(TUNES.find((t) => t.id === 'another-you')));
   assert.ok(you.length >= 1 && you.every((m) => m.to.family === 'maj' && hubPair(m.tonic, m.id, m.pos)));
 });
+
+// ---- the Ear tab ----
+const ear = await import('../js/ear.js');
+const seeded = (seed = 11) => () => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648; };
+
+test('every ear game makes a full round at every level, with something to play and one right answer', () => {
+  const rng = seeded();
+  for (const game of ear.GAMES) {
+    assert.ok(game.tip && game.blurb && ear.SHELVES.some((s) => s.id === game.shelf), game.id);
+    for (let level = 0; level < game.levels.length; level++) {
+      for (let round = 0; round < 6; round++) {
+        const r = ear.makeRound(game.id, level, { rng });
+        assert.equal(r.questions.length, game.count, `${game.id} ${level}`);
+        for (const q of r.questions) {
+          const where = `${game.id} level ${level + 1}`;
+          assert.ok(q.sound.length && q.sound.every((ev) => ev.at >= 0 && ev.midis.every((m) => m >= 40 && m <= 88)), `${where}: playable`);
+          const words = [q.prompt, q.hint, q.kicker, q.reveal ? q.reveal.text : '', ...(q.options || []).map((o) => o.text)];
+          assert.ok(words.every((w) => typeof w === 'string' && !/undefined|NaN|null/.test(w)), `${where}: ${words.join(' / ')}`);
+          if (q.form === 'choice') {
+            assert.equal(q.choices.filter((c) => c.value === q.answer).length, 1, `${where}: the answer is one of the choices`);
+            assert.ok(q.reveal.neck.marks.length && q.reveal.neck.hi > q.reveal.neck.lo, where);
+          }
+          if (q.form === 'tap') {
+            assert.equal(q.notes.length, game.levels[level].notes, where);
+            assert.ok(q.notes.every((n) => n.string === q.string && n.fret >= q.lo && n.fret <= q.hi), `${where}: the phrase is on screen`);
+            assert.ok(q.hi - q.lo <= 8, `${where}: no sideways scrolling on a phone`);
+            assert.ok(q.notes.every((n, i) => i === 0 || n.fret !== q.notes[i - 1].fret), where);
+            assert.equal(!!q.landmark, !!game.levels[level].blind);
+          }
+          if (q.form === 'self') assert.ok(q.check.length, where);
+          if (q.form === 'free') {
+            assert.ok(q.options.length >= 2 && q.options.every((o) => o.landed % 2 === 0 && o.sound.length === 2), `${where}: every way out lands on an on note`);
+            assert.equal(q.target % 2, 1, `${where}: it starts from an off note`);
+            assert.ok([q.neck, ...q.options.map((o) => o.neck)].every((n) => n.hi - Math.max(1, n.lo) <= 8 && n.marks.every((m) => m.fret >= n.lo && m.fret <= n.hi)), `${where}: fits a phone`);
+          }
+        }
+      }
+    }
+  }
+});
+
+test('ear rounds stay in one key where the ear needs to settle, and lean on what was missed', () => {
+  const rng = seeded(3);
+  // which degree, level 4: the chord sounds on questions 1, 4, 7 and 10 only
+  const d = ear.makeRound('degree', 3, { rng }).questions;
+  assert.deepEqual(d.map((q) => q.sound.length), [2, 1, 1, 2, 1, 1, 2, 1, 1, 2]);
+  assert.ok(d.filter((q) => q.sound.length === 1).every((q) => q.again.length === 1), 'the chord is still there to ask for');
+  assert.equal(new Set(d.map((q) => q.kicker)).size, 1, 'one key for the whole round');
+  // level 5: major or minor for the round, and the chord only at the start
+  const e = ear.makeRound('degree', 4, { rng }).questions;
+  assert.deepEqual(e.map((q) => q.sound.length), [2, 1, 1, 1, 1, 1, 1, 1, 1, 1]);
+  assert.equal(new Set(e.map((q) => q.kicker)).size, 1);
+  // the same answer never comes three times running
+  for (let k = 0; k < 20; k++) {
+    const a = ear.makeRound('onoff', 0, { rng }).questions.map((q) => q.target);
+    assert.ok(a.every((x, i) => i < 2 || !(a[i - 1] === x && a[i - 2] === x)));
+  }
+  // a degree that has been missed a lot is asked more often than one that never is
+  const stats = { 'degree|maj6|6': { n: 10, x: 9 }, 'degree|maj6|0': { n: 10, x: 0 }, 'degree|maj6|2': { n: 10, x: 0 }, 'degree|maj6|4': { n: 10, x: 0 } };
+  const count = { 0: 0, 6: 0 };
+  for (let k = 0; k < 60; k++) for (const q of ear.makeRound('degree', 0, { rng, stats }).questions) if (q.target in count) count[q.target]++;
+  assert.ok(count[6] > count[0] * 1.8, `the sixth ${count[6]} times, the root ${count[0]}`);
+  assert.deepEqual(ear.weakest(stats).map((w) => [w.label, w.missed, w.asked, w.game.id]), [['the sixth', 9, 10, 'degree']]);
+  assert.equal(ear.statLabel('voices|con'), 'contrary motion');
+  assert.equal(ear.statLabel('degree|min6|2'), 'the minor third in minor 6');
+  // timed levels say so; quick rounds mix the games and never run a clock
+  assert.ok(ear.makeRound('onoff', 3, { rng }).questions.every((q) => q.seconds === 5));
+  const quick = ear.makeQuick({}, { rng });
+  assert.equal(quick.questions.length, 10);
+  assert.deepEqual([...new Set(quick.questions.map((q) => q.game))].sort(), ['degree', 'echo', 'floor', 'onoff', 'roads', 'voices']);
+  assert.ok(quick.questions.every((q) => !q.seconds && q.sound.length >= 1));
+  // a quick round meets you at the level you have reached in each game
+  const further = ear.makeQuick({ degree: { best: { 0: 9, 1: 10 } } }, { rng });
+  assert.ok(further.questions.filter((q) => q.game === 'degree').every((q) => q.level === 2 && q.choices.length === 8));
+});
+
+test('ear progress: passing a level, best scores, and merging two devices', () => {
+  store.resetAll();
+  const game = ear.gameById('degree');
+  assert.equal(ear.passMark(game), 8);
+  assert.equal(ear.passMark(ear.gameById('echo')), 7);
+  assert.equal(ear.suggested(game, store.earRecord('degree')), 0);
+  assert.equal(store.recordRound('degree', 0, 7), true);
+  assert.equal(ear.suggested(game, store.earRecord('degree')), 0, 'seven of ten is not a pass');
+  assert.equal(store.recordRound('degree', 0, 9), true);
+  assert.equal(store.recordRound('degree', 0, 8), false, 'not a new best');
+  assert.equal(ear.suggested(game, store.earRecord('degree')), 1);
+  assert.ok(ear.passed(game, store.earRecord('degree'), 0) && !ear.passed(game, store.earRecord('degree'), 1));
+  assert.equal(ear.suggested(ear.gameById('resolve'), undefined), 0, 'nothing to pass in a game with no wrong answers');
+  // answers are counted by what was asked, and playing counts toward the day
+  const before = store.dayTotal(store.dayKey()).n;
+  store.recordAnswer('degree|maj6|6', false);
+  store.recordAnswer('degree|maj6|6', true);
+  store.logPractice(true, 4);
+  assert.deepEqual([store.state.ear.stats['degree|maj6|6'].n, store.state.ear.stats['degree|maj6|6'].x], [2, 1]);
+  assert.equal(store.dayTotal(store.dayKey()).n, before + 1);
+  assert.equal(Object.keys(store.state.items).length, 0, 'ear games never touch the ladder items');
+  // two devices: the best at each level survives, and the fuller answer count wins
+  const phone = { ear: { games: { degree: { best: { 0: 10, 2: 6 }, plays: 5, t: Date.now() + 10 } }, stats: { 'degree|maj6|6': { n: 9, x: 2, t: Date.now() + 10 }, 'floor|shells': { n: 3, x: 3, t: Date.now() + 10 } } } };
+  const merged = store.merge(store.state, phone);
+  assert.deepEqual(merged.ear.games.degree.best, { 0: 10, 2: 6 });
+  assert.equal(merged.ear.games.degree.plays, 5);
+  assert.deepEqual([merged.ear.stats['degree|maj6|6'].n, merged.ear.stats['floor|shells'].x], [9, 3]);
+  assert.equal(store.canonical(store.merge(merged, phone)), store.canonical(merged), 'merging again changes nothing');
+  assert.notEqual(store.canonical(merged), store.canonical(store.state));
+  // an older copy without the Ear tab merges cleanly
+  assert.deepEqual(store.merge({ items: {} }, { items: {} }).ear, { games: {}, stats: {} });
+  // erasing progress erases the ear records too, on every device
+  store.resetAll();
+  assert.deepEqual(store.state.ear, { games: {}, stats: {} });
+  assert.deepEqual(store.merge(store.state, { ear: { games: { degree: { best: { 0: 10 }, plays: 1, t: 5 } }, stats: {} } }).ear.games, {});
+});

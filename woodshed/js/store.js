@@ -17,12 +17,16 @@ const blank = () => ({
   units: {},  // id -> { read: ms, on: ms }
   days: {},   // 'YYYY-MM-DD' -> { [device]: { n, ok, s } }
   songs: {},  // id -> { title, key, chart, melody, prefs, t } for your own tunes; { prefs, t } for built-in ones
+  // the Ear tab, kept apart from the ladder's items so its games never change what is due:
+  //   games: id -> { best: { [level]: most right in a round }, plays, t }
+  //   stats: what was asked -> { n: times asked, x: times missed, t }
+  ear: { games: {}, stats: {} },
 });
 
 function load() {
   try {
     const raw = JSON.parse(localStorage.getItem(KEY) || 'null');
-    if (raw && raw.v === 1) return { ...blank(), ...raw, settings: { ...blank().settings, ...raw.settings } };
+    if (raw && raw.v === 1) return { ...blank(), ...raw, settings: { ...blank().settings, ...raw.settings }, ear: { ...blank().ear, ...raw.ear } };
   } catch (e) { /* corrupt or unavailable storage: start fresh */ }
   return blank();
 }
@@ -84,12 +88,42 @@ export function grade(id, result, seconds = 0) {
     it.d = today;
   }
   state.items[id] = it;
+  logPractice(result === 'right', seconds, now);
+}
+
+// One more exercise done today, on this device. Everything that counts as practice goes
+// through here, so the streak and the calendar include the Ear tab.
+export function logPractice(ok, seconds = 0, now = Date.now()) {
   const key = dayKey(now);
   const day = (state.days[key] = state.days[key] || {});
   const mine = (day[DEVICE] = day[DEVICE] || { n: 0, ok: 0, s: 0 });
   mine.n += 1;
-  if (result === 'right') mine.ok += 1;
+  if (ok) mine.ok += 1;
   mine.s += Math.min(120, Math.round(seconds));
+  save(true);
+}
+
+// ---- the Ear tab ----
+export const earRecord = (id) => state.ear.games[id] || { best: {}, plays: 0, t: 0 };
+// A finished round: keeps the best score at that level. Returns true if it is a new best.
+export function recordRound(id, level, score) {
+  const r = (state.ear.games[id] = state.ear.games[id] || { best: {}, plays: 0, t: 0 });
+  const better = score > (r.best[level] || 0);
+  if (better) r.best[level] = score;
+  r.plays += 1;
+  r.t = Date.now();
+  save();
+  return better;
+}
+// One answer: remembered by what was asked, so later rounds can lean on what is missed.
+export function recordAnswer(key, ok) {
+  if (!key) return;
+  const s = (state.ear.stats[key] = state.ear.stats[key] || { n: 0, x: 0, t: 0 });
+  // only the last thirty or so answers count, so an old weak spot can heal
+  if (s.n >= 30) { s.n = Math.round(s.n * 0.8); s.x = Math.round(s.x * 0.8); }
+  s.n += 1;
+  if (!ok) s.x += 1;
+  s.t = Date.now();
   save(true);
 }
 
@@ -135,7 +169,8 @@ export function resetAll() {
 // ---- merging two copies (this device and the synced file) ----
 // Items: the most recently practiced record wins. Days: counts are kept per device, so
 // merging is a union and can be repeated safely. Units: earliest timestamps are kept.
-// Anything older than the latest "erase progress" on either side is dropped.
+// Ear games: the best score at each level is kept; for the answer counts, the copy that
+// has seen more wins. Anything older than the latest "erase progress" on either side is dropped.
 export function merge(a, b) {
   const out = blank();
   const newer = (b.settingsAt || 0) > (a.settingsAt || 0) ? b : a;
@@ -159,6 +194,18 @@ export function merge(a, b) {
     for (const [id, song] of Object.entries(src.songs || {})) {
       if (!out.songs[id] || (song.t || 0) > (out.songs[id].t || 0)) out.songs[id] = song;
     }
+    for (const [id, g] of Object.entries((src.ear && src.ear.games) || {})) {
+      if ((g.t || 0) < resetAt) continue;
+      const target = (out.ear.games[id] = out.ear.games[id] || { best: {}, plays: 0, t: 0 });
+      for (const [level, score] of Object.entries(g.best || {})) target.best[level] = Math.max(target.best[level] || 0, score);
+      target.plays = Math.max(target.plays, g.plays || 0);
+      target.t = Math.max(target.t, g.t || 0);
+    }
+    for (const [key, st] of Object.entries((src.ear && src.ear.stats) || {})) {
+      if ((st.t || 0) < resetAt) continue;
+      const have = out.ear.stats[key];
+      if (!have || st.n > have.n || (st.n === have.n && (st.t || 0) > (have.t || 0))) out.ear.stats[key] = { ...st };
+    }
     for (const [id, u] of Object.entries(src.units || {})) {
       for (const [field, ts] of Object.entries(u)) {
         if (ts < resetAt) continue;
@@ -181,5 +228,5 @@ export function canonical(s) {
   const sortKeys = (o) => (o && typeof o === 'object' && !Array.isArray(o)
     ? Object.keys(o).sort().reduce((acc, k) => { acc[k] = sortKeys(o[k]); return acc; }, {})
     : o);
-  return JSON.stringify(sortKeys({ v: 1, settings: s.settings, settingsAt: s.settingsAt || 0, resetAt: s.resetAt || 0, items: s.items || {}, units: s.units || {}, days: s.days || {}, songs: s.songs || {} }));
+  return JSON.stringify(sortKeys({ v: 1, settings: s.settings, settingsAt: s.settingsAt || 0, resetAt: s.resetAt || 0, items: s.items || {}, units: s.units || {}, days: s.days || {}, songs: s.songs || {}, ear: { games: (s.ear && s.ear.games) || {}, stats: (s.ear && s.ear.stats) || {} } }));
 }

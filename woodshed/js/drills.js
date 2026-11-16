@@ -24,7 +24,7 @@ const rand = (arr) => arr[Math.floor(Math.random() * arr.length)];
 const mark = (n, scale, kind) => ({ string: n.string, fret: n.fret, kind: kind || kc(n.deg), label: lab(scale, n.deg) });
 const frets = (n) => `${n} fret${n === 1 ? '' : 's'}`;
 
-function frame({ kicker, prompt, hint, body, fb }) {
+export function frame({ kicker, prompt, hint, body, fb }) {
   return h('div', { class: 'drill' },
     h('div', { class: 'kicker' }, kicker),
     h('h2', { class: 'prompt' }, prompt),
@@ -33,13 +33,13 @@ function frame({ kicker, prompt, hint, body, fb }) {
     fb || null);
 }
 
-function feedback() {
+export function feedback() {
   const el = h('div', { class: 'fb', role: 'status' });
   return { el, show(ok, text) { el.className = 'fb show ' + (ok === true ? 'ok' : ok === false ? 'no' : 'info'); el.textContent = text; } };
 }
 
 // A set of answer buttons. resolve() colors the right one and locks the set.
-function choices(options, onPick, cls = '') {
+export function choices(options, onPick, cls = '') {
   const wrap = h('div', { class: 'choices ' + cls });
   let locked = false;
   const buttons = options.map((o) => {

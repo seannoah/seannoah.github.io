@@ -17,6 +17,7 @@ Plain HTML, CSS and JavaScript modules. There is no build step: what is in this 
 | `js/subs.js` | Substitution: the chords one fret from a key's off chord, the jobs each chord can do, and chains of nearest grips |
 | `js/harmony.js` | Reading a chord chart: chord symbol to scale of chords, movements, transposition |
 | `js/tunes.js`, `js/songs.js`, `js/songsui.js` | The built-in tunes, what is worked out about each, and the Songs pages |
+| `js/ear.js`, `js/earui.js` | The Ear tab: its games as data and question makers, and the pages and round player that run them |
 | `js/curriculum.js` | The ladder of units, the practice items in each, and the session builder |
 | `js/drills.js` | One exercise per item kind, in "away" and "guitar in hand" forms |
 | `js/lessons.js` | The short reading for each unit |
@@ -24,7 +25,7 @@ Plain HTML, CSS and JavaScript modules. There is no build step: what is in this 
 | `js/audio.js` | Plucked-string sound and metronome |
 | `js/store.js` | Progress, spaced repetition, and merging two devices' copies |
 | `js/sync.js` | Sync through a file in a private GitHub repository |
-| `js/app.js` | The four pages and the session runner |
+| `js/app.js` | Today, Learn, Explore and Progress, the tab bar, and the session runner |
 | `sw.js` | Offline support (network first, saved copy as fallback) |
 
 ## Working on it
