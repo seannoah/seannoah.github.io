@@ -15,7 +15,7 @@ import { Drums } from './drums.js';
 import { KITS } from './rhythms.js';
 import { LANES } from './seq.js';
 
-export const VERSION = '0.2.0';
+export const VERSION = '0.2.1';
 
 const state = load();
 const events = bus();
@@ -158,8 +158,8 @@ function guide() {
         p(h('b', null, 'Parallel'), ': the floor stays, so the bass follows the melody. ', h('b', null, 'Contrary'), ': step the melody up and the floor grows, so the bass steps down; step down and it closes again. ', h('b', null, 'Oblique'), ': the bass holds while the melody moves.')),
       sec('Borrowing',
         p('Every note has a neighbour a step above and a step below, and the neighbour always belongs to the other chord. Borrowing is letting one voice of a chord step to its neighbour while the rest keep ringing, and then step back. The chord leans, then settles.'),
-        p('The row of keys above the pads is the chord you are on, one key for each voice, lowest on the left. Press the ', h('b', null, 'top'), ' half of a key to borrow above and the ', h('b', null, 'bottom'), ' half to borrow below. Let go and the voice goes home. Hold a pad with one hand and lean its voices with the other, two at a time if you like. With no pad down, a voice key strikes your last chord again, leaning.'),
-        p(h('b', null, 'On chord under off notes'), ' keeps the on chord beneath an off melody note, so only the melody leans.')),
+        p('The row of keys above the pads is the chord you are on, one key for each voice, lowest on the left. The middle of a key names the note that voice is playing. Its ', h('b', null, 'top'), ' half names the neighbour above and its ', h('b', null, 'bottom'), ' half the neighbour below: press a half and the voice goes there for as long as you hold it. Let go and it comes home. Hold a pad with one hand and lean its voices with the other, two at a time if you like. With no pad down, a voice key strikes your last chord again, leaning.'),
+        p(h('b', null, 'On under off'), ' keeps the on chord beneath an off melody note, so only the melody leans.')),
       sec('Stations and family',
         p(h('b', null, 'Stations'), ' are the chords round your home key. The last five are five ways to play the V chord, each one the off chord with a note moved a half step: minor 6 on the 5, tritone’s minor, true dominant, tritone substitute, dominant 7♭5. The bass keeps the V underneath, so you hear what each one does.'),
         p(h('b', null, 'Family'), ' moves a 6th chord to its brothers and sisters: forward, backward, across, up or down a family, major or minor. The formula from home is shown as you go.'),

@@ -12,7 +12,7 @@ import { Synth, resolvePatch } from './synth.js';
 import { Drums } from './drums.js';
 import { midiAt, isOn, mod, chordPcs, harmonyNotes, sameHarmony, nearestStep, pcName, SCALES } from './theory.js';
 import { FLOORS, SHAPES, shapeOn, shapeSteps, realize } from './floors.js';
-import { nextChord, describeMotion, motionWords, leanAll, underBorrowed, voiceName, carry } from './moves.js';
+import { nextChord, describeMotion, motionWords, leanAll, borrow, underBorrowed, voiceName, carry } from './moves.js';
 
 const STRUM_GAP = 0.011;        // seconds between the notes of a pad chord, low to high
 const PLATE_LOW = 45;           // the strings run from A2 ...
@@ -243,13 +243,19 @@ export function createInstrument(state, events, persist) {
     const c = list.length ? list[list.length - 1] : ghost();
     const names = harmonyNotes(c.h);
     const steps = c.steps || leanAll(c.base, leans);
-    return c.base.map((home, i) => ({
-      fromTop: c.base.length - 1 - i,
-      home: names[mod(home, 8)],
-      now: names[mod(steps[i], 8)],
-      lean: steps[i] - home,
-      ringing: list.length > 0,
-    }));
+    return c.base.map((home, i) => {
+      const fromTop = c.base.length - 1 - i;
+      return {
+        fromTop,
+        home: names[mod(home, 8)],
+        now: names[mod(steps[i], 8)],
+        lean: steps[i] - home,
+        // the neighbors it can borrow, and whether each is free (not already sounding)
+        up: names[mod(home + 1, 8)], down: names[mod(home - 1, 8)],
+        canUp: !!borrow(c.base, fromTop, 1), canDown: !!borrow(c.base, fromTop, -1),
+        ringing: list.length > 0,
+      };
+    });
   }
 
   // ---- what just sounded, in words ----

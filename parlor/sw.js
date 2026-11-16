@@ -3,7 +3,7 @@
 // and fall back to the saved copy when there is no connection.
 // Bump VERSION whenever the list of files changes.
 
-const VERSION = 'parlor-0.2.0';
+const VERSION = 'parlor-0.2.1';
 const FILES = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css',
   'js/app.js', 'js/audio.js', 'js/band.js', 'js/bass.js', 'js/dom.js', 'js/drums.js', 'js/floors.js', 'js/harmony.js', 'js/instrument.js',

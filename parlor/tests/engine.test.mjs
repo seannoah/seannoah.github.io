@@ -372,6 +372,34 @@ test('chart chords become scales of chords', () => {
   assert.equal(transposeChart('| Dm7 | G7 |', 2), '| Em7 | A7 |');
 });
 
+test('A Train by substitution: every change is a half step or two', () => {
+  // Foundations I, Substitution Ex. 4, from a root position C6: C6, Am6, C°7, F6, A♭m6, C6.
+  const tune = TUNES.find((t) => t.id === 'a-train-sub');
+  const read = readChart(parseChart(tune.chart), () => 0, 0, false);
+  assert.deepEqual(read.map((c) => c.use.on), ['C6', 'C6', 'Am6', 'Am6', 'C°7', 'F6', 'A♭m6', 'C6', 'F6', 'A♭m6']);
+  let h = harmony(0, 'maj6');
+  let steps = shapeSteps('drop2', 2);                                  // C G A E
+  const heard = [];
+  for (const c of read.slice(1, 8)) {
+    const next = harmony(c.use.root, c.use.scale);
+    const before = steps.map((n) => midiAt(h, n));
+    steps = carry(before, 'drop2', next).steps;
+    h = next;
+    const after = steps.map((n) => midiAt(h, n));
+    heard.push(after.map((m, i) => m - before[i]));
+  }
+  assert.deepEqual(heard, [
+    [0, 0, 0, 0],        // bar 2: C6 still
+    [0, -1, 0, 0],       // Am6 for D7: G falls to F♯
+    [0, 0, 0, 0],
+    [0, 0, 0, -1],       // the passing diminished: E falls to E♭
+    [0, -1, 0, -1],      // F6 for Dm7: F♯ to F, E♭ to D
+    [-1, 0, -1, 1],      // A♭m6, the tritone's minor, for G7
+    [1, 2, 1, 1],        // home
+  ]);
+  assert.deepEqual(steps.map((n) => midiAt(h, n)), [48, 55, 57, 64]);
+});
+
 test('every built-in tune reads from start to finish', () => {
   const bars = { embraceable: 32, stella: 32, 'another-you': 32, someday: 32, 'blues-bb': 12, 'blue-monk': 12, footprints: 12, 'my-romance': 8, 'a-train': 8, 'blue-bossa': 8 };
   for (const tune of TUNES) {

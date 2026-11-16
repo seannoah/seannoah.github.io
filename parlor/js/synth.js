@@ -76,6 +76,9 @@ export const presetIds = (kind) => Object.keys(PRESETS).filter((id) => PRESETS[i
 // A part's patch: a preset with the player's changes laid over it.
 export const resolvePatch = (presetId, changes = {}) => ({ ...(PRESETS[presetId] || PRESETS.nylon), ...changes });
 
+// The shortest a note may sound, in seconds, however quickly it is let go.
+const MIN_GATE = 0.045;
+
 // ---- sources ----
 const SOURCE_GAIN = { string: 0.75, tine: 0.5, organ: 0.34, sine: 0.5, triangle: 0.55, sawtooth: 0.22, square: 0.2 };
 
@@ -239,7 +242,7 @@ export class Synth {
     amp.gain.setTargetAtTime(hold, t + p.attack, Math.max(0.01, p.decay / 3));
 
     const id = this.next++;
-    const voice = { id, amp, stops, done: false };
+    const voice = { id, amp, stops, start: t, done: false };
     this.voices.set(id, voice);
     stops[0].onended = () => { this.voices.delete(id); try { amp.disconnect(); } catch (e) { /* gone */ } };
     // a plucked buffer ends by itself; make sure everything else in the voice ends with it
@@ -255,11 +258,25 @@ export class Synth {
     this.fade(v, Math.max(this.ctx.currentTime, when || 0), fast ? 0.03 : this.patch.release);
   }
 
-  fade(v, t, r) {
+  // Fade a voice out from time t. A note that has not started yet (the later notes of a
+  // strummed chord, when the finger lifts at once) must still begin from silence and
+  // sound for a moment: clearing its envelope before it starts would leave it at full
+  // volume, far louder than a played note. `never` drops such a note without a sound.
+  fade(v, t, r, never = false) {
     v.done = true;
-    v.amp.gain.cancelScheduledValues(t);
-    v.amp.gain.setTargetAtTime(0, t, Math.max(0.006, r / 3.5));
-    this.stopAll(v, t + r * 1.6 + 0.08);
+    const g = v.amp.gain;
+    if (never && t <= v.start) {
+      g.cancelScheduledValues(0);
+      g.setValueAtTime(0, 0);
+      this.stopAll(v, 0);
+      this.voices.delete(v.id);
+      try { v.amp.disconnect(); } catch (e) { /* gone */ }
+      return;
+    }
+    const at = Math.max(t, v.start + MIN_GATE);
+    g.cancelScheduledValues(at);
+    g.setTargetAtTime(0, at, Math.max(0.006, r / 3.5));
+    this.stopAll(v, at + r * 1.6 + 0.08);
   }
 
   stopAll(v, at) {
@@ -271,10 +288,10 @@ export class Synth {
     const oldest = this.voices.values().next().value;
     if (!oldest) return;
     this.voices.delete(oldest.id);
-    this.fade(oldest, this.ctx.currentTime, 0.03);
+    this.fade(oldest, this.ctx.currentTime, 0.03, true);
   }
 
   allOff() {
-    for (const v of [...this.voices.values()]) this.fade(v, this.ctx.currentTime, 0.03);
+    for (const v of [...this.voices.values()]) this.fade(v, this.ctx.currentTime, 0.03, true);
   }
 }

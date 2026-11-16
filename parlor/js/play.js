@@ -274,9 +274,12 @@ export function playView(app) {
     const list = inst.voices();
     const sel = Math.min(state.borrowVoice, list.length - 1);
     fill(voicesEl, list.map((v) => h('div', {
-      class: `vkey ${v.now.on ? 'on' : 'off'}${v.lean ? ' lean' : ''}${v.ringing ? '' : ' quiet'}${v.fromTop === sel ? ' sel' : ''}`, 'data-voice': String(v.fromTop),
-      title: `The ${voiceName(list.length, v.fromTop)} voice: ${v.home.say}`,
-    }, h('span', { class: 'vk-arrow' }, '▲'), h('span', { class: 'vk-mid' }, h('b', null, deg(v.now.label)), h('i', null, v.now.name)), h('span', { class: 'vk-arrow' }, '▼'))));
+      class: `vkey ${v.home.on ? 'on' : 'off'}${v.lean ? ' lean' : ''}${v.ringing ? '' : ' quiet'}${v.fromTop === sel ? ' sel' : ''}`, 'data-voice': String(v.fromTop),
+      title: `The ${voiceName(list.length, v.fromTop)} voice: ${v.home.say}. Top half borrows the ${v.up.say} above, bottom half the ${v.down.say} below.`,
+    },
+    h('span', { class: `vk-half ${v.up.on ? 'on' : 'off'}${v.lean > 0 ? ' live' : ''}${v.canUp ? '' : ' no'}` }, h('i', null, '▲'), h('span', null, deg(v.up.label))),
+    h('span', { class: 'vk-mid' }, h('b', null, deg(v.home.label)), h('i', null, v.home.name)),
+    h('span', { class: `vk-half ${v.down.on ? 'on' : 'off'}${v.lean < 0 ? ' live' : ''}${v.canDown ? '' : ' no'}` }, h('i', null, '▼'), h('span', null, deg(v.down.label))))));
   }
 
   function doLean(voice, dir) {
@@ -335,16 +338,15 @@ export function playView(app) {
     keyLean = null;
   }
 
-  const keepBtn = h('button', { type: 'button', class: 'toggle keep', 'aria-pressed': String(state.keepOn), title: 'Under an off melody note, keep the on chord and treat the melody as borrowed', onpress: () => setKeep(!state.keepOn) }, 'On chord under off notes');
+  const keepBtn = h('button', { type: 'button', class: 'toggle keep', 'aria-pressed': String(state.keepOn), title: 'Under an off melody note, keep the on chord and treat the melody as borrowed', onpress: () => setKeep(!state.keepOn) }, 'On under off');
   function setKeep(on) {
     state.keepOn = on; save();
     keepBtn.setAttribute('aria-pressed', String(on)); keepBtn.classList.toggle('sel', on);
     caption(on ? 'Off melody notes now keep the on chord beneath them: the melody is borrowed.' : 'Off melody notes now take the whole off chord.');
   }
 
-  const moves = h('div', { class: 'moves' }, cap, rail,
-    h('div', { class: 'moves-row' }, motion.el, mirrorBtn, holdBtn),
-    h('div', { class: 'moves-row lean-row' }, voicesEl, keepBtn));
+  const moves = h('div', { class: 'moves' }, h('div', { class: 'cap-row' }, cap, keepBtn), rail,
+    h('div', { class: 'moves-row' }, motion.el, mirrorBtn, holdBtn));
 
   // ---------- the pads ----------
   const pads = h('div', { class: 'pads', role: 'group', 'aria-label': 'Pads: one for each note of the scale' });
@@ -454,14 +456,21 @@ export function playView(app) {
 
   // ---------- putting it together ----------
   const el = h('section', { class: 'view play', 'data-view': 'play' },
-    h('div', { class: 'play-head' }, scaleBtn, h('div', { class: 'head-row' }, readout, pager)), harm, plateWrap, moves, pads);
+    h('div', { class: 'play-head' }, scaleBtn, h('div', { class: 'head-row' }, readout, pager)), harm, plateWrap, moves, voicesEl, pads);
 
   function refresh() {
     drawScale(); drawPager(); drawHarmony(); drawPlate(); drawRail(); drawVoices(); drawPads(); caption('');
     holdBtn.classList.toggle('sel', state.hold); keepBtn.classList.toggle('sel', state.keepOn);
   }
 
-  events.on('harmony', () => { delete readout.dataset.live; drawScale(); drawHarmony(); drawPlate(); drawPads(); drawVoices(); });
+  // a new harmony clears the line that said what was last played; a step along a chart
+  // that stays on the same chord leaves it alone
+  let shown = null;
+  events.on('harmony', ({ h: now }) => {
+    if (!sameHarmony(shown, now)) delete readout.dataset.live;
+    shown = { ...now };
+    drawScale(); drawHarmony(); drawPlate(); drawPads(); drawVoices();
+  });
   events.on('chord', (c) => { showChord(c); if (state.plate === 'chord') drawPlate(); drawVoices(); });
   events.on('lifted', () => drawVoices());
   events.on('voices', () => drawVoices());

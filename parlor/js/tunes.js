@@ -27,6 +27,15 @@ A | F6 | Fm6 | C6 | % |`,
 A | C6 A7 | Dm7 G7 | C6 A7 | Dm7 G7 |`,
   },
   {
+    // The first eight bars of Take the "A" Train with a passing diminished chord at the end
+    // of bar 4: the phrase the course builds its first substitution exercise on. Read the
+    // method's way it is C6, Am6, C°7, F6, A♭m6, C6, and every change is a half step or two.
+    id: 'a-train-sub', title: 'A Train, by substitution', kind: 'movement', key: 'C', beats: 4, form: '8 bars',
+    chart: `
+A | C6 | % | D7 | D7 Cdim7 |
+  | Dm7 | G7 | C6 | Dm7 G7 |`,
+  },
+  {
     id: 'embraceable', title: 'Embraceable You', by: 'George Gershwin', year: 1930, key: 'F', beats: 4, form: '32 bars', ballad: true,
     chart: `
 A | F | Abdim7 | Gm7 | C7 |
