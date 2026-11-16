@@ -1,9 +1,27 @@
 // dom.js — small helpers for building the page: elements, icons, sliders, sheets.
 
+// A control that answers the moment it is touched, not when the finger lifts. That is
+// quicker, and it is also the only way a second finger works while another is holding a
+// pad: phones send no "click" for a second touch. The click that would follow a touch is
+// cancelled, so nothing underneath is pressed by mistake; a click that arrives without a
+// touch (a keyboard, a screen reader) still counts.
+let lastPress = 0;
+export function press(el, fn) {
+  el.addEventListener('pointerdown', (e) => {
+    if (el.disabled || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    lastPress = performance.now();
+    fn(e);
+  });
+  el.addEventListener('touchend', (e) => { if (e.cancelable) e.preventDefault(); });
+  el.addEventListener('click', (e) => { if (performance.now() - lastPress > 700) fn(e); });
+  return el;
+}
+
 export function h(tag, attrs, ...kids) {
   const el = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs || {})) {
     if (v == null || v === false) continue;
+    if (k === 'onpress') { press(el, v); continue; }
     if (k === 'class') el.className = v;
     else if (k === 'style' && typeof v === 'object') Object.assign(el.style, v);
     else if (k.startsWith('on') && typeof v === 'function') el.addEventListener(k.slice(2), v);
@@ -60,10 +78,10 @@ export function icon(name, size = 20) {
 }
 
 // A row of choices where one is chosen. options: [{ id, label, title }]. Returns { el, set }.
-export function segmented(options, value, onPick, cls = '') {
+export function segmented(options, value, onPick, cls = '', fast = false) {
   const el = h('div', { class: `seg ${cls}`, role: 'group' });
   const buttons = options.map((o) => {
-    const b = h('button', { type: 'button', class: 'seg-b', title: o.title || null, 'aria-pressed': 'false', onclick: () => { set(o.id); onPick(o.id); } }, o.label);
+    const b = h('button', { type: 'button', class: 'seg-b', title: o.title || null, 'aria-pressed': 'false', [fast ? 'onpress' : 'onclick']: () => { set(o.id); onPick(o.id); } }, o.label);
     el.append(b);
     return b;
   });
@@ -94,9 +112,10 @@ export function sheet(title, build, { wide = false } = {}) {
   if (openSheet) openSheet.close();
   const body = h('div', { class: 'sheet-body' });
   const panel = h('div', { class: `sheet${wide ? ' wide' : ''}`, role: 'dialog', 'aria-modal': 'true', 'aria-label': title },
-    h('div', { class: 'sheet-head' }, h('h2', null, title), h('button', { type: 'button', class: 'icon-b', 'aria-label': 'Close', onclick: () => close() }, icon('close'))),
+    h('div', { class: 'sheet-head' }, h('h2', null, title), h('button', { type: 'button', class: 'icon-b', 'aria-label': 'Close', onpress: () => close() }, icon('close'))),
     body);
-  const veil = h('div', { class: 'veil', onclick: (e) => { if (e.target === veil) close(); } }, panel);
+  const opened = performance.now();
+  const veil = h('div', { class: 'veil', onclick: (e) => { if (e.target === veil && performance.now() - opened > 350) close(); } }, panel);
   const onKey = (e) => { if (e.key === 'Escape') { e.stopPropagation(); close(); } };
   function close() {
     if (openSheet !== api) return;

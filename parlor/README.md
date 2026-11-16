@@ -8,7 +8,12 @@ Parlor is separate from Woodshed. It started from copies of Woodshed's engine fi
 
 ## What it does
 
-- **Play**: eight pads are the eight notes of a scale of chords (on chord on the top row, off chord below). Each pad plays its note as the melody with a floor of the Elevator beneath it. Controls for the floor, the kind of motion (parallel, contrary, oblique), borrowing, the stations round a home key (substitution), and the family of a 6th chord (transformation). A plate of strings tuned to the current chord.
+- **Play**: eight pads are the eight notes of a scale of chords (on chord on the top row, off chord below). Each pad plays its note as the melody with a floor of the Elevator beneath it. The moves are all live while a chord rings:
+  - the floor rail re-voices the chord under a held pad, and Mirror swaps a floor for its reflection (a pivot);
+  - a key for each voice of the chord borrows above or below while it is held;
+  - parallel, contrary and oblique motion decide what the bass does as the melody moves;
+  - the stations round a home key (substitution) and the family of a 6th chord (transformation) change the scale. A pad under a finger stays in the scale it was played in; a chord left ringing by Hold is carried to the new chord by the shortest route.
+  - A plate of strings is tuned to the current chord.
 - **Loop**: drums, bass and chords in steps, with tempo, swing, four patterns and a chain. Record the pads or tap steps in.
 - **Sound**: a synth voice each for pads, strings and bass, four drum kits, a mixer, and shared chorus, delay and reverb.
 - **Tune**: load a tune's changes and the pads retune chord by chord, the way the method reads a chart.
@@ -19,7 +24,7 @@ Parlor is separate from Woodshed. It started from copies of Woodshed's engine fi
 |---|---|
 | `js/theory.js` | The scales of chords as pitches: notes, names, steps, where the pads sit |
 | `js/floors.js` | The nine Elevator floors as shapes in scale steps, and voicing one beneath a melody note |
-| `js/moves.js` | Motion between two chords, borrowing, the family of a 6th chord and its formulas, the stations round a key |
+| `js/moves.js` | Motion between two chords, borrowing, the mirror, carrying a chord to a new harmony, the family of a 6th chord and its formulas, the stations round a key |
 | `js/bass.js` | A bass line written as jobs (root, fifth, walk, approach) and turned into notes |
 | `js/harmony.js` | Reading a chord chart: chord symbol to scale of chords (copied from Woodshed) |
 | `js/tunes.js` | The built-in changes. Chords only |
@@ -50,6 +55,8 @@ Preview locally by serving the repository root and opening `/parlor/`:
 ```bash
 python3 -m http.server 8767
 ```
+
+Controls on the Play screen are wired with `onpress` (see `press` in `js/dom.js`), which answers on touch-down. A phone sends no click for a second finger while another is holding a pad, so anything meant to be used mid-chord must not wait for a click.
 
 In the browser console, `parlor.probe()` renders every voice and every drum offline and reports how loud each comes out. It is a way to check a change to the sound for silence or clipping without relying on ears. `parlor.state`, `parlor.inst` and `parlor.band` are there too.
 

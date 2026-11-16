@@ -8,7 +8,7 @@
 //   family     the brothers and sisters of a 6th chord, and the formula between any two
 //   stations   the chords round a home key that lead back to it (substitution)
 
-import { harmony, mod, isOn, SCALES, keyName, chordLabel } from './theory.js';
+import { harmony, mod, isOn, SCALES, keyName, chordLabel, nearestStep, midiAt } from './theory.js';
 import { FLOORS, shapeOn, shapeSteps } from './floors.js';
 
 // ---------- motion ----------
@@ -68,6 +68,32 @@ export function voiceWords(n) {
 }
 export const motionWords = (d) => (d.motion === 'none' ? '' : `Melody ${voiceWords(d.top)}, bass ${voiceWords(d.bass)}: ${d.motion}.`);
 
+// ---------- the mirror ----------
+// The outside distances of the floors repeat an octave wider: thirds and drop 2, triads
+// and drop 3, shells and drop 2 and 4, octaves and double octaves (and a single note with
+// an octave chord). Each is the reflection of the other: under the same melody note, the
+// same bass note an octave away. Playing the reflection of the floor that is due is a pivot.
+export const reflect = (floorIndex) => (floorIndex <= 4 ? floorIndex + 4 : floorIndex - 4);
+
+// ---------- carrying a chord into a new harmony ----------
+// Transformation heard from the inside: the same shape, beneath whichever note of the new
+// chord moves the voices least. `midis` is the chord as it sounds now, low to high; `on`
+// keeps an on chord on and an off chord off.
+export function carry(midis, shapeId, h, on = true) {
+  const want = on ? 'on' : 'off';
+  const near = nearestStep(h, midis[midis.length - 1], want);
+  let best = null;
+  for (const top of [near, near - 2, near + 2]) {
+    const steps = shapeSteps(shapeId, top);
+    // compare voice with voice, counting from the melody down
+    let cost = 0;
+    for (let k = 1; k <= Math.min(steps.length, midis.length); k++) cost += Math.abs(midiAt(h, steps[steps.length - k]) - midis[midis.length - k]);
+    cost += 0.01 * Math.abs(midiAt(h, top) - midis[midis.length - 1]);
+    if (!best || cost < best.cost) best = { cost, top, steps };
+  }
+  return { top: best.top, steps: best.steps };
+}
+
 // ---------- borrowing ----------
 // Voices are named from the top down, as you hear them.
 export const VOICES = {
@@ -86,6 +112,17 @@ export function borrow(steps, fromTop, dir) {
   const moved = steps[i] + dir;
   if ((i > 0 && moved <= steps[i - 1]) || (i < steps.length - 1 && moved >= steps[i + 1])) return null;
   return steps.map((n, k) => (k === i ? moved : n));
+}
+
+// Several voices leaning at once. `leans` maps a voice (counted from the top) to +1 or -1.
+// They are moved from the top down, and one that would land on its neighbor stays put.
+export function leanAll(steps, leans) {
+  let out = steps;
+  for (const voice of Object.keys(leans).map(Number).sort((a, b) => a - b)) {
+    const moved = borrow(out, voice, leans[voice]);
+    if (moved) out = moved;
+  }
+  return out;
 }
 
 // An on chord kept beneath an off melody note (or the reverse): the shape that belongs

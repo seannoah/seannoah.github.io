@@ -8,7 +8,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { SCALES, SCALE_ORDER, KEYS, harmony, harmonyNotes, harmonyTitle, chordLabel, chordPcs, midiAt, rootMidi, stepOfMidi, nearestStep, semisAt, stepSize, isOn, mod, REGISTER, midiName } from '../js/theory.js';
 import { SHAPES, FLOORS, voicing, shapeSteps, shapeOn, spanOf, floorIndexOf, partsInside, shapeOfSteps } from '../js/floors.js';
-import { nextChord, describeMotion, bassMove, borrow, underBorrowed, familyMove, formulaBetween, applyFormula, formulaText, familyOf, stations, stationOf, V_POSTS, voiceName, motionWords } from '../js/moves.js';
+import { reflect, carry, leanAll, nextChord, describeMotion, bassMove, borrow, underBorrowed, familyMove, formulaBetween, applyFormula, formulaText, familyOf, stations, stationOf, V_POSTS, voiceName, motionWords } from '../js/moves.js';
 import { bassNote, bassTones, bassRootMidi, approach, nearestPc, ROLE_IDS, BASS_FLOOR } from '../js/bass.js';
 import { parseChord, parseChart, readChart, scaleOptions, transposeChart } from '../js/harmony.js';
 import { TUNES, parseKey } from '../js/tunes.js';
@@ -206,6 +206,51 @@ test('an on chord kept beneath an off melody note', () => {
   const notes = underBorrowed('drop2', 7, 1);
   assert.ok(notes.slice(0, -1).every((n) => isOn(n)));
   assert.equal(notes[notes.length - 1], 7);
+});
+
+test('several voices can lean at once', () => {
+  const c6 = shapeSteps('drop2', 6);                                  // G C E A
+  assert.deepEqual(leanAll(c6, {}), c6);
+  assert.deepEqual(leanAll(c6, { 1: -1, 2: -1 }), [-4, -1, 1, 6]);     // the third in the middle steps down: G B D A
+  assert.deepEqual(leanAll(c6, { 0: 1, 3: -1 }), [-5, 0, 2, 7]);
+  assert.deepEqual(leanAll([0, 2], { 0: -1, 1: 1 }), [0, 1]);          // the second would land on the first, so it stays
+  assert.deepEqual(leanAll([4], { 0: 1 }), [5]);                       // a single note leans too
+  assert.deepEqual(leanAll(c6, { 7: 1 }), c6);                         // no such voice
+});
+
+// ---- the mirror ----
+test('each floor has a reflection an octave wider or narrower', () => {
+  assert.deepEqual([0, 1, 2, 3, 4, 5, 6, 7, 8].map(reflect), [4, 5, 6, 7, 8, 1, 2, 3, 4]);
+  for (let f = 0; f <= 4; f++) for (let top = 0; top < 8; top++) {
+    const small = shapeSteps(shapeOn(f), top);
+    const wide = shapeSteps(shapeOn(reflect(f)), top);
+    assert.equal(wide[0], small[0] - 8, 'the same bass note an octave lower');
+    assert.equal(wide[wide.length - 1], top, 'under the same melody note');
+  }
+  for (let f = 1; f <= 4; f++) assert.equal(reflect(reflect(f)), f);
+});
+
+// ---- carrying a chord into a new harmony ----
+test('a chord goes to the next harmony by the shortest route', () => {
+  const midis = (h, steps) => steps.map((n) => midiAt(h, n));
+  const c6 = midis(C, shapeSteps('drop2', 6));                        // G C E A
+  // I to the ii chord's major 6: two voices move a whole step, two stay (F C D A)
+  const toF = carry(c6, 'drop2', harmony(5, 'maj6'));
+  assert.deepEqual(midis(harmony(5, 'maj6'), toF.steps), [53, 60, 62, 69]);
+  // the minor iv: one voice more (F C D A to F C D A♭)
+  const toFm = carry(midis(harmony(5, 'maj6'), toF.steps), 'drop2', harmony(5, 'min6'));
+  assert.deepEqual(midis(harmony(5, 'min6'), toFm.steps), [53, 60, 62, 68]);
+  // an off chord stays an off chord
+  const off = midis(C, shapeSteps('drop2', 7));
+  const carried = carry(off, 'drop2', harmony(7, 'dom7'), false);
+  assert.ok(carried.steps.every((n) => !isOn(n)));
+  // nothing ever moves further than the chord's own next position would
+  for (let a = 0; a < 12; a++) for (let b = 0; b < 12; b++) for (const shape of ['thirds', 'triads', 'shell.low', 'drop2']) {
+    const from = harmony(a, 'maj6'); const to = harmony(b, 'min6');
+    const start = midis(from, shapeSteps(shape, 4));
+    const end = midis(to, carry(start, shape, to).steps);
+    assert.ok(Math.abs(end[end.length - 1] - start[start.length - 1]) <= 3, 'the melody moves a minor third at most');
+  }
 });
 
 // ---- family ----

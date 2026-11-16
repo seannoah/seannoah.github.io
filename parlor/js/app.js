@@ -15,7 +15,7 @@ import { Drums } from './drums.js';
 import { KITS } from './rhythms.js';
 import { LANES } from './seq.js';
 
-export const VERSION = '0.1.0';
+export const VERSION = '0.2.0';
 
 const state = load();
 const events = bus();
@@ -25,8 +25,8 @@ const band = createBand(state, inst, events, save);
 const app = { state, events, inst, band, save, version: VERSION };
 
 // ---------- the top bar ----------
-const playBtn = h('button', { type: 'button', class: 'transport play', 'aria-label': 'Play', title: 'Play or stop the loop (space bar)', onclick: () => band.toggle() }, icon('play', 20));
-const recBtn = h('button', { type: 'button', class: 'transport rec', 'aria-label': 'Record', 'aria-pressed': 'false', title: 'Record what the pads play into the loop (R)', onclick: () => band.setRecord(!band.recording) }, icon('rec', 20));
+const playBtn = h('button', { type: 'button', class: 'transport play', 'aria-label': 'Play', title: 'Play or stop the loop (space bar)', onpress: () => band.toggle() }, icon('play', 20));
+const recBtn = h('button', { type: 'button', class: 'transport rec', 'aria-label': 'Record', 'aria-pressed': 'false', title: 'Record what the pads play into the loop (R)', onpress: () => band.setRecord(!band.recording) }, icon('rec', 20));
 const tempoBtn = h('button', { type: 'button', class: 'tempo', title: 'Tempo: open the Loop screen', onclick: () => go('loop') });
 const beat = h('i', { class: 'beat-dot' });
 const drawTempo = () => fill(tempoBtn, beat, h('b', null, String(state.song.bpm)), h('span', null, 'bpm'));
@@ -121,6 +121,7 @@ window.addEventListener('keydown', (e) => {
   else if (STATION_KEYS.includes(e.code)) play.station(STATION_KEYS.indexOf(e.code));
   else if (e.code === 'KeyR') band.setRecord(!band.recording);
   else if (e.code === 'KeyL') play.setHold(!state.hold);
+  else if (e.code === 'Semicolon') play.mirror();
   else if (e.code === 'ArrowLeft') { e.preventDefault(); play.cycleVoice(-1); }
   else if (e.code === 'ArrowRight') { e.preventDefault(); play.cycleVoice(1); }
   else if (e.code === 'Minus') play.octave(-1);
@@ -131,10 +132,10 @@ function keyUp(code) {
   if (!pressed.has(code)) return;
   const what = pressed.get(code);
   pressed.delete(code);
-  if (what === 'lean') inst.borrowUp(); else views.play.lift(`k${code}`, what);
+  if (what === 'lean') views.play.borrowUp(); else views.play.lift(`k${code}`, what);
 }
 window.addEventListener('keyup', (e) => keyUp(e.code));
-window.addEventListener('blur', () => { for (const code of [...pressed.keys()]) keyUp(code); });
+window.addEventListener('blur', () => { for (const code of [...pressed.keys()]) keyUp(code); inst.unleanAll(); });
 
 // ---------- the guide ----------
 function guide() {
@@ -150,15 +151,19 @@ function guide() {
         p('Eight pads are the eight notes of the scale. The top row is the ', on('on'), ' chord: root, third, fifth, sixth. The bottom row is the ', off('off'), ' chord, a diminished chord: second, fourth, sharp five, major seven. Zig-zag across them and you walk the scale.'),
         p('Each pad plays its note as the melody, with a chord built beneath it. Slide a finger from pad to pad to walk. Say the name as you land: "fifth, on".')),
       sec('The Elevator',
-        p('The numbered rail chooses the floor: how much chord sits under the melody, from a single note (1) through thirds, triads, shells and octaves to drop 2 (6) and the wide floors. Tap the lit floor again to hear its other shape, where it has one.')),
+        p('The numbered rail chooses the floor: how much chord sits under the melody, from a single note (1) through thirds, triads, shells and octaves to drop 2 (6) and the wide floors. Tap the lit floor again to hear its other shape, where it has one.'),
+        p('It works while a chord is ringing. Hold a pad and slide a finger along the rail: the melody stays, and the chord opens and closes beneath it.'),
+        p(h('b', null, 'Mirror'), ' swaps a floor for its reflection: thirds for drop 2, triads for drop 3, shells for drop 2 and 4, octaves for double octaves. The melody stays and the bass jumps an octave. That is a pivot.')),
       sec('Motion',
         p(h('b', null, 'Parallel'), ': the floor stays, so the bass follows the melody. ', h('b', null, 'Contrary'), ': step the melody up and the floor grows, so the bass steps down; step down and it closes again. ', h('b', null, 'Oblique'), ': the bass holds while the melody moves.')),
       sec('Borrowing',
-        p('While a chord sounds, hold ', h('b', null, 'below'), ' or ', h('b', null, 'above'), ': one voice leans to its neighbour, and settles when you let go. The button beside them chooses which voice.'),
+        p('Every note has a neighbour a step above and a step below, and the neighbour always belongs to the other chord. Borrowing is letting one voice of a chord step to its neighbour while the rest keep ringing, and then step back. The chord leans, then settles.'),
+        p('The row of keys above the pads is the chord you are on, one key for each voice, lowest on the left. Press the ', h('b', null, 'top'), ' half of a key to borrow above and the ', h('b', null, 'bottom'), ' half to borrow below. Let go and the voice goes home. Hold a pad with one hand and lean its voices with the other, two at a time if you like. With no pad down, a voice key strikes your last chord again, leaning.'),
         p(h('b', null, 'On chord under off notes'), ' keeps the on chord beneath an off melody note, so only the melody leans.')),
       sec('Stations and family',
         p(h('b', null, 'Stations'), ' are the chords round your home key. The last five are five ways to play the V chord, each one the off chord with a note moved a half step: minor 6 on the 5, tritone’s minor, true dominant, tritone substitute, dominant 7♭5. The bass keeps the V underneath, so you hear what each one does.'),
-        p(h('b', null, 'Family'), ' moves a 6th chord to its brothers and sisters: forward, backward, across, up or down a family, major or minor. The formula from home is shown as you go.')),
+        p(h('b', null, 'Family'), ' moves a 6th chord to its brothers and sisters: forward, backward, across, up or down a family, major or minor. The formula from home is shown as you go.'),
+        p('A pad under your finger stays in the scale it was played in, so you can choose the next station while it rings. With ', h('b', null, 'Hold'), ' on, a chord rings after you lift, and then a station or a family move takes that chord with it by the shortest route, each voice moving as little as it can. That is transformation, played.')),
       sec('Strings',
         p('The plate is strung with the chord of the last pad, across three octaves. Drag across it to strum, or tap one string. Switch it to Scale for single-note lines.')),
       sec('Loop and Tune',
@@ -167,7 +172,7 @@ function guide() {
       sec('On a keyboard',
         h('ul', { class: 'keys-list' },
           h('li', null, k('A'), k('S'), k('D'), k('F'), ' on pads, ', k('Z'), k('X'), k('C'), k('V'), ' off pads'),
-          h('li', null, k('1'), '–', k('9'), ' floor · ', k('Q'), k('W'), k('E'), ' parallel, contrary, oblique'),
+          h('li', null, k('1'), '–', k('9'), ' floor · ', k(';'), ' mirror · ', k('Q'), k('W'), k('E'), ' parallel, contrary, oblique'),
           h('li', null, k('↑'), k('↓'), ' borrow above, below · ', k('←'), k('→'), ' which voice'),
           h('li', null, k('T'), k('Y'), k('U'), k('I'), k('O'), k('P'), k('['), k(']'), ' stations'),
           h('li', null, k('Enter'), ' strum · ', k('Space'), ' play or stop · ', k('R'), ' record · ', k('L'), ' hold · ', k('−'), k('='), ' octave · ', k('.'), ' next chart chord'))),
