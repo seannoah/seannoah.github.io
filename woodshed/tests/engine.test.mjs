@@ -273,7 +273,7 @@ test('a chart is parsed into bars, read with movements, and transposed', () => {
   const read = readChart(bars);
   assert.equal(read[0].use.label, 'E♭ major 6');
   assert.equal(read[0].movement.name, 'Major ii–V7');
-  assert.equal(read[1].resolves, false);                    // F7 goes on to Fm7, not to Bb
+  assert.equal(read[1].use.how, "tritone's minor");         // F7 is the V of a ii-V, even though Fm7 follows (Stella, bar 4)
   assert.equal(read[3].resolves, true);                     // Bb7 resolves to Eb
   assert.equal(read[3].use.how, "tritone's minor");
   assert.equal(read[5].movement.name, 'Minor iv');          // Eb, Ab7, Bb: the back-door dominant
@@ -293,4 +293,62 @@ test('a chart is parsed into bars, read with movements, and transposed', () => {
 test('the diminished scale of chords keeps the usual off chord', () => {
   assert.equal(names('C', 'dim'), 'C D E♭ F G♭ A♭ A B');
   assert.ok(voicingFor('C', 'dim', 'drop2', [5, 4, 3, 2], 'top', 4));
+});
+
+// ---- borrowing ----
+import { borrowPair, underBorrowed, borrowIn, voiceName } from '../js/borrow.js';
+const bnames = (key, scale, notes) => notes.map((n) => sn(key, scale)[n.deg].name).join(' ');
+
+test('borrowing below the top voice of C6 (Foundations I p. 26 and fig. 12)', () => {
+  // A root-position C6 with the third on string 2: the path below the third is a whole
+  // step, so the third is replaced by the second (D), an off note.
+  const root = voicings('C', 'maj6', 'drop2', [5, 4, 3, 2]).find((v) => v.bottomDeg === 0);
+  assert.equal(bnames('C', 'maj6', root.notes), 'C G A E');
+  const b = borrowIn('C', 'maj6', root, 0, -1);
+  assert.equal(bnames('C', 'maj6', b.notes), 'C G A D');
+  assert.equal(b.size, 2);
+  assert.equal(b.moved.fret, b.old.fret - 2);
+});
+
+test('borrowing never crosses another voice and stays playable', () => {
+  for (const shape of ['thirds', 'triads', 'shell.low', 'shell.high', 'drop2']) {
+    for (let deg = 0; deg < 8; deg++) {
+      for (const dir of [1, -1]) {
+        for (let voice = 0; voice < SHAPES[shape].steps.length; voice++) {
+          const b = borrowPair('C', { scale: 'maj6', shape, set: SHAPES[shape].primary, voice, dir, deg });
+          if (!b) continue;
+          const midis = b.notes.map((n) => n.midi);
+          assert.deepEqual(midis, [...midis].sort((x, y) => x - y), `${shape} ${deg} ${voice} ${dir}`);
+          assert.equal(new Set(midis).size, midis.length);
+          assert.ok(b.size === 1 || b.size === 2);
+        }
+      }
+    }
+  }
+  assert.equal(voiceName(3, 1), 'middle');
+});
+
+test('an on chord beneath an off melody note ("5 Chord Melody Games", scenario 4)', () => {
+  // Stella bar 3: the melody F is the second of E♭ major 6. A shell of E♭6 goes beneath it.
+  const fromAbove = underBorrowed('E♭', { scale: 'maj6', shape: 'shell.low', set: [4, 3, 2], from: 1, deg: 1 });
+  assert.equal(bnames('E♭', 'maj6', fromAbove.notes), 'B♭ C F');     // the shell under G (B♭ C G) with the top lowered to F
+  const fromBelow = underBorrowed('E♭', { scale: 'maj6', shape: 'shell.low', set: [4, 3, 2], from: -1, deg: 1 });
+  assert.equal(bnames('E♭', 'maj6', fromBelow.notes), 'G B♭ F');     // the shell under E♭ (G B♭ E♭) with the top raised to F
+  for (const b of [fromAbove, fromBelow]) assert.equal(b.notes.slice(0, -1).every((n) => n.deg % 2 === 0), true, 'the lower voices are all on');
+  // "whenever a voice is holding the root, borrow beneath it by moving down a half step"
+  const root = underBorrowed('C', { scale: 'min6', shape: 'triads', set: [4, 3, 2], from: 1, deg: 7 });
+  assert.equal(root.size, 1);
+  assert.equal(bnames('C', 'min6', [root.old]), 'C');
+});
+
+test('borrowing archetypes: the chord diagrams in Standards 4.4', () => {
+  const under = (key, scale, set, from, deg, midi) => underBorrowed(key, { scale, shape: 'drop2', set, from, deg }, midi).notes.map((n) => n.fret);
+  // 1. a borrowed major 2nd: E♭6 x-6-8-5-8-x with the third on top lowered to the second (bar 3)
+  assert.deepEqual(under('E♭', 'maj6', [5, 4, 3, 2], 1, 1, 59 + 6), [6, 8, 5, 6]);
+  // 2. a borrowed major 7th: A♭6 x-6-6-5-6-x with the sixth on top raised (bar 5)
+  assert.deepEqual(under('A♭', 'maj6', [5, 4, 3, 2], -1, 7, 59 + 8), [6, 6, 5, 8]);
+  //    and E♭ minor 6 x-x-10-11-11-11 with the root on top lowered a half step (bars 21-22)
+  assert.deepEqual(under('E♭', 'min6', [4, 3, 2, 1], 1, 7, 64 + 10), [10, 11, 11, 10]);
+  // 3. a borrowed fourth: B♭6 x-1-3-0-3-x with the third on top raised (bar 9)
+  assert.deepEqual(under('B♭', 'maj6', [5, 4, 3, 2], -1, 3, 59 + 4), [1, 3, 0, 4]);
 });

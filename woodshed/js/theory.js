@@ -67,8 +67,10 @@ export const SCALES = {
 SCALES.dim = {
   id: 'dim', name: 'Diminished', short: 'diminished', suffix: '°7', whole: true,
   semis: [0, 2, 3, 5, 6, 8, 9, 11], letters: [0, 1, 2, 3, 4, 5, 5, 6],
-  labels: ['R', '2', '♭3', '4', '♭5', '♭6', '6', '7'],
-  say: ['root', 'second', 'minor third', 'fourth', 'flat five', 'flat six', 'sixth', 'major seven'],
+  // its on notes are the flat nine, third, fifth and seventh of the dominant a half step
+  // below its root; the off notes are simply "off"
+  labels: ['♭9', '·', '3', '·', '5', '·', '♭7', '·'],
+  say: ['flat nine', 'off note', 'third', 'off note', 'fifth', 'off note', 'seventh', 'off note'],
 };
 export const SCALE_ORDER = ['maj6', 'min6', 'dom7', 'dom7b5'];
 

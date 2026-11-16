@@ -6,6 +6,7 @@ import * as audio from './audio.js';
 import { SCALES, SCALE_ORDER, scaleNotes, chordName, stepSize, walkPath, stepMidi, mod } from './theory.js';
 import { SHAPES, ELEVATOR, voicings, voicingAt, voicingFor, setWithTop, setLabel, floorOf } from './floors.js';
 import { describeMove, moveWords, TOP_STRING } from './motion.js';
+import { borrowIn, borrowWords, voiceName } from './borrow.js';
 
 const kindOf = (deg) => (deg % 2 === 0 ? 'on' : 'off');
 export const labelOf = (scale, deg) => SCALES[scale].labels[deg];
@@ -169,6 +170,49 @@ export function elevatorRide(init = {}) {
         h('span', { class: 'ride-label' }, 'Same floor'), btn('Melody down', 0, -1), btn('Melody up', 0, 1),
         h('span', { class: 'ride-label' }, 'Contrary'), btn('In: floor down', -1, -1), btn('Out: floor up', 1, 1),
         h('span', { class: 'ride-label' }, 'Melody holds'), btn('Floor down', -1, 0), btn('Floor up', 1, 0)),
+      h('figcaption', null, note),
+    );
+  }
+  render();
+  return root;
+}
+
+// Borrow above or below any voice of a chord, and give it back.
+export function borrowDemo(init = {}) {
+  const cfg = { key: 'C', scale: 'maj6', shape: 'triads', set: [4, 3, 2], deg: 4, ...init };
+  const base = voicingFor(cfg.key, cfg.scale, cfg.shape, cfg.set, 'top', cfg.deg);
+  const say = (scale, deg) => SCALES[scale].say[deg];
+  let cur = null;
+  let note = 'Pick a voice and a direction.';
+  const root = h('figure', { class: 'fig browser ride' });
+  const sound = (v) => audio.chord(v.notes.map((n) => n.midi), 0, 0.03, 0.55);
+  function borrow(voice, dir) {
+    const b = borrowIn(cfg.key, cfg.scale, base, voice, dir);
+    audio.stopAll();
+    if (!b) { note = 'That voice has no room to move there.'; return render(); }
+    cur = b; note = borrowWords(cfg.scale, b, say); sound(b); render();
+  }
+  function render() {
+    const notes = cur ? cur.notes : base.notes;
+    const all = [...base.notes, ...(cur ? [cur.moved] : [])].map((n) => n.fret);
+    const lo = Math.max(1, Math.min(...all) - 2);
+    const marks = notes.map((n) => ({ string: n.string, fret: n.fret, kind: kindOf(n.deg) + (cur && n === cur.moved ? ' anchor' : ''), label: labelOf(cfg.scale, n.deg) }));
+    if (cur) marks.push({ string: cur.old.string, fret: cur.old.fret, kind: 'from', label: labelOf(cfg.scale, cur.old.deg) });
+    const board = neck({ lo, hi: Math.max(Math.max(...all) + 2, lo + 6), focus: cfg.set, marks });
+    const count = base.notes.length;
+    const row = (voice) => [
+      h('span', { class: 'ride-label' }, voiceName(count, voice)),
+      h('button', { class: 'pill', onclick: () => borrow(voice, -1) }, 'Borrow below'),
+      h('button', { class: 'pill', onclick: () => borrow(voice, 1) }, 'Borrow above'),
+    ];
+    root.replaceChildren(
+      h('div', { class: 'browser-title' },
+        h('span', { class: `tag ${cur ? 'off' : 'on'}` }, cur ? 'borrowed' : 'on'),
+        h('strong', null, chordName(cfg.key, cfg.scale, true)),
+        h('span', { class: 'muted' }, ` ${SHAPES[cfg.shape].name.toLowerCase()} beneath the ${say(cfg.scale, cfg.deg)}`)),
+      board.el,
+      h('div', { class: 'ride-grid' }, ...Array.from({ length: count }, (_, v) => row(v)).flat()),
+      h('div', { class: 'pills center' }, h('button', { class: 'pill', onclick: () => { cur = null; note = 'Given back: all on again.'; audio.stopAll(); sound(base); render(); } }, 'Give it back')),
       h('figcaption', null, note),
     );
   }

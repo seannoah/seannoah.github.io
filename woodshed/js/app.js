@@ -16,7 +16,7 @@ import * as sync from './sync.js';
 import { pageSongs, pageSong, pageSongEdit, attachSongs } from './songsui.js';
 import { songById } from './songs.js';
 
-const VERSION = '0.3.0';
+const VERSION = '0.4.0';
 const view = document.getElementById('view');
 const sessionRoot = document.getElementById('session');
 const TABS = [['today', 'Today'], ['learn', 'Learn'], ['songs', 'Songs'], ['explore', 'Explore'], ['progress', 'Progress']];
@@ -28,11 +28,12 @@ const progressBar = (ratio, cls = '') => h('div', { class: 'meter ' + cls }, h('
 const PART_BLURB = {
   path: 'Steps, names, and walking a string',
   floors: 'Summoning shapes around a note',
+  borrow: 'One voice stepping to its neighbor',
   motion: 'Two voices moving between floors',
   tunes: 'Reading chord charts',
   ear: 'Hearing on and off, degrees and floors',
 };
-const PART_ICON = { path: 'next', floors: 'progress', motion: 'motion', tunes: 'songs', ear: 'ear' };
+const PART_ICON = { path: 'next', floors: 'progress', borrow: 'repeat', motion: 'motion', tunes: 'songs', ear: 'ear' };
 
 function installHint() {
   const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -318,6 +319,7 @@ function elevator() {
     h('h2', { class: 'card-title' }, 'The elevator'),
     h('p', { class: 'muted small' }, 'An item counts as learned once you have got it right on two different days.'),
     h('div', { class: 'elevator' }, rows),
+    side('borrow', 'Borrowing', 'repeat'),
     side('motion', 'Motion', 'motion'),
     side('tunes', 'Tunes', 'songs'),
     side('ear', 'Ear', 'ear'));

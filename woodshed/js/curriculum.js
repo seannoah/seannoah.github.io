@@ -16,10 +16,14 @@
 //   mv|scale|move|floor|u/d|deg   play the next chord: move is par, con or obl (see motion.js)
 //   em|scale|motion         ear: parallel, contrary or oblique? (motion: par, con, obl)
 //   sc|family|how           reading a chart: which scale of chords for this chord? (see harmony.js)
+//   bw|scale|shape|set|voice|u/d|deg   borrow above or below one voice of a chord (voice 0 = top)
+//   bm|scale|shape|set|a/b|deg         an on chord beneath an off melody note, borrowed from above or below
+//   eb|scale|x              ear: is one note of this chord borrowed?
 
 import { SCALES, KEY_ORDER } from './theory.js';
 import { SHAPES, setKey } from './floors.js';
 import { movePair } from './motion.js';
+import { borrowPair, underBorrowed } from './borrow.js';
 import { state, isNew, isDue, box, everRight, rec, unitFlag } from './store.js';
 
 const DEGS = [0, 1, 2, 3, 4, 5, 6, 7];
@@ -43,6 +47,12 @@ const ON = [0, 4, 2, 6];
 const mv = (s, move, floors, dirs, degs = ON_FIRST) => floors
   .flatMap((f) => dirs.flatMap((dir) => degs.map((d) => `mv|${s}|${move}|${f}|${dir}|${d}`)))
   .filter((id) => movePair('C', parse(id)));
+const bw = (s, shape, set, voices, degs = ON) => degs
+  .flatMap((d) => voices.flatMap((v) => ['d', 'u'].map((dir) => `bw|${s}|${shape}|${setKey(set)}|${v}|${dir}|${d}`)))
+  .filter((id) => borrowPair('C', parse(id)));
+const bm = (s, shape, set, degs = [1, 7, 3, 5]) => degs
+  .flatMap((d) => ['a', 'b'].map((from) => `bm|${s}|${shape}|${setKey(set)}|${from}|${d}`))
+  .filter((id) => underBorrowed('C', parse(id)));
 const mq = (floors, hows = ['out', 'par', 'in']) => floors.flatMap((f) => hows.map((how) => `mq|maj6|${f}|${how}`));
 
 const floorUnit = (id, title, blurb, shapes, floorId, group) => ({
@@ -78,6 +88,16 @@ export const UNITS = [
   floorUnit('thirds', 'Thirds', 'Two notes, the smallest harmony', ['thirds'], 'thirds', 'The small floors'),
   floorUnit('triads', 'Triads', 'Three notes, leapfrogging up the scale', ['triads'], 'triads', 'The small floors'),
   floorUnit('shells', 'Shells', 'Three notes with a gap: low and high', ['shell.low', 'shell.high'], 'shells', 'The small floors'),
+  {
+    id: 'borrow.voice', title: 'Borrowing a neighbor', blurb: 'One voice steps off the chord and back', group: 'Borrowing',
+    core: [...bw('maj6', 'triads', [4, 3, 2], [0, 1]), ...bw('maj6', 'shell.low', [4, 3, 2], [0, 1])],
+    extra: ['eb|maj6|x', ...bw('maj6', 'thirds', [4, 3], [0, 1]), ...bw('maj6', 'triads', [4, 3, 2], [2]), ...bw('maj6', 'triads', [4, 3, 2], [0, 1], [7, 1, 3, 5])],
+  },
+  {
+    id: 'borrow.melody', title: 'A borrowed note in the melody', blurb: 'An on chord kept beneath an off note', group: 'Borrowing',
+    core: [...bm('maj6', 'thirds', [3, 2]), ...bm('maj6', 'triads', [4, 3, 2]), ...bm('maj6', 'shell.low', [4, 3, 2])],
+    extra: [...bm('maj6', 'shell.high', [4, 3, 2]), ...bm('maj6', 'drop2', [5, 4, 3, 2])],
+  },
   {
     id: 'motion.steps', title: 'Parallel and contrary', blurb: 'Two voices, stepping together or apart', group: 'Moving between floors',
     core: [
@@ -124,7 +144,6 @@ export const UNITS = [
 
 // What comes after the units above. Listed in the app so the road ahead is visible.
 export const PLANNED = [
-  { title: 'Borrowing', blurb: 'Swapping one voice for its neighbor on the path' },
   { title: 'Leaps, and floors within floors', blurb: 'Patterns that skip floors, and small floors inside big ones' },
   { title: 'Pivoting', blurb: 'Through the mirror: trading a floor for its reflection' },
   { title: 'Substitution', blurb: 'Minor 6 on the 5, the tritone’s minor, and friends' },
@@ -145,12 +164,14 @@ export function parse(id) {
   if (kind === 'mv') return { ...base, move: p[2], floor: p[3], dir: p[4] === 'u' ? 1 : -1, deg: +p[5] };
   if (kind === 'em') return { ...base, motion: p[2] };
   if (kind === 'sc') return { id, kind, fam: p[1], how: p[2] };
+  if (kind === 'bw') return { ...base, shape: p[2], set: p[3].split('').map(Number), voice: +p[4], dir: p[5] === 'u' ? 1 : -1, deg: +p[6] };
+  if (kind === 'bm') return { ...base, shape: p[2], set: p[3].split('').map(Number), from: p[4] === 'a' ? 1 : -1, deg: +p[5] };
   if (kind === 'sh') return { ...base, shape: p[2], set: p[3].split('').map(Number), anchor: p[4] === 't' ? 'top' : 'bottom', deg: +p[5] };
   return { ...base, deg: +p[2] };
 }
 
-export const SECTION = { oo: 'path', st: 'path', nm: 'path', wk: 'path', sh: 'floors', mq: 'motion', mv: 'motion', sc: 'tunes', eo: 'ear', ed: 'ear', ef: 'ear', ei: 'ear', el: 'ear', em: 'ear' };
-export const SECTION_NAME = { path: 'The path', floors: 'Floors', motion: 'Motion', tunes: 'Tunes', ear: 'Ear' };
+export const SECTION = { oo: 'path', st: 'path', nm: 'path', wk: 'path', sh: 'floors', bw: 'borrow', bm: 'borrow', mq: 'motion', mv: 'motion', sc: 'tunes', eb: 'ear', eo: 'ear', ed: 'ear', ef: 'ear', ei: 'ear', el: 'ear', em: 'ear' };
+export const SECTION_NAME = { path: 'The path', floors: 'Floors', borrow: 'Borrowing', motion: 'Motion', tunes: 'Tunes', ear: 'Ear' };
 const kindOf = (id) => id.slice(0, 2);
 const AWAY_ONLY = new Set(['oo', 'mq', 'sc']);
 const supports = (id, mode) => mode === 'away' || !AWAY_ONLY.has(kindOf(id));
@@ -242,7 +263,7 @@ export function buildSession(mode, minutes, only = null) {
   take(fresh, room());
   take(seen.slice().sort((a, b) => rec(a).b - rec(b).b || rec(a).t - rec(b).t), room());
 
-  const bySection = { path: [], floors: [], motion: [], tunes: [], ear: [] };
+  const bySection = { path: [], floors: [], borrow: [], motion: [], tunes: [], ear: [] };
   for (const id of picked) bySection[SECTION[kindOf(id)]].push(id);
   const out = [];
   out.push(...shuffle(bySection.path).map((id) => ({ id })));
@@ -250,6 +271,7 @@ export function buildSession(mode, minutes, only = null) {
   const newShapes = bySection.floors.filter(isNew);
   out.push(...newShapes.map((id) => ({ id, study: true })));
   out.push(...shuffle(bySection.floors).map((id) => ({ id })));
+  out.push(...shuffle(bySection.borrow).map((id) => ({ id })));
   out.push(...shuffle(bySection.motion).map((id) => ({ id })));
   out.push(...shuffle(bySection.tunes).map((id) => ({ id })));
   out.push(...shuffle(bySection.ear).map((id) => ({ id })));
@@ -257,7 +279,7 @@ export function buildSession(mode, minutes, only = null) {
 }
 
 export function summarize(session) {
-  const counts = { path: { n: 0, fresh: 0 }, floors: { n: 0, fresh: 0 }, motion: { n: 0, fresh: 0 }, tunes: { n: 0, fresh: 0 }, ear: { n: 0, fresh: 0 } };
+  const counts = { path: { n: 0, fresh: 0 }, floors: { n: 0, fresh: 0 }, borrow: { n: 0, fresh: 0 }, motion: { n: 0, fresh: 0 }, tunes: { n: 0, fresh: 0 }, ear: { n: 0, fresh: 0 } };
   for (const it of session) {
     if (it.study) continue;
     const c = counts[SECTION[kindOf(it.id)]];
@@ -276,6 +298,7 @@ export function floorOfItem(id) {
   if (k === 'sh') return SHAPES[id.split('|')[2]].floor;
   if (SECTION[k] === 'ear') return 'ear';
   if (SECTION[k] === 'motion') return 'motion';
+  if (SECTION[k] === 'borrow') return 'borrow';
   if (SECTION[k] === 'tunes') return 'tunes';
   return 'unison';
 }

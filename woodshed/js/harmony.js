@@ -66,9 +66,12 @@ export function scaleOptions(chord, resolves = true) {
       opt('maj6', r + 3, 'same four notes', 'a minor 7 chord has the same notes as the major 6 a minor third above it'),
       opt('min6', r, 'true minor', 'the chord as a minor 6, when it is home'),
     ];
-    case 'min6': return [opt('min6', r, 'true minor', 'the chord itself as a minor 6')];
+    case 'min6': return [
+      opt('min6', r, 'true minor', 'the chord itself as a minor 6'),
+      opt('maj6', r + 3, 'same four notes', 'as a minor 7 chord, it has the same notes as the major 6 a minor third above it'),
+    ];
     case 'hdim': return [opt('min6', r + 3, 'same four notes', 'a half-diminished chord has the same notes as the minor 6 a minor third above it')];
-    case 'dim': return [opt('dim', r, 'diminished scale', 'the diminished chord with a half step below each of its notes')];
+    case 'dim': return [opt('dim', r, 'diminished scale', `the diminished chord with a half step below each of its notes; its notes are the flat nine, third, fifth and seventh of ${scaleKey(r - 1, sharpContext)}7`)];
     case 'dom7b5': return [
       opt('dom7b5', r, 'dominant 7♭5', 'the chord itself'),
       opt('min6', r + 1, "tritone's minor", 'the minor 6 a half step above the root'),
@@ -104,7 +107,15 @@ export function parseChart(text) {
       const prev = bars[bars.length - 1];
       let symbols = cell.split(/\s+/).filter(Boolean);
       if (!symbols.length || symbols[0] === '%') symbols = prev ? prev.chords.map((c) => c.symbol) : [];
-      const chords = symbols.map((s) => ({ symbol: s, ...(parseChord(s) || { root: null, family: null, text: s }) })).filter((c) => c.root != null);
+      // A symbol written twice in a row holds for twice as long: "F F Gm7 Am7" is two beats
+      // of F, then one each of Gm7 and Am7.
+      const slots = symbols.map((s) => ({ symbol: s, ...(parseChord(s) || { root: null }) })).filter((c) => c.root != null);
+      const chords = [];
+      slots.forEach((c, k) => {
+        const last = chords[chords.length - 1];
+        if (last && last.symbol === c.symbol) last.len += 1 / slots.length;
+        else chords.push({ ...c, start: k / slots.length, len: 1 / slots.length });
+      });
       bars.push({ n: bars.length + 1, section: i === 0 ? section : null, chords });
     });
   }
@@ -143,32 +154,80 @@ const isDom = (c) => c && (c.family === 'dom' || c.family === 'dom7b5');
 const up = (a, b) => mod(b.root - a.root, 12);
 
 // Movements named in Foundations IV that can be spotted from the chords alone.
+// A chord held over several bars counts once, and each label sits on the chords that
+// carry the movement (the diminished chord of a flat-3 diminished, the dominant of a
+// minor iv), so a ii-V that follows can still be labelled.
 function findMovements(seq) {
   const tags = seq.map(() => null);
-  const mark = (from, to, name) => { for (let i = from; i <= to; i++) if (!tags[i]) tags[i] = { name, start: i === from }; };
-  for (let i = 0; i < seq.length - 1; i++) {
-    const a = seq[i]; const b = seq[i + 1]; const c = seq[i + 2];
-    if (a.family === 'hdim' && isDom(b) && up(a, b) === 5) mark(i, i + 1, 'Minor iiø–V7');
-    else if (a.family === 'min7' && isDom(b) && up(a, b) === 5) mark(i, i + 1, 'Major ii–V7');
-    else if (a.family === 'dim' && b.family === 'min7' && up(a, b) === 11) mark(i, i + 1, 'Flat-3 diminished');
-    else if (a.family === 'maj' && b.family === 'min6' && up(a, b) === 0) mark(i, i + 1, 'Minor iv');
-    else if (isDom(a) && b.family === 'maj' && up(a, b) === 2) mark(i, i + 1, 'Minor iv');
-    else if (a.family === 'maj' && isDom(b) && up(a, b) === 5 && c && c.family === 'maj' && up(b, c) === 2) mark(i, i + 2, 'Minor iv');
+  const runs = [];
+  seq.forEach((c, i) => {
+    const last = runs[runs.length - 1];
+    if (last && last.chord.symbol === c.symbol) last.to = i; else runs.push({ chord: c, from: i, to: i });
+  });
+  const mark = (first, last, name) => {
+    for (let r = first; r <= last; r++) {
+      for (let i = runs[r].from; i <= runs[r].to; i++) if (!tags[i]) tags[i] = { name, start: r === first && i === runs[r].from };
+    }
+  };
+  for (let r = 0; r < runs.length - 1; r++) {
+    const a = runs[r].chord; const b = runs[r + 1].chord;
+    if (a.family === 'hdim' && isDom(b) && up(a, b) === 5) mark(r, r + 1, 'Minor iiø–V7');
+    else if (a.family === 'min7' && isDom(b) && up(a, b) === 5) mark(r, r + 1, 'Major ii–V7');
+    else if (a.family === 'dim' && b.family === 'min7' && up(a, b) === 11) mark(r, r, 'Flat-3 diminished');
+    else if (a.family === 'maj' && b.family === 'min6' && up(a, b) === 0) mark(r + 1, r + 1, 'Minor iv');
+    else if (isDom(a) && b.family === 'maj' && up(a, b) === 2) mark(r, r, 'Minor iv');
   }
   return tags;
 }
 
-// options(i) lets the caller say which option is chosen for chord i (default 0).
-export function readChart(bars, chosen = () => 0) {
+// Which choice comes first follows the Standards Series charts:
+//   a dominant takes the tritone's minor when it is the V of a ii-V or resolves down a
+//     fifth, and the minor 6 on the 5 otherwise (including the back-door dominant that
+//     resolves up a whole step);
+//   a plain minor chord on the relative minor of the tune's key is read as the tonic major 6;
+//   in a minor-key tune, a minor 7 chord on the tonic or the fourth is read as a true minor;
+//   a diminished chord a half step below what follows is the off chord of that next scale.
+// chosen(i) lets the caller say which option is picked for chord i (default 0).
+export function readChart(bars, chosen = () => 0, home = null, minorHome = false) {
   const seq = [];
   bars.forEach((bar, b) => bar.chords.forEach((chord, k) => seq.push({ ...chord, bar: b, slot: k, of: bar.chords.length })));
   const moves = findMovements(seq);
-  return seq.map((chord, i) => {
-    const next = seq[(i + 1) % seq.length];
+  // the chord a held chord finally moves to, and the one it came from (a chord that
+  // lasts two bars is one event, not two)
+  const beyond = (i, step) => {
+    for (let k = 1; k < seq.length; k++) {
+      const other = seq[((i + step * k) % seq.length + seq.length) % seq.length];
+      if (other.symbol !== seq[i].symbol) return step < 0 && i - k < 0 ? null : other;
+    }
+    return null;
+  };
+  const first = seq.map((chord, i) => {
+    const next = beyond(i, 1);
+    const prev = beyond(i, -1);
+    const backDoor = isDom(chord) && next && next.family === 'maj' && up(chord, next) === 2;
+    const inTwoFive = prev && (prev.family === 'min7' || prev.family === 'hdim') && up(prev, chord) === 5;
     // down a fifth to its tonic, or to the minor 7 chord that stands in for that tonic (V to iii)
-    const resolves = isDom(chord) && next && (up(chord, next) === 5 || (up(chord, next) === 9 && next.family === 'min7'));
-    const options = scaleOptions(chord, resolves);
+    const goesHome = next && (up(chord, next) === 5 || (up(chord, next) === 9 && next.family === 'min7'));
+    const resolves = isDom(chord) && !backDoor && !!(inTwoFive || goesHome);
+    let options = scaleOptions(chord, resolves);
+    if (chord.family === 'min6' && home != null && !minorHome && mod(chord.root - home, 12) === 9 && /^(m|min|-)?$/.test(chord.quality)) options = [options[1], options[0]];
+    if (chord.family === 'min7' && minorHome && home != null && [0, 5].includes(mod(chord.root - home, 12))) options = [options[1], options[0]];
+    return { ...chord, index: i, resolves, options };
+  });
+  return first.map((chord, i) => {
+    let options = chord.options;
+    const next = first[(i + 1) % first.length];
+    if (chord.family === 'dim' && next && next !== chord && [0, 3, 6, 9].some((k) => mod(chord.root + k + 1, 12) === next.root)) {
+      const lead = [0, 3, 6, 9].map((k) => mod(chord.root + k, 12)).find((pc) => mod(pc + 1, 12) === next.root);
+      sharpContext = !!chord.sharp;
+      const target = next.options[0];
+      options = [
+        { ...target, how: 'off chord of what follows', why: `this diminished chord is the off chord of ${target.label}, the scale of the chord it leads to` },
+        opt('min6', lead - 3, "tritone's minor", `it stands for ${scaleKey(lead - 4, sharpContext)}7, and this is that chord's tritone's minor`),
+        ...options,
+      ];
+    }
     const pick = Math.min(options.length - 1, Math.max(0, chosen(i) || 0));
-    return { ...chord, index: i, resolves, options, pick, use: options[pick], movement: moves[i] };
+    return { ...chord, options, pick, use: options[pick], movement: moves[i] };
   });
 }

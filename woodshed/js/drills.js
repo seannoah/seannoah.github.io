@@ -8,6 +8,7 @@ import * as audio from './audio.js';
 import { SCALES, OPEN, keyOf, scaleNotes, chordName, scaleTitle, stepSize, walkPath, walkStart, stringPath, mod } from './theory.js';
 import { SHAPES, FLOORS, ELEVATOR, voicingFor, voicingAt, voicings, anchorNote, setLabel, floorOf } from './floors.js';
 import { parseChord, scaleOptions, scaleKey } from './harmony.js';
+import { borrowPair, underBorrowed, borrowIn, borrowWords, voiceName } from './borrow.js';
 import { movePair, moveWords, floorAfter, shapeName } from './motion.js';
 import { parse, unitById, isActive } from './curriculum.js';
 import { isNew } from './store.js';
@@ -735,6 +736,170 @@ function earMotion(it, ctx) {
   });
 }
 
+// ---- borrowing ----
+const frameFor = (notes) => {
+  const all = notes.map((n) => n.fret);
+  const fretted = all.filter((f) => f > 0);
+  const low = fretted.length ? Math.min(...fretted) : 1;
+  const lo = all.includes(0) || low <= 2 ? 0 : low - 2;
+  return { lo, hi: Math.max(Math.max(...all, 1) + 2, (lo || 1) + 6) };
+};
+const borrowedMarks = (it, b) => [
+  ...b.notes.map((n) => (n === b.moved ? { ...mark(n, it.scale), kind: `${kc(n.deg)} anchor` } : mark(n, it.scale))),
+  { ...mark(b.old, it.scale), kind: 'from' },
+];
+function playBorrow(b, back = true) {
+  audio.stopAll();
+  audio.chord(b.notes.map((n) => n.midi), 0, 0.03, 0.55);
+  if (back) audio.chord(b.base.notes.map((n) => n.midi), 1.2, 0.03, 0.55);
+}
+
+function borrowTap(it, ctx) {
+  const key = borrowPair(ctx.key, it) ? ctx.key : 'C';
+  const b = borrowPair(key, it);
+  const base = b.base;
+  const voice = voiceName(base.notes.length, it.voice);
+  const where = it.dir > 0 ? 'above' : 'below';
+  const win = frameFor([...base.notes, b.moved]);
+  const fb = feedback();
+  let done = false;
+  const board = neck({
+    lo: win.lo, hi: win.hi, focus: base.set, marks: base.notes.map((n) => mark(n, it.scale)),
+    onTap: (string, fret) => {
+      if (done || string !== b.old.string || fret === b.old.fret) return;
+      done = true;
+      const ok = fret === b.moved.fret;
+      board.draw(ok ? borrowedMarks(it, b) : [...borrowedMarks(it, b).map((m) => (m.fret === b.moved.fret && m.string === b.moved.string ? { ...m, kind: 'ghost' } : m)), { string, fret, kind: 'wrong', label: '' }]);
+      playBorrow(b);
+      fb.show(ok, `${borrowWords(it.scale, b, say)} Then it steps back.`);
+      ctx.finish(ok ? 'right' : 'wrong', ok ? 'auto' : 'tap');
+    },
+  });
+  setTimeout(() => { audio.stopAll(); audio.chord(base.notes.map((n) => n.midi), 0, 0.03, 0.55); }, 250);
+  return frame({
+    kicker: `Borrowing · ${scaleTitle(key, it.scale)}`,
+    prompt: `Borrow ${where} the ${voice} voice.`,
+    hint: `The ${say(it.scale, b.old.deg)} on string ${b.old.string} steps to its neighbor on the path while the other notes hold. Tap where it goes.`,
+    body: board.el, fb: fb.el,
+  });
+}
+
+function borrowGuitar(it, ctx) {
+  const key = borrowPair(ctx.key, it) ? ctx.key : 'C';
+  const b = borrowPair(key, it);
+  const win = frameFor([...b.base.notes, b.moved]);
+  const board = neck({ lo: win.lo, hi: win.hi, focus: b.base.set, marks: b.base.notes.map((n) => mark(n, it.scale)) });
+  const fb = feedback();
+  revealThenRate(ctx, () => { board.draw(borrowedMarks(it, b)); playBorrow(b); return borrowWords(it.scale, b, say); }, fb);
+  return frame({
+    kicker: `Borrowing · ${scaleTitle(key, it.scale)}`,
+    prompt: `Play this ${shapeName(b.base.shape)}. Borrow ${it.dir > 0 ? 'above' : 'below'} the ${voiceName(b.base.notes.length, it.voice)} voice, then give it back.`,
+    hint: 'Let the other notes ring. Say the name of the note you borrow.',
+    body: board.el, fb: fb.el,
+  });
+}
+
+// An on chord kept beneath an off melody note.
+function underInfo(it, ctx) {
+  const key = underBorrowed(ctx.key, it, ctx.at) ? ctx.key : underBorrowed(ctx.key, it) ? ctx.key : 'C';
+  const b = underBorrowed(key, it, ctx.at) || underBorrowed(key, it);
+  return { key, b, win: frameFor([...b.notes, b.old]), below: b.notes.filter((n) => n !== b.moved), shape: SHAPES[it.shape] };
+}
+const underText = (it, m) => `${chordName(m.key, it.scale, true)} beneath a borrowed note. ${borrowWords(it.scale, m.b, say)}`;
+
+function underTap(it, ctx) {
+  const m = underInfo(it, ctx);
+  const { b } = m;
+  const melody = { ...mark(b.moved, it.scale), kind: `${kc(b.moved.deg)} anchor` };
+  const picks = {};
+  let done = false;
+  const fb = feedback();
+  const draw = () => board.draw([melody, ...Object.entries(picks).map(([s, f]) => ({ string: +s, fret: f, kind: 'pick', label: '' }))]);
+  const board = neck({
+    lo: m.win.lo, hi: m.win.hi, focus: m.b.base.set, marks: [melody],
+    onTap: (string, fret) => {
+      if (done || string === b.moved.string) return;
+      if (!b.base.set.includes(string)) { fb.show(null, `This shape lives on ${setLabel(b.base.set)}.`); return; }
+      if (picks[string] === fret) delete picks[string]; else picks[string] = fret;
+      audio.note(OPEN[string] + fret, 0, 0.5, 1.2);
+      draw();
+    },
+  });
+  const check = () => {
+    const missing = m.below.filter((n) => picks[n.string] == null);
+    if (missing.length) { fb.show(null, `Place a note on string${missing.length > 1 ? 's' : ''} ${missing.map((n) => n.string).join(' and ')} first.`); return; }
+    done = true;
+    const ok = m.below.every((n) => picks[n.string] === n.fret);
+    const marks = [melody, { ...mark(b.old, it.scale), kind: 'from' }];
+    for (const n of m.below) {
+      if (picks[n.string] === n.fret) marks.push(mark(n, it.scale));
+      else { marks.push({ string: n.string, fret: picks[n.string], kind: 'wrong', label: '' }); marks.push({ ...mark(n, it.scale), kind: 'ghost' }); }
+    }
+    board.draw(marks);
+    playBorrow(b);
+    fb.show(ok, underText(it, m));
+    ctx.finish(ok ? 'right' : 'wrong', ok ? 'auto' : 'tap');
+  };
+  ctx.foot(h('button', { class: 'primary wide', onclick: check }, 'Check'));
+  return frame({
+    kicker: `Borrowed melody · ${scaleTitle(m.key, it.scale)} · ${setLabel(b.base.set)}`,
+    prompt: `The melody is the ${say(it.scale, b.moved.deg)}, an off note. Keep the on chord beneath it.`,
+    hint: `Summon ${m.shape.a} as if the melody were the ${say(it.scale, b.old.deg)}, the on note just ${it.from > 0 ? 'above' : 'below'} it. Tap the other ${m.below.length === 1 ? 'note' : 'notes'}.`,
+    body: board.el, fb: fb.el,
+  });
+}
+
+function underGuitar(it, ctx) {
+  const m = underInfo(it, ctx);
+  const { b } = m;
+  const melody = { ...mark(b.moved, it.scale), kind: `${kc(b.moved.deg)} anchor` };
+  const board = neck({ lo: m.win.lo, hi: m.win.hi, focus: b.base.set, marks: [melody] });
+  const fb = feedback();
+  revealThenRate(ctx, () => {
+    board.draw([melody, ...m.below.map((n) => mark(n, it.scale)), { ...mark(b.old, it.scale), kind: 'from' }]);
+    playBorrow(b);
+    return underText(it, m);
+  }, fb);
+  return frame({
+    kicker: `Borrowed melody · ${scaleTitle(m.key, it.scale)} · ${setLabel(b.base.set)}`,
+    prompt: `Hold the ${say(it.scale, b.moved.deg)} on string ${b.moved.string}, an off note. Summon ${m.shape.a} of the on chord beneath it.`,
+    hint: `Think of the ${say(it.scale, b.old.deg)}, the on note just ${it.from > 0 ? 'above' : 'below'}: its shape, with the melody in its place. Then let the melody step ${it.from > 0 ? 'up' : 'down'} to it.`,
+    body: board.el, fb: fb.el,
+  });
+}
+
+// Ear: is one note of this chord borrowed?
+function earBorrow(it, ctx) {
+  const key = ctx.key;
+  const shape = rand(['triads', 'shell.low']);
+  const set = SHAPES[shape].primary;
+  const pool = voicings(key, it.scale, shape, set).filter((v) => v.on && v.minFret >= 1 && v.maxFret <= 12);
+  const base = rand(pool);
+  const tries = [[0, 1], [0, -1], [1, 1], [1, -1]].map(([voice, dir]) => borrowIn(key, it.scale, base, voice, dir)).filter(Boolean);
+  const b = Math.random() < 0.55 && tries.length ? rand(tries) : null;
+  const midis = (b || base).notes.map((n) => n.midi);
+  const play = () => { audio.stopAll(); audio.chord(midis, 0, 0.03, 0.6); audio.line(midis, 0.3, 1.4, 0.55); };
+  play();
+  const fb = feedback();
+  const slot = h('div');
+  const ch = choices([{ value: 'pure', label: 'All on', sub: 'at rest' }, { value: 'borrowed', label: 'One borrowed', sub: 'a note leans' }], (val) => {
+    const answer = b ? 'borrowed' : 'pure';
+    const ok = val === answer;
+    ch.resolve(answer, val);
+    const win = frameFor([...base.notes, ...(b ? [b.moved] : [])]);
+    slot.replaceChildren(neck({ lo: win.lo, hi: win.hi, focus: set, marks: b ? borrowedMarks(it, b) : base.notes.map((n) => mark(n, it.scale)) }).el);
+    fb.show(ok, b ? borrowWords(it.scale, b, say) : `All on: a plain ${shapeName(shape)} of ${chordName(key, it.scale, true)}.`);
+    if (b) audio.chord(base.notes.map((n) => n.midi), 0.2, 0.03, 0.5);
+    ctx.finish(ok ? 'right' : 'wrong', ok ? 'auto' : 'tap');
+  }, 'two');
+  return frame({
+    kicker: `Ear · ${scaleTitle(key, it.scale)}`,
+    prompt: 'All on, or is one note borrowed?',
+    hint: `You hear a small chord of ${chordName(key, it.scale, true)}. Does every note rest, or does one lean toward its neighbor?`,
+    body: [again(play), ch.el, slot], fb: fb.el,
+  });
+}
+
 // ---- reading a chart: which scale of chords goes with this chord symbol? ----
 const SC_SUFFIX = { min7: 'm7', hdim: 'm7♭5', maj: 'maj7', dom: '7' };
 const SC_HOW = { same: () => 'same four notes', on5: (fam) => (fam === 'maj' ? 'major 6 on the 5' : 'minor 6 on the 5'), tm: () => "tritone's minor", tt: () => 'tritone substitute' };
@@ -787,6 +952,9 @@ export function mountDrill(entry, ctx) {
     case 'mv': return g ? moveGuitar(it, ctx) : moveTap(it, ctx);
     case 'em': return earMotion(it, ctx);
     case 'sc': return scaleChoice(it, ctx);
+    case 'bw': return g ? borrowGuitar(it, ctx) : borrowTap(it, ctx);
+    case 'bm': return g ? underGuitar(it, ctx) : underTap(it, ctx);
+    case 'eb': return earBorrow(it, ctx);
     default: return h('div', null, 'Unknown exercise');
   }
 }

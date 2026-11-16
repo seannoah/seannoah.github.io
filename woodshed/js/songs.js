@@ -10,6 +10,7 @@ import { SHAPES, voicings } from './floors.js';
 import { parseChart, readChart, transposeChart, parseChord, prefersFlats } from './harmony.js';
 import { state, save } from './store.js';
 import { TUNES } from './tunes.js';
+import { underBorrowed } from './borrow.js';
 
 export { TUNES };
 
@@ -23,7 +24,7 @@ export function allSongs() {
 export const songById = (id) => allSongs().find((s) => s.id === id) || null;
 
 // Per-tune choices that are remembered: transposition, which scale was picked for a chord, the floor.
-export const prefsOf = (id) => ({ shift: 0, picks: {}, floor: 'thirds', ...(((state.songs || {})[id] || {}).prefs || {}) });
+export const prefsOf = (id) => ({ shift: 0, octave: 0, borrow: false, picks: {}, floor: 'thirds', ...(((state.songs || {})[id] || {}).prefs || {}) });
 export function setPrefs(id, patch) {
   state.songs = state.songs || {};
   const cur = state.songs[id] || {};
@@ -87,11 +88,13 @@ export function readSong(song) {
   const flats = prefersFlats(homePc + prefs.shift);
   const chartText = transposeChart(song.chart, prefs.shift, flats);
   const bars = parseChart(chartText);
-  const chords = readChart(bars, (i) => prefs.picks[i]);
+  const minorKey = (parseChord(song.key || 'C') || {}).family === 'min6';
+  const chords = readChart(bars, (i) => prefs.picks[i], mod(homePc + prefs.shift, 12), minorKey);
   const beats = song.beats || 4;
-  const melody = parseMelody(song.melody, beats, prefs.shift).map((n) => {
+  const melody = parseMelody(song.melody, beats, prefs.shift + 12 * (prefs.octave || 0)).map((n) => {
     const inBar = chords.filter((c) => c.bar === n.bar);
-    const chord = inBar[Math.min(inBar.length - 1, Math.floor((n.beat / beats) * inBar.length))] || null;
+    const at = n.beat / beats + 0.0001;
+    const chord = inBar.find((c) => at >= c.start && at < c.start + c.len) || inBar[inBar.length - 1] || null;
     const deg = chord ? degOfMidi(chord.use.key, chord.use.scale, n.midi) : -1;
     return { ...n, chord, deg, on: deg >= 0 ? isOn(deg) : null, label: deg >= 0 ? SCALES[chord.use.scale].labels[deg] : '·', say: deg >= 0 ? SCALES[chord.use.scale].say[deg] : 'outside the scale' };
   });
@@ -125,15 +128,33 @@ export function topNoteFor(use, degree = 4) {
   return null;
 }
 
+// An on chord of this floor beneath an off melody note (see borrow.js), nearest `around`.
+function borrowedUnder(use, shapeId, note, around) {
+  let best = null;
+  for (const set of SHAPES[shapeId].sets) {
+    for (const from of [1, -1]) {
+      const b = underBorrowed(use.key, { scale: use.scale, shape: shapeId, set, from, deg: note.deg }, note.midi);
+      if (!b) continue;
+      const frets = b.notes.map((x) => x.fret).filter((f) => f > 0);
+      const minFret = frets.length ? Math.min(...frets) : 0;
+      const score = (b.notes.some((x) => x.fret === 0) ? 6 : 0) + (around == null ? Math.abs(minFret - 5) * 0.3 : Math.abs(minFret - around) * 0.6) + (set[set.length - 1] > 2 ? 2 : 0);
+      if (!best || score < best.score) best = { score, voicing: { notes: b.notes, set, shape: shapeId, on: true, minFret, maxFret: frets.length ? Math.max(...frets) : 0, borrowed: b } };
+    }
+  }
+  return best ? best.voicing : null;
+}
+
 // The steps of a play-through: each melody note (or each chord, if there is no melody)
-// with a shape of the chosen floor beneath it.
-export function playThrough(read, shapeId) {
+// with a shape of the chosen floor beneath it. With `borrow`, an off melody note keeps
+// the on chord beneath it instead of moving to the off chord.
+export function playThrough(read, shapeId, borrow = false) {
   const steps = [];
   let around = null;
   if (read.melody.length) {
     for (const n of read.melody) {
       if (!n.chord) continue;
-      const v = n.deg >= 0 ? shapeUnder(n.chord.use, shapeId, n.midi, around) : null;
+      const lean = borrow && n.deg >= 0 && n.deg % 2 === 1 && SHAPES[shapeId].steps.length > 1;
+      const v = n.deg < 0 ? null : (lean && borrowedUnder(n.chord.use, shapeId, n, around)) || shapeUnder(n.chord.use, shapeId, n.midi, around);
       if (v) around = v.minFret || around;
       steps.push({ bar: n.bar, chord: n.chord, note: n, voicing: v });
     }

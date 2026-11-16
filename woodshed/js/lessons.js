@@ -3,7 +3,7 @@
 // to where Thomas Echols teaches it in his course materials.
 
 import { h } from './dom.js';
-import { scaleStrip, pathChips, pathCompare, shapeBrowser, elevatorRide } from './widgets.js';
+import { scaleStrip, pathChips, pathCompare, shapeBrowser, elevatorRide, borrowDemo } from './widgets.js';
 import { SCALES } from './theory.js';
 import { SHAPES, setLabel } from './floors.js';
 
@@ -179,6 +179,46 @@ Object.assign(LESSONS, {
   ],
 });
 
+Object.assign(LESSONS, {
+  'borrow.voice': () => [
+    p('On the path, every on note has an off note right next to it, a step above and a step below. ', b('Borrowing'), ' is letting one voice of a chord step to that neighbor while the other voices stay where they are.'),
+    p('For a moment the chord holds one note that does not belong to it. It leans. Then the voice steps back and the chord is whole again. That small lean and release is one of the most recognizable sounds in this style.'),
+    head('It is pathfinding inside a chord'),
+    p('Nothing new has to be memorized. To borrow below the third you only need to know what you already drilled on a single string: the note below the third is a whole step away. The difference is that you now do it in one voice while holding a shape.'),
+    p('Try it. Choose a voice, borrow above or below, and give it back.'),
+    borrowDemo({ shape: 'triads', set: [4, 3, 2], deg: 4 }),
+    head('How to practice it'),
+    list(
+      'Say which note you are moving before you move it: "third".',
+      'See the distance first. Half step or whole step?',
+      'Let the other notes keep ringing. The sustain is part of the sound.',
+      'Give it back, and hear the chord settle.',
+    ),
+    p('Some borrowed chords have everyday names. C6 with the root borrowed below is a C major 7. Try not to think of those names. "Root, borrow below" is faster, and it works on every chord in every key.'),
+    read('Foundations I, pages 34 to 36, and 5 Chord Melody Games, scenario 5.'),
+  ],
+
+  'borrow.melody': () => [
+    p('Sooner or later a melody lands on an off note and stays there. You have two ways to play it.'),
+    list(
+      ['Move everything to the ', off('off chord'), '. The melody and the harmony lean together, then resolve together.'],
+      ['Keep the ', on('on chord'), ' underneath and treat the melody note as ', b('borrowed'), '. Only the top leans. This is usually the better choice on a strong beat, or when a new harmony has just arrived.'],
+    ),
+    head('How to find the chord'),
+    p('Look at the on note right next to the melody, above it or below it. Summon the shape that belongs under that on note. Then let the melody take its place on top.'),
+    p('So for each off note and each floor there are just two answers: borrowed from the note above, or from the note below. The same shapes work in every key.'),
+    borrowDemo({ shape: 'shell.low', set: [4, 3, 2], deg: 2 }),
+    p('Above, borrow below the top voice: the third becomes the second, with the same two notes of the on chord still beneath it. That is the shape for a melody sitting on the second.'),
+    head('Two distances worth knowing cold'),
+    list(
+      'A voice on the root borrows below by a half step, to the major seven.',
+      'A voice on the sixth borrows above by a whole step, to the same major seven.',
+    ),
+    p('In the Songs tab, when a tune has a melody you can choose what happens under its off notes: move to the off chord, or borrow over the on chord.'),
+    read('5 Chord Melody Games, scenario 4, and Chord Melodies in Any Key, step 3.'),
+  ],
+});
+
 LESSONS.chart = () => [
   p('A chord chart names one chord per bar or half bar. In this method you do not play those chords as written. For each one you pick a ', b('scale of chords'), ' that covers it, and then everything you have practiced inside that scale is available: its floors, its path, its moves.'),
   p('Often the scale is built on a different note from the chord. That is ', b('substitution'), ', and a handful of rules covers almost every chart.'),
@@ -200,7 +240,7 @@ LESSONS.chart = () => [
   p('In the Songs tab each dominant starts on a sensible choice: the tritone’s minor when it resolves down a fifth, the minor 6 on the 5 when it does not. Tap a chord there to hear and try the others.'),
   head('Melody notes become degrees'),
   p('Once a bar has its scale, every melody note in it is simply a degree of that scale: "fifth, on" or "second, off". You already know shapes that have the fifth on top. That is how a melody gets harmonized without stopping to think about chord names.'),
-  p('An off note in the melody is not a wrong note. It is a borrowed one, and it gets its own stage later.'),
+  p('An off note in the melody is not a wrong note. It can be treated as a borrowed one, which the Borrowing lessons cover.'),
   read('Foundations I, pages 42 to 47, and 5 Chord Melody Games.'),
 ];
 

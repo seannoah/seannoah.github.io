@@ -10,6 +10,7 @@ Plain HTML, CSS and JavaScript modules. There is no build step: what is in this 
 |---|---|
 | `js/theory.js` | The four scales of chords, note names, step sizes |
 | `js/floors.js` | The nine Elevator floors as rules, and where each shape sits on the neck |
+| `js/borrow.js` | Borrowing: one voice of a chord stepping to its neighbor, and on chords beneath off melody notes |
 | `js/motion.js` | Two chords in a row: parallel, contrary and oblique motion between floors |
 | `js/harmony.js` | Reading a chord chart: chord symbol to scale of chords, movements, transposition |
 | `js/tunes.js`, `js/songs.js`, `js/songsui.js` | The built-in tunes, what is worked out about each, and the Songs pages |

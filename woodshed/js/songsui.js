@@ -99,13 +99,14 @@ function stepper(read, steps, redraw) {
       t += dur * beat;
     });
   };
-  const note = st.note && st.note.deg >= 0 ? `${read.melody.length ? 'Melody' : 'Top note'}: the ${SCALES[scale].say[st.note.deg]}, ${kindOf(st.note.deg)}.` : '';
+  const name = st.note && st.note.deg >= 0 ? SCALES[scale].say[st.note.deg] : '';
+  const note = name ? `${read.melody.length ? 'Melody' : 'Top note'}: ${name === 'off note' ? 'an off note' : `the ${name}, ${kindOf(st.note.deg)}`}${v && v.borrowed ? `, borrowed over ${st.chord.use.on}` : ''}.` : '';
   const caption = v ? `${note} ${SHAPES[v.shape].name} on ${setLabel(v.set)}. Low to high: ${v.notes.map((n) => SCALES[scale].say[n.deg]).join(', ')}.`
     : st.note && st.note.deg < 0 ? 'This melody note is not in the scale chosen for this chord. Try another choice for the chord above, or play the note on its own.'
     : 'No comfortable position for this floor here. Try a smaller floor.';
   return h('div', { class: 'fig browser' },
     h('div', { class: 'browser-title' },
-      h('span', { class: `tag ${v && !v.on ? 'off' : 'on'}` }, v ? (v.on ? 'on' : 'off') : '·'),
+      h('span', { class: `tag ${v && (!v.on || v.borrowed) ? 'off' : 'on'}` }, v ? (v.borrowed ? 'borrowed' : v.on ? 'on' : 'off') : '·'),
       h('strong', null, st.chord.text),
       h('span', { class: 'muted' }, ` bar ${st.bar + 1} · ${st.chord.use.label} · ${i + 1} of ${steps.length}`)),
     board.el,
@@ -140,7 +141,10 @@ function songSession(read, steps, mode) {
   for (const s of picked) {
     const v = s.voicing;
     const top = v.notes[v.notes.length - 1];
-    out.push({ id: `sh|${s.chord.use.scale}|${v.shape}|${setKey(v.set)}|t|${top.deg}`, key: s.chord.use.key, at: top.midi, tag: `${tag(s.bar)} · ${s.chord.text}` });
+    const id = v.borrowed
+      ? `bm|${s.chord.use.scale}|${v.shape}|${setKey(v.set)}|${v.borrowed.old.midi > top.midi ? 'a' : 'b'}|${top.deg}`
+      : `sh|${s.chord.use.scale}|${v.shape}|${setKey(v.set)}|t|${top.deg}`;
+    out.push({ id, key: s.chord.use.key, at: top.midi, tag: `${tag(s.bar)} · ${s.chord.text}` });
   }
   return out;
 }
@@ -154,7 +158,8 @@ export function pageSong(id) {
 
   function draw() {
     const read = readSong(song);
-    const steps = playThrough(read, read.prefs.floor);
+    const steps = playThrough(read, read.prefs.floor, read.prefs.borrow);
+    const hasOff = read.melody.some((n) => n.deg >= 0 && n.deg % 2 === 1);
     view.step = Math.min(view.step, Math.max(0, steps.length - 1));
     const cursor = steps[view.step] ? steps[view.step].chord : read.chords[0];
     const shift = (d) => { setPrefs(song.id, { shift: ((read.prefs.shift + d + 18) % 12) - 6, picks: read.prefs.picks }); draw(); };
@@ -179,6 +184,8 @@ export function pageSong(id) {
       cursor ? chordDetail(read, cursor, draw) : null,
       h('h2', { class: 'group' }, read.melody.length ? 'The melody, harmonized' : 'Play through'),
       pickRow('Floor', floorShapes, read.prefs.floor, (v) => { setPrefs(song.id, { floor: v }); draw(); }),
+      hasOff ? pickRow('Under off notes', [['chord', 'Move to the off chord'], ['borrow', 'Borrow over the on chord']], read.prefs.borrow ? 'borrow' : 'chord', (v) => { setPrefs(song.id, { borrow: v === 'borrow' }); draw(); }) : null,
+      read.melody.length ? pickRow('Melody', [[-1, 'Octave down'], [0, 'As written'], [1, 'Octave up']], read.prefs.octave || 0, (v) => { setPrefs(song.id, { octave: v }); view.step = 0; draw(); }) : null,
       stepper(read, steps, draw),
       read.melody.length ? null : h('p', { class: 'muted small' }, song.own
         ? 'No melody yet. Edit the tune to add one and each note will be named and harmonized.'

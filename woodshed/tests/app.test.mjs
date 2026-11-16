@@ -43,6 +43,7 @@ const sync = await import('../js/sync.js');
 const { voicingFor } = await import('../js/floors.js');
 const { walkPath, walkStart } = await import('../js/theory.js');
 const { movePair, floorAfter } = await import('../js/motion.js');
+const { borrowPair, underBorrowed } = await import('../js/borrow.js');
 
 test('every item in the catalogue is well formed and playable in C', () => {
   const ids = cur.catalogue();
@@ -61,14 +62,28 @@ test('every item in the catalogue is well formed and playable in C', () => {
       assert.ok(Math.abs(m.top) <= 1 && Math.abs(m.bass) === 1, `${id}: outer voices move by step`);
     }
     if (it.kind === 'mq') assert.ok(floorAfter(it.floor, it.how), id);
+    if (it.kind === 'bw') {
+      const b = borrowPair('C', it);
+      assert.ok(b, id);
+      assert.notEqual(b.moved.deg % 2, b.old.deg % 2, `${id}: the borrowed note comes from the other chord`);
+    }
+    if (it.kind === 'bm') {
+      const b = underBorrowed('C', it);
+      assert.ok(b, id);
+      assert.equal(b.moved.deg, it.deg, id);
+      assert.ok(b.notes.slice(0, -1).every((n) => n.deg % 2 === 0), `${id}: an on chord beneath`);
+    }
   }
 });
 
 test('the motion units sit between the small floors and the four-note floors', () => {
   const ids = cur.UNITS.map((u) => u.id);
-  assert.deepEqual(ids.slice(2, 10), ['thirds', 'triads', 'shells', 'motion.steps', 'motion.oblique', 'octaves', 'drop2', 'motion.wide']);
+  assert.deepEqual(ids.slice(2, 12), ['thirds', 'triads', 'shells', 'borrow.voice', 'borrow.melody', 'motion.steps', 'motion.oblique', 'octaves', 'drop2', 'motion.wide']);
   store.resetAll();
   for (const u of cur.UNITS.slice(0, 5)) for (const id of u.core) store.grade(id, 'right');
+  assert.equal(cur.currentUnit().id, 'borrow.voice');
+  assert.ok(cur.buildSession('guitar', 10).some((x) => x.id.startsWith('bw|')), 'borrowing has a guitar-in-hand form');
+  for (const u of cur.UNITS.slice(5, 7)) for (const id of u.core) store.grade(id, 'right');
   assert.equal(cur.currentUnit().id, 'motion.steps');
   const s = cur.buildSession('away', 10);
   assert.ok(s.some((x) => x.id.startsWith('mq|')) && s.some((x) => x.id.startsWith('mv|')));
@@ -202,16 +217,17 @@ test('sync: a clash with another device is retried, and bad setups are explained
 // ---- songs ----
 const songs = await import('../js/songs.js');
 const { TUNES } = await import('../js/tunes.js');
-const { parseChart } = await import('../js/harmony.js');
+const { parseChart, parseChord } = await import('../js/harmony.js');
 
 test('every built-in tune reads cleanly and can be played through', () => {
   assert.ok(TUNES.length >= 3);
   for (const tune of TUNES) {
     const read = songs.readSong(tune);
     assert.ok(read.bars.length >= 4, tune.id);
-    const typed = tune.chart.replace(/^\s*[A-Z]\s*\|/gm, '|').split(/[|\s]+/).filter((t) => t && t !== '%').length;
-    const repeats = (tune.chart.match(/%/g) || []).length;
-    assert.ok(read.chords.length >= typed + repeats, `${tune.id}: every chord symbol was understood`);
+    const typed = tune.chart.replace(/^\s*[A-Z]\s*\|/gm, '|').split(/[|\s]+/).filter((t) => t && t !== '%');
+    for (const symbol of typed) assert.ok(parseChord(symbol), `${tune.id}: "${symbol}" was understood`);
+    assert.equal(read.bars.length, tune.chart.split('|').length - 1 - tune.chart.trim().split('\n').length, `${tune.id}: bar count`);
+    assert.ok(read.bars.every((b) => b.chords.length >= 1 && Math.abs(b.chords.reduce((n, c) => n + c.len, 0) - 1) < 1e-9), `${tune.id}: every bar is filled`);
     for (const shape of ['thirds', 'triads', 'shell.low', 'drop2']) {
       const steps = songs.playThrough(read, shape);
       const missing = steps.filter((s) => s.note && s.note.deg >= 0 && !s.voicing).length;
@@ -256,4 +272,68 @@ test('your own tunes and choices are stored, merged between devices, and survive
   assert.ok(songs.songById(id), 'erasing progress keeps your tunes');
   songs.deleteOwnSong(id);
   assert.equal(songs.songById(id), null);
+});
+
+test('Embraceable You is read the way its MetaScore reads it', () => {
+  const read = songs.readSong(TUNES.find((t) => t.id === 'embraceable'));
+  const at = (bar) => read.chords.filter((c) => c.bar === bar - 1).map((c) => c.use.label).join(', ');
+  // Polyphonic track, MetaScore pp. 13-15
+  assert.equal(at(1), 'F major 6');
+  assert.equal(at(2), 'A♭ diminished');
+  assert.equal(at(4), 'D♭ minor 6');
+  assert.equal(at(6), 'B♭ minor 6, D♭ minor 6');
+  assert.equal(at(8), 'G minor 6, B♭ minor 6');
+  assert.equal(at(9), 'F major 6');
+  assert.equal(at(10), 'D minor 6, F minor 6');
+  assert.equal(at(11), 'A minor 6');
+  assert.equal(at(13), 'C major 6, F major 6');             // the D♭ diminished read as the off chord of F major 6
+  assert.equal(at(24), 'E♭ major 6, G♭ minor 6');
+  assert.equal(at(28), 'D minor 6, D♭ major 6, B♭ minor 6');
+  assert.equal(at(29), 'F major 6, B♭ major 6, C major 6');
+  assert.equal(at(30), 'B♭ minor 6, D♭ minor 6');
+  // Scale "Degrees" track
+  const degs = (bar) => read.melody.filter((n) => n.bar === bar - 1).map((n) => n.label).join(' ');
+  assert.equal(degs(1), '6 7 R');
+  assert.equal(degs(2), '5 · ♭7');
+  assert.equal(degs(6), '6 ♯5 6');
+  assert.equal(degs(9), '3 R 2 R');
+  assert.equal(degs(13), '5 3 R 7');
+  assert.equal(degs(26), '♭3 2 6 7');
+  assert.equal(degs(29), '3 R R');
+});
+
+test('in a tune, an off melody note can keep the on chord beneath it', () => {
+  const tune = TUNES.find((t) => t.id === 'embraceable');
+  const read = songs.readSong(tune);
+  const plain = songs.playThrough(read, 'shell.low', false);
+  const leaning = songs.playThrough(read, 'shell.low', true);
+  assert.equal(plain.length, leaning.length);
+  const offSteps = leaning.filter((s) => s.note.deg % 2 === 1 && s.voicing);
+  assert.ok(offSteps.length > 10);
+  assert.ok(offSteps.filter((s) => s.voicing.borrowed).length >= offSteps.length * 0.8, 'most off notes found a borrowed shape');
+  for (const s of offSteps.filter((x) => x.voicing.borrowed)) {
+    const top = s.voicing.notes[s.voicing.notes.length - 1];
+    assert.equal(top.midi, s.note.midi, 'the melody note stays on top');
+    assert.ok(s.voicing.notes.slice(0, -1).every((n) => n.deg % 2 === 0), 'on chord notes beneath it');
+  }
+  // bar 1: the melody E is the major seven of F major 6, borrowed over F6
+  const bar1 = leaning.filter((s) => s.bar === 0);
+  assert.equal(bar1[1].note.say, 'major seven');
+  assert.ok(bar1[1].voicing.borrowed);
+  assert.equal(plain.filter((s) => s.voicing && s.voicing.borrowed).length, 0);
+});
+
+test('Stella by Starlight is read the way Standards Series Unit 4 reads it', () => {
+  const read = songs.readSong(TUNES.find((t) => t.id === 'stella'));
+  assert.equal(read.bars.length, 32);
+  const at = (bar) => read.chords.filter((c) => c.bar === bar - 1).map((c) => c.use.label).join(', ');
+  const want = {
+    1: 'D♭ diminished', 2: 'D♭ diminished', 3: 'E♭ major 6', 4: 'G♭ minor 6', 5: 'A♭ major 6', 6: 'B minor 6', 7: 'E♭ major 6', 8: 'E♭ minor 6',
+    9: 'B♭ major 6', 10: 'G minor 6, B♭ minor 6', 11: 'F major 6', 12: 'D♭ major 6, B♭ minor 6', 13: 'F major 6', 15: 'E♭ major 6', 16: 'C minor 6, E♭ minor 6',
+    17: 'A♭ minor 6', 18: 'A♭ minor 6', 19: 'E♭ major 6', 21: 'E♭ minor 6', 22: 'E♭ minor 6', 23: 'B♭ major 6',
+    25: 'G minor 6', 26: 'B♭ minor 6', 27: 'F minor 6', 28: 'A♭ minor 6', 29: 'E♭ minor 6', 30: 'G♭ minor 6', 31: 'B♭ major 6',
+  };
+  for (const [bar, label] of Object.entries(want)) assert.equal(at(+bar), label, `bar ${bar}`);
+  const moves = read.chords.filter((c) => c.movement && c.movement.start).map((c) => `${c.bar + 1} ${c.movement.name}`);
+  assert.ok(moves.includes('1 Flat-3 diminished') && moves.includes('3 Major ii–V7') && moves.includes('25 Minor iiø–V7'));
 });
