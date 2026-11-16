@@ -24,17 +24,23 @@ const adj = (n) => {
   return out;
 };
 
+// `frame` is the floor's outside distance as a two-note shape of its own, and `span` is
+// how that distance is spoken of: together they are the "elevator of intervals" (The
+// Elevator Sequence, p. 7). From drop 2 upward the spans repeat an octave wider.
 export const FLOORS = [
-  { id: 'unison', name: 'Single notes', level: 1, shapes: ['unison'] },
-  { id: 'thirds', name: 'Thirds', level: 2, shapes: ['thirds'] },
-  { id: 'triads', name: 'Triads', level: 3, shapes: ['triads'] },
-  { id: 'shells', name: 'Shells', level: 4, shapes: ['shell.low', 'shell.high'] },
-  { id: 'octaves', name: 'Octaves', level: 5, shapes: ['oct.triad', 'oct.low', 'oct.high'] },
-  { id: 'drop2', name: 'Drop 2', level: 6, shapes: ['drop2'] },
-  { id: 'drop3', name: 'Drop 3', level: 7, shapes: ['drop3'] },
-  { id: 'drop24', name: 'Drop 2 and 4', level: 8, shapes: ['drop24'] },
-  { id: 'dbl', name: 'Double octaves', level: 9, shapes: ['dbl', 'dbl.alt'] },
+  { id: 'unison', name: 'Single notes', level: 1, shapes: ['unison'], span: 'a unison' },
+  { id: 'thirds', name: 'Thirds', level: 2, shapes: ['thirds'], span: 'a third' },
+  { id: 'triads', name: 'Triads', level: 3, shapes: ['triads'], frame: 'fifth', span: 'a fifth' },
+  { id: 'shells', name: 'Shells', level: 4, shapes: ['shell.low', 'shell.high'], frame: 'sixth', span: 'a sixth' },
+  { id: 'octaves', name: 'Octaves', level: 5, shapes: ['oct.triad', 'oct.low', 'oct.high'], frame: 'oct2', span: 'an octave' },
+  { id: 'drop2', name: 'Drop 2', level: 6, shapes: ['drop2'], span: 'a third plus an octave' },
+  { id: 'drop3', name: 'Drop 3', level: 7, shapes: ['drop3'], span: 'a fifth plus an octave' },
+  { id: 'drop24', name: 'Drop 2 and 4', level: 8, shapes: ['drop24'], span: 'a sixth plus an octave' },
+  { id: 'dbl', name: 'Double octaves', level: 9, shapes: ['dbl', 'dbl.alt'], span: 'two octaves' },
 ];
+
+// Two strings with one string between them: where a sixth or an octave sits best.
+const SKIP = [[6, 4], [5, 3], [4, 2], [3, 1]];
 
 export const SHAPES = {
   unison: { id: 'unison', floor: 'unison', name: 'Single note', a: 'a single note', steps: [0], sets: adj(1), primary: [2] },
@@ -50,11 +56,19 @@ export const SHAPES = {
   drop24: { id: 'drop24', floor: 'drop24', name: 'Drop 2 and 4', a: 'a drop 2 and 4', steps: [0, 4, 10, 14], sets: [[6, 5, 3, 2], [5, 4, 2, 1]], primary: [6, 5, 3, 2] },
   dbl: { id: 'dbl', floor: 'dbl', name: 'Double octave', a: 'a double octave', steps: [0, 10, 12, 16], sets: [[6, 3, 2, 1]], primary: [6, 3, 2, 1] },
   'dbl.alt': { id: 'dbl.alt', floor: 'dbl', name: 'Double octave (alternate)', a: 'an alternate double octave', steps: [0, 6, 10, 16], sets: [[6, 4, 3, 1]], primary: [6, 4, 3, 1] },
+  // The frames: the outside notes of a triad, a shell and an octave chord, on their own.
+  // Like "thirds", they are counted in scale steps, so a "fifth" is four steps of the
+  // eight-note scale and may measure a fourth, a tritone or a fifth on the fretboard.
+  fifth: { id: 'fifth', floor: 'triads', frame: true, name: 'Fifth', a: 'a fifth', steps: [0, 4], sets: adj(2), primary: [4, 3] },
+  sixth: { id: 'sixth', floor: 'shells', frame: true, name: 'Sixth', a: 'a sixth', steps: [0, 6], sets: SKIP, primary: [4, 2] },
+  oct2: { id: 'oct2', floor: 'octaves', frame: true, name: 'Octave', a: 'a bare octave', steps: [0, 8], sets: SKIP, primary: [4, 2] },
 };
 
 export const setKey = (set) => set.join('');
-export const setLabel = (set) => (set.length === 1 ? `string ${set[0]}` : `strings ${set.join('-')}`);
+export const setLabel = (set) => (set.length === 1 ? `string ${set[0]}` : set.length === 2 ? `strings ${set[0]} and ${set[1]}` : `strings ${set.join('-')}`);
 export const floorOf = (shapeId) => FLOORS.find((f) => f.id === SHAPES[shapeId].floor);
+// What to call a shape when it is one stop on a ride: its floor, or its own name for a frame.
+export const stopName = (shapeId) => (SHAPES[shapeId].frame ? SHAPES[shapeId].name : floorOf(shapeId).name);
 
 const MAX_SPAN = 5;
 
@@ -118,4 +132,45 @@ export const spanOf = (shapeId) => SHAPES[shapeId].steps[SHAPES[shapeId].steps.l
 export const setWithTop = (shapeId, string) => SHAPES[shapeId].sets.find((s) => s[s.length - 1] === string) || null;
 
 // Other shapes on the same floor (the other shell, the other octave chords).
-export const siblings = (shapeId) => FLOORS.find((f) => f.id === SHAPES[shapeId].floor).shapes;
+export const siblings = (shapeId) => (SHAPES[shapeId].frame ? [shapeId] : FLOORS.find((f) => f.id === SHAPES[shapeId].floor).shapes);
+
+// The elevator of intervals as a column of two-note shapes.
+export const INTERVALS = ['unison', 'thirds', 'fifth', 'sixth', 'oct2'];
+
+// ---- floors within floors (The Elevator Sequence, p. 8) ----
+// The small shapes that can be found inside a bigger one.
+export const PARTS = ['thirds', 'fifth', 'sixth', 'triads', 'shell.low', 'shell.high'];
+
+// Every way of choosing notes of `shapeId` that makes `partId`: lists of note indexes,
+// counted from the lowest note. A triad holds two thirds; a drop 2 holds one, in the middle.
+export function partsInside(shapeId, partId) {
+  const steps = SHAPES[shapeId].steps;
+  const want = SHAPES[partId].steps;
+  if (want.length >= steps.length) return [];
+  const out = [];
+  const pick = (from, chosen) => {
+    if (chosen.length === want.length) { out.push(chosen); return; }
+    for (let i = from; i < steps.length; i++) {
+      const k = chosen.length;
+      if (k === 0 || steps[i] - steps[chosen[0]] === want[k]) pick(i + 1, [...chosen, i]);
+    }
+  };
+  pick(0, []);
+  return out;
+}
+export const insideOf = (shapeId) => PARTS.flatMap((part) => partsInside(shapeId, part).map((idx) => ({ part, idx })));
+
+// Where a part sits in its chord, in words: "the middle two notes" (or, short, "middle two").
+// Positions are never called "second" or "third", which already name notes of the scale.
+export function partWhere(count, idx, short = false) {
+  const n = idx.length;
+  const word = n === 2 ? 'two' : 'three';
+  const run = idx.every((x, k) => k === 0 || x === idx[k - 1] + 1);
+  const say = (place) => (short ? `${place} ${word}` : `the ${place} ${word} notes`);
+  if (run && idx[0] === 0) return say('bottom');
+  if (run && idx[n - 1] === count - 1) return say('top');
+  if (run) return say('middle');
+  if (n === 2 && idx[0] === 0 && idx[1] === count - 1) return short ? 'outside two' : 'the two outside notes';
+  const end = idx[0] === 0 ? 'bottom' : 'top';
+  return short ? `${end}, and next but one` : `the ${end} note and the next but one`;
+}

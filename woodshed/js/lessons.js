@@ -3,9 +3,9 @@
 // to where Thomas Echols teaches it in his course materials.
 
 import { h } from './dom.js';
-import { scaleStrip, pathChips, pathCompare, shapeBrowser, elevatorRide, borrowDemo, transformLab, chainPlayer } from './widgets.js';
+import { scaleStrip, pathChips, pathCompare, shapeBrowser, elevatorRide, borrowDemo, transformLab, chainPlayer, insideFigure, pivotFigure, mirrorRide } from './widgets.js';
 import { SCALES } from './theory.js';
-import { SHAPES, setLabel } from './floors.js';
+import { SHAPES, INTERVALS, setLabel } from './floors.js';
 
 const p = (...kids) => h('p', null, ...kids);
 const b = (text) => h('strong', null, text);
@@ -121,7 +121,7 @@ const LESSONS = {
     p('The alternate leaves out string 2 instead of string 4.'),
     browser({ shape: 'dbl.alt', set: [6, 4, 3, 1], start: 2 }),
     head('The mirror'),
-    p('Look at the distance between the top and bottom notes. Drop 2 spans a third plus an octave, drop 3 a fifth plus an octave, drop 2 and 4 a sixth plus an octave, and the double octave two octaves. Those are the spans of thirds, triads, shells and octaves again, one octave wider. That echo becomes useful later for pivoting.'),
+    p('Look at the distance between the top and bottom notes. Drop 2 spans a third plus an octave, drop 3 a fifth plus an octave, drop 2 and 4 a sixth plus an octave, and the double octave two octaves. Those are the spans of thirds, triads, shells and octaves again, one octave wider. That echo is what pivoting is built on, in the step called Through the mirror.'),
     read('The Elevator Sequence, pages 5 and 12, and Reference Library: Drop 2 and 4.'),
   ],
 };
@@ -321,6 +321,103 @@ Object.assign(LESSONS, {
     p('From the I chord to the ii chord is ', f('[Across, Down]'), ', the second path in the figure above. And ', f('[Forward, Minor]'), ', which took the ii chord to its V, is also how Stella by Starlight gets from B♭ to Em7♭5 in bars 9 and 10. One practiced move, two uses.'),
     p('In the Songs tab, tap any chord in a chart. When it and its neighbor are both played as 6th chords, the formula between them is shown. Once you have started this stage, "Practice this tune" also drills the tune’s own moves.'),
     read('Foundations IV, pages 50 to 52, 67, 73 to 76 and 86, and Foundations I, pages 51 to 53.'),
+  ],
+});
+
+Object.assign(LESSONS, {
+  'lm.intervals': () => [
+    p('Every floor so far has been learned as a whole shape. This step looks at two things about a shape: its outside notes, and the smaller floors hidden inside it. Both are ways of getting more movement out of chords you already know.'),
+    head('The outside notes'),
+    p('Play only the top and bottom notes of each floor and you get a ladder of two-note shapes: a ', b('unison'), ', a ', b('third'), ', a ', b('fifth'), ', a ', b('sixth'), ' and an ', b('octave'), '. This is the ', b('elevator of intervals'), '. The fifth is a triad with its middle note left out. The sixth is a shell with its middle note left out.'),
+    p('From drop 2 upward the same distances come round again, one octave wider.'),
+    h('p', { class: 'note' }, 'These names count steps of the scale, the same way "thirds" do: take a note, skip one, take the next. So a "fifth" here is the outside of a triad, whatever it measures in frets. In C major 6 some are true fifths, some are fourths, and the off ones are all tritones.'),
+    p('The two-note elevator moves by the same rule as the full one. Step the melody up and go out one stop, and the bass steps down.'),
+    elevatorRide({ column: INTERVALS, floor: 'thirds', deg: 2 }),
+    p('Two notes are often enough. Thinning a chord to its outside notes lets the two lines be heard clearly, and it leaves fingers free.'),
+    head('Floors within floors'),
+    p('Now look inside. A big shape is made of smaller ones you have already learned. Choose a shape below and tap each part to see and hear it.'),
+    insideFigure({ shape: 'drop2' }),
+    list(
+      ['A ', b('drop 2'), ' holds a third in its middle, a low shell on top and a high shell at the bottom.'],
+      ['An ', b('octave chord'), ' holds two of the three-note floors: a triad and a shell, or both shells.'],
+      ['A ', b('shell'), ' holds a third and a fifth. The low shell has the fifth on top. The high shell has the third on top.'],
+      ['A ', b('drop 2 and 4'), ' holds a sixth in its middle.'],
+    ),
+    head('Why it matters'),
+    p('Once you can see the third in the middle of a drop 2, you can move it. Play just that third, take it out to a fifth and then to a shell, the way the small elevator moves, and come back to the full chord. The big chord has not gone anywhere, but the inside of it has come alive. This is where movement in the middle voices comes from.'),
+    p('It also deepens the small floors. A third stops being only a shape you summon on two strings. It becomes something you can find inside six or seven other shapes.'),
+    head('How to practice it'),
+    list(
+      'Play the whole chord. Then play only the part, and say its name.',
+      'Play the part first, then put the rest of the chord back around it.',
+      'When that is easy, move the part one step along the scale and back while another note of the chord keeps ringing.',
+    ),
+    read('The Elevator Sequence, pages 7 to 9, and the last page of Octave Chords (short lesson).'),
+  ],
+
+  'lm.leaps': () => [
+    p('Until now both outer voices have moved by step, or one has stayed still. That is the normal way to move in this style, and it should stay the normal way. A ', b('leap'), ' is the exception, saved for a moment you want to stand out.'),
+    p('A leap turns up for one of two reasons. The tune leaps and you have to follow it, or you choose to let the bass jump for effect.'),
+    head('One sum covers every move'),
+    p('You already know that each floor up puts the bass one chord note lower under the same melody note. One chord note is two steps of the scale. So, counting in steps of the scale:'),
+    h('p', { class: 'sum' }, 'bass move = melody move − 2 for each floor up'),
+    list(
+      ['Melody up 1, floor up 1: bass ', b('down 1'), '. Contrary motion, as before.'],
+      ['Melody up 1, same floor: bass ', b('up 1'), '. Parallel, as before.'],
+      ['Melody up 1, floor ', em('down'), ' 1: bass ', b('up 3'), '. The bass leaps.'],
+      ['Melody up 2, floor up 1: bass ', b('stays'), '. The melody leaps over a held bass.'],
+      ['Melody up 2, floor up 2: bass ', b('down 2'), '. Both leap, in opposite directions.'],
+    ),
+    p('Try each kind. The caption says what the two outside voices did.'),
+    elevatorRide({ floor: 'triads', deg: 4, max: 'oct.low', rows: 'leaps' }),
+    head('When the melody leaps'),
+    p('A melody that jumps from one on note to the next on note has moved two steps and stayed inside the chord. There are three good ways to go with it.'),
+    list(
+      [b('Hold the bass'), ' and go up a floor. A third becomes a triad, a triad becomes a shell. The chord simply opens.'],
+      [b('Take everything with it'), ' on the same floor. The whole shape moves to its next position.'],
+      [b('Send the bass the other way'), ' and skip a floor. A third becomes a shell in one move.'],
+    ),
+    p('All three stay in one chord, so nothing has to resolve. The choice is only about how wide you want the sound to become.'),
+    head('When the bass leaps'),
+    p('Shrink the floor while the melody rises and the bass has to jump up to stay underneath: a triad under one note, then a third under the next. Both voices rise, so it is still parallel motion, but the bass covers three steps to the melody’s one. Follow it with contrary motion, so the bass steps back down, and you have a small phrase worth learning on its own.'),
+    head('Two habits worth having'),
+    list(
+      'After a leap, step back the other way. A jump followed by a step in the opposite direction sounds balanced. Breaking that habit on purpose is one way to add drama.',
+      'Arrive on an octave by contrary motion when you can. When both voices move the same way into an octave they blur into one line for a moment. That is not wrong, but it is a different effect, closer to doubling the melody.',
+    ),
+    say('"Melody up one, floor down one. Bass leaps up three."'),
+    read('The Elevator Sequence, pages 2, 9 and 10, 5 Chord Melody Games, pages 11 and 12, and Foundations I, page 26.'),
+  ],
+
+  'lm.mirror': () => [
+    p('When two voices close in on each other by contrary motion they eventually meet, and the line is over. ', b('Pivoting'), ' is a way to keep going. It also makes one of the most striking shapes a line can have: a sudden drop, and then on upward as if nothing had happened.'),
+    head('The pivot in a single line'),
+    p('Barry Harris taught the pivot for single-note lines. Go up a chord, but play everything after the first note an octave lower. The notes are the same. From the root of C6 the line falls a sixth and then climbs.'),
+    pivotFigure(),
+    p('The same can be done to a scale: walk up three notes, drop, and carry on walking up from an octave below.'),
+    head('The mirror'),
+    p('To pivot with chords you need one fact about the Elevator. The outside distances of the floors repeat.'),
+    list(
+      [b('Thirds'), ' span a third. ', b('Drop 2'), ' spans a third plus an octave.'],
+      [b('Triads'), ' span a fifth. ', b('Drop 3'), ' spans a fifth plus an octave.'],
+      [b('Shells'), ' span a sixth. ', b('Drop 2 and 4'), ' spans a sixth plus an octave.'],
+      [b('Octaves'), ' span an octave. ', b('Double octaves'), ' span two.'],
+    ),
+    p('Each wide floor is the ', b('reflection'), ' of a small one. Under the same melody note, the reflection has the same bass note an octave lower. A single note and an octave chord make a fifth pair.'),
+    head('How to pivot'),
+    p('When the next floor is due, play its reflection instead. Keep your attention on the melody, which carries on by step exactly as planned. The bass takes care of itself: it lands an octave below where it was heading, and that is a pivot in the bass.'),
+    mirrorRide(),
+    p('In the first line, the fourth chord should be a triad and a drop 3 is played instead. From there the floors go on shrinking one at a time, and five more chords fit before the voices are close again. Choose "Straight on" to hear the line without the pivot.'),
+    head('Opening instead of closing'),
+    p('The mirror also works when the voices are moving apart. Then the bass keeps stepping down as planned and the melody is the voice that jumps: up a ninth, and on up by step. A leap followed by a step in the same direction breaks the usual habit, which is exactly why it sounds so expressive.'),
+    head('How to practice it'),
+    list(
+      'Start with one pair: shell to triad, then shell to drop 3. The same melody over two different basses.',
+      'Say what is due before you play its reflection. "Triad is due. Drop 3."',
+      'Hum the melody note as you move, so the wide chord does not pull your ear away from it.',
+      'Then run a whole line: down the floors, through the mirror once, and on down.',
+    ),
+    read('The Elevator Sequence, pages 11 to 13, and Foundations II, pages 38 to 39.'),
   ],
 });
 

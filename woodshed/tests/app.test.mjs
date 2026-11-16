@@ -45,6 +45,9 @@ const { walkPath, walkStart } = await import('../js/theory.js');
 const { movePair, floorAfter } = await import('../js/motion.js');
 const { borrowPair, underBorrowed } = await import('../js/borrow.js');
 const { MOVES } = await import('../js/transform.js');
+const { leapPair, bassMove } = await import('../js/motion.js');
+const { pivotPair, reflectFloor } = await import('../js/mirror.js');
+const { partsInside, SHAPES: ALL_SHAPES, FLOORS: ALL_FLOORS } = await import('../js/floors.js');
 
 test('every item in the catalogue is well formed and playable in C', () => {
   const ids = cur.catalogue();
@@ -66,6 +69,20 @@ test('every item in the catalogue is well formed and playable in C', () => {
     if (it.kind === 'tb' || it.kind === 'tw' || it.kind === 'tx') assert.ok(it.role >= 0 && it.role < 4, id);
     if (it.kind === 'tw') assert.ok(['forward', 'backward', 'across'].includes(it.dir), id);
     if (it.kind === 'tf' || it.kind === 'tx') assert.ok(MOVES[it.move], id);
+    if (it.kind === 'fw') assert.ok(partsInside(it.shape, it.part).length, `${id}: the part is in there`);
+    if (it.kind === 'lq') assert.ok(ALL_SHAPES[it.floor] && Number.isInteger(bassMove(it.t, it.df)), id);
+    if (it.kind === 'lp') {
+      const m = leapPair('C', it);
+      assert.ok(m, id);
+      assert.equal(m.bass, bassMove(it.t, it.df), id);
+      assert.ok(Math.abs(m.top) > 1 || Math.abs(m.bass) > 1, `${id}: a voice leaps`);
+    }
+    if (it.kind === 'pm') assert.ok(reflectFloor(it.floor, it.wider), id);
+    if (it.kind === 'pv') {
+      const m = pivotPair('C', it);
+      assert.ok(m && m.accept.length, id);
+      assert.equal(m.to.notes[m.to.notes.length - 1].midi - m.to.notes[0].midi - (m.straight ? m.straight.notes[m.straight.notes.length - 1].midi - m.straight.notes[0].midi : 0), 12, `${id}: an octave wider than the chord that was due`);
+    }
     if (it.kind === 'bw') {
       const b = borrowPair('C', it);
       assert.ok(b, id);
@@ -375,4 +392,28 @@ test('the formulas between the chords of Stella match the Standards Series (4.1 
   const moves = songs.songMoves(read);
   assert.ok(moves.length >= 3 && moves.every((m) => MOVES[m.move]));
   assert.equal(new Set(moves.map((m) => m.move)).size, moves.length);
+});
+
+test('leaps and the mirror come last, and the two rule quizzes are for away mode', () => {
+  const ids = cur.UNITS.map((u) => u.id);
+  assert.deepEqual(ids.slice(-3), ['lm.intervals', 'lm.leaps', 'lm.mirror']);
+  assert.equal(ids[ids.length - 4], 'wide', 'pivoting needs the wide floors first');
+  // the frames are summoned like any other shape and count toward the floor they frame
+  const frames = cur.unitById('lm.intervals').core.filter((id) => id.startsWith('sh|'));
+  assert.equal(frames.length, 16);
+  assert.deepEqual([...new Set(frames.map(cur.floorOfItem))], ['triads', 'shells']);
+  // frames are not floors: the ear drill for floors and the Explore list of floors do not pick them up
+  assert.ok(ALL_FLOORS.every((f) => f.shapes.every((id) => !ALL_SHAPES[id].frame)));
+  for (const unit of ['lm.leaps', 'lm.mirror']) {
+    const u = cur.unitById(unit);
+    const quiz = u.core.filter((id) => /^(lq|pm)\|/.test(id));
+    assert.equal(quiz.length, 8);
+    const guitar = cur.buildSession('guitar', 10, u).map((x) => x.id);
+    const away = cur.buildSession('away', 10, u).map((x) => x.id);
+    assert.ok(guitar.length && guitar.every((id) => !/^(lq|pm)\|/.test(id)), `${unit}: nothing to tap with a guitar in hand`);
+    assert.ok(away.some((id) => /^(lq|pm)\|/.test(id)));
+  }
+  assert.equal(cur.SECTION_NAME[cur.SECTION.pv], 'Leaps and pivots');
+  assert.equal(cur.PLANNED.length, 2);
+  assert.equal(cur.floorOfItem('pv|maj6|triads|in|0'), 'leaps');
 });

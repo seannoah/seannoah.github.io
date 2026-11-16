@@ -468,3 +468,178 @@ test('chains of moves stay in one place on the neck', () => {
   assert.deepEqual(namedMove(six('Ab6'), six('Fm6')), { id: 'ii-on5', tonic: PCS.Eb });
   assert.equal(namedMove(six('C6'), six('Db6')), null);
 });
+
+// ---- the elevator of intervals, floors within floors, leaps and the mirror ----
+import { FLOORS, INTERVALS, partsInside, insideOf, partWhere, setLabel, stopName } from '../js/floors.js';
+import { leapPair, bassMove, voiceWords } from '../js/motion.js';
+import { reflect, reflectFloor, pivotPair, mirrorLine, pivotNotes } from '../js/mirror.js';
+
+test('the elevator of intervals: each floor by its outside notes (The Elevator Sequence p. 7)', () => {
+  // unison, third, fifth, sixth, octave: two scale steps wider each time
+  assert.deepEqual(INTERVALS.map((id) => SHAPES[id].steps[SHAPES[id].steps.length - 1]), [0, 2, 4, 6, 8]);
+  // a floor's frame has the same outside distance as the floor
+  for (const f of FLOORS.filter((x) => x.frame)) {
+    for (const id of f.shapes) assert.equal(SHAPES[id].steps[SHAPES[id].steps.length - 1], SHAPES[f.frame].steps[1], id);
+  }
+  // in C minor 6 the "fifths" are mostly tritones and one is a fourth (p. 10): C-G, D-A♭, E♭-A, F-B, G-C, A♭-D, A-E♭, B-F
+  const fifths = voicings('C', 'min6', 'fifth', [4, 3]).filter((v) => v.lowFret >= 10 && v.lowFret <= 21).concat(voicings('C', 'min6', 'fifth', [4, 3]).filter((v) => v.lowFret < 10));
+  const size = Object.fromEntries(fifths.map((v) => [v.bottomDeg, v.notes[1].midi - v.notes[0].midi]));
+  assert.deepEqual([0, 1, 2, 3, 4, 5, 6, 7].map((d) => size[d]), [7, 6, 6, 6, 5, 6, 6, 6]);
+  // sixths and bare octaves sit on two strings with one between
+  assert.deepEqual(frets(voicingFor('C', 'maj6', 'sixth', [4, 2], 'bottom', 0)), [10, 10]);   // C and A
+  assert.deepEqual(frets(voicingFor('C', 'maj6', 'oct2', [4, 2], 'bottom', 0)), [10, 13]);
+  assert.equal(setLabel([4, 2]), 'strings 4 and 2');
+  assert.equal(stopName('fifth'), 'Fifth');
+  assert.equal(stopName('shell.low'), 'Shells');
+});
+
+test('floors within floors (The Elevator Sequence pp. 8-9, Octave Chords short lesson)', () => {
+  const where = (shape, part) => partsInside(shape, part).map((idx) => partWhere(SHAPES[shape].steps.length, idx));
+  // "the third that lives in the center of a drop 2"
+  assert.deepEqual(where('drop2', 'thirds'), ['the middle two notes']);
+  assert.deepEqual(where('drop2', 'shell.low'), ['the top three notes']);
+  assert.deepEqual(where('drop2', 'shell.high'), ['the bottom three notes']);
+  // "a shell chord without the tenor voice has a third on top ... with no alto voice, a fifth on top"
+  assert.deepEqual(where('shell.high', 'thirds'), ['the top two notes']);
+  assert.deepEqual(where('shell.low', 'fifth'), ['the top two notes']);
+  assert.deepEqual(where('shell.low', 'sixth'), ['the two outside notes']);
+  // "take a drop 2 and 4 voicing and see the 6th in the middle"
+  assert.deepEqual(where('drop24', 'sixth'), ['the middle two notes']);
+  // octave chords hold triads and both shells
+  assert.deepEqual(where('oct.low', 'shell.low'), ['the bottom three notes']);
+  assert.deepEqual(where('oct.low', 'shell.high'), ['the top three notes']);
+  assert.deepEqual(where('oct.triad', 'triads'), ['the bottom three notes']);
+  assert.deepEqual(where('oct.high', 'triads'), ['the top three notes']);
+  assert.equal(where('triads', 'thirds').length, 2);
+  // a drop 2 also holds two sixths, each skipping a note; positions are not called "second" or "third"
+  assert.deepEqual(where('drop2', 'sixth'), ['the bottom note and the next but one', 'the top note and the next but one']);
+  assert.equal(partWhere(4, [1, 2], true), 'middle two');
+  // nothing is found inside itself, and every find really has the part's spacing
+  for (const shape of Object.values(SHAPES)) {
+    for (const { part, idx } of insideOf(shape.id)) {
+      assert.deepEqual(idx.map((i) => shape.steps[i] - shape.steps[idx[0]]), SHAPES[part].steps, `${shape.id} ${part}`);
+      assert.ok(idx.length < shape.steps.length);
+    }
+  }
+});
+
+test('leaps: bass move = melody move - 2 x floors (The Elevator Sequence p. 2)', () => {
+  assert.equal(bassMove(1, 1), -1);    // contrary, as before
+  assert.equal(bassMove(1, 0), 1);     // parallel, as before
+  assert.equal(bassMove(1, -1), 3);    // "the bass leaps up"
+  assert.equal(bassMove(2, 1), 0);     // the melody leaps to the next chord note, the bass holds
+  assert.equal(bassMove(2, 2), -2);    // both leap, apart
+  assert.equal(voiceWords(3), 'leaps up three steps');
+  assert.equal(voiceWords(-2), 'leaps down to the next note of the chord');
+  assert.equal(voiceWords(0), 'holds');
+
+  const lp = (floor, t, df, deg, scale = 'min6') => leapPair('C', { scale, floor, t, df, deg });
+  // p. 2, last example: a triad under C, then a third under D. The bass leaps from G up to B.
+  const a = lp('triads', 1, -1, 0);
+  assert.equal(spell('C', 'min6', a.from), 'G A C');
+  assert.equal(spell('C', 'min6', a.to), 'B D');
+  assert.deepEqual([a.top, a.bass, a.motion], [1, 3, 'parallel']);
+  assert.equal(moveWords(a), 'The melody stepped up, the bass leapt up: parallel motion.');
+  // the melody leaps to the next chord note over a held bass: third to triad. The two
+  // lower notes stay under the fingers and the melody crosses to the next string.
+  const b = lp('thirds', 2, 1, 2);
+  assert.equal(spell('C', 'min6', b.from), 'C E♭');
+  assert.equal(spell('C', 'min6', b.to), 'C E♭ G');
+  assert.deepEqual([b.top, b.bass, b.motion], [2, 0, 'oblique']);
+  assert.deepEqual(b.from.notes.map((n) => [n.string, n.fret]), [[3, 5], [2, 4]]);
+  assert.deepEqual(b.to.notes.map((n) => [n.string, n.fret]), [[3, 5], [2, 4], [1, 3]]);
+  assert.deepEqual([b.given[0].string, b.given[0].fret], [3, 5], 'the held bass is the given note');
+  // both voices leap apart inside one chord: third to shell, and either shell will do
+  const c = lp('thirds', 2, 2, 2);
+  assert.equal(spell('C', 'min6', c.to), 'A C G');
+  assert.deepEqual([c.top, c.bass, c.motion], [2, -2, 'contrary']);
+  assert.equal(c.accept.length, 2);
+  // the sum holds for every leap in the curriculum, and a leap of two stays in the same chord
+  for (const floor of ['thirds', 'triads', 'shell.low']) for (const [t, df] of [[1, -1], [-1, 1], [2, 1], [-2, -1], [2, 2], [-2, -2], [2, 0], [-2, 0]]) for (let deg = 0; deg < 8; deg++) {
+    const m = lp(floor, t, df, deg, 'maj6');
+    if (!m) continue;
+    assert.equal(m.top, t);
+    assert.equal(m.bass, bassMove(t, df), `${floor} ${t} ${df} ${deg}`);
+    if (Math.abs(t) === 2) assert.equal(m.from.on, m.to.on);
+    // a bass that holds does not change string or fret
+    if (m.bass === 0) assert.deepEqual([m.to.notes[0].string, m.to.notes[0].fret], [m.from.notes[0].string, m.from.notes[0].fret], `${floor} ${t} ${df} ${deg}`);
+    assert.ok(m.accept.some((notes) => notes.every((n, k) => n.string === m.to.notes[k].string && n.fret === m.to.notes[k].fret)));
+  }
+});
+
+test('the mirror: each wide floor reflects a small one (The Elevator Sequence p. 12)', () => {
+  assert.equal(reflect('unison'), 'oct.low');
+  assert.equal(reflect('thirds'), 'drop2');
+  assert.equal(reflect('triads'), 'drop3');
+  assert.equal(reflect('shell.low'), 'drop24');
+  assert.equal(reflect('oct.low'), 'dbl');
+  assert.equal(reflect('drop2'), null);
+  assert.equal(reflect('drop3', false), 'triads');
+  assert.equal(reflectFloor('shells'), 'drop24');
+  assert.equal(reflectFloor('octaves', false), 'unison');
+  assert.equal(reflectFloor('dbl'), null);
+  // the spans say the same thing in words
+  const span = (id) => FLOORS.find((f) => f.id === id).span;
+  for (const id of ['thirds', 'triads', 'shells']) assert.equal(span(reflectFloor(id)), `${span(id)} plus an octave`);
+});
+
+test('pivoting: the reflection of the floor that was due (The Elevator Sequence pp. 12-13)', () => {
+  // p. 12, first example, third chord to fourth: a shell under C (fr. 8), then a drop 3 where a triad was due (fr. 7)
+  const p = pivotPair('C', { scale: 'min6', floor: 'shell.low', how: 'in', deg: 0 });
+  assert.equal(spell('C', 'min6', p.from), 'E♭ G C');
+  assert.equal(spell('C', 'min6', p.to), 'F D G♯ B');
+  assert.equal(p.to.shape, 'drop3');
+  assert.deepEqual(p.to.set, [5, 3, 2, 1]);
+  assert.deepEqual(frets(p.to), [8, 7, 9, 7]);
+  assert.equal(p.from.minFret, 8);
+  assert.deepEqual([p.expected, p.mirror, p.top, p.bass], ['triads', 'drop3', -1, -7]);
+  // the chord that was due sits under the same melody note, its bass an octave higher
+  assert.equal(spell('C', 'min6', p.straight), 'F G♯ B');
+  assert.equal(p.straight.notes[0].midi - p.to.notes[0].midi, 12);
+  assert.equal(p.given[0].midi, p.to.notes[3].midi);
+
+  // p. 13: thirds moving apart. A triad is due under D; the drop 3 keeps the bass and lifts the melody a ninth.
+  const q = pivotPair('C', { scale: 'min6', floor: 'thirds', how: 'out', deg: 0 });
+  assert.equal(spell('C', 'min6', q.from), 'A C');
+  assert.equal(spell('C', 'min6', q.to), 'G♯ F B D');
+  assert.deepEqual([q.expected, q.mirror, q.top, q.bass], ['triads', 'drop3', 9, -1]);
+  assert.equal(q.given[0].midi, q.to.notes[0].midi);
+
+  // every pivot in the catalogue floors: one voice steps as planned, the other lands an octave away
+  for (const scale of ['maj6', 'min6']) for (const how of ['in', 'out']) for (const floor of ['thirds', 'triads', 'shell.low', 'oct.low']) for (let deg = 0; deg < 8; deg++) {
+    const m = pivotPair('C', { scale, floor, how, deg });
+    if (!m) continue;
+    assert.deepEqual([m.top, m.bass], how === 'in' ? [-1, -7] : [9, -1], `${scale} ${floor} ${how} ${deg}`);
+    assert.equal(SHAPES[m.to.shape].floor, SHAPES[m.mirror].floor);
+    assert.ok(m.accept.some((notes) => notes === m.to.notes || notes.every((n, k) => n.fret === m.to.notes[k].fret && n.string === m.to.notes[k].string)));
+    assert.ok(Math.abs(m.from.minFret - m.to.minFret) <= 5, `${scale} ${floor} ${how} ${deg} stays near`);
+  }
+});
+
+test('a pivoted line (The Elevator Sequence pp. 11-12)', () => {
+  const name = (n) => sn('C', 'min6')[n.deg].name;
+  const basses = (line) => line.map((x) => name(x.voicing.notes[0])).join(' ');
+  const tops = (line) => line.map((x) => name(x.voicing.notes[x.voicing.notes.length - 1])).join(' ');
+  const floors = (line) => line.map((x) => SHAPES[x.voicing.shape].floor).join(' ');
+  // first example on p. 12: drop 2 at fr. 10, the melody walking down from E♭, the pivot at the fourth chord
+  const one = mirrorLine('C', 'min6', { start: 'drop2', top: 75, count: 9, pivotAt: 3 });
+  assert.equal(tops(one), 'E♭ D C B A G♯ G F E♭');
+  // the bass does what the scale did on p. 11: C D E♭, then from F onward an octave lower
+  assert.equal(basses(one), 'C D E♭ F G G♯ A B C');
+  assert.deepEqual(one.map((x) => x.voicing.notes[0].midi), [60, 62, 63, 53, 55, 56, 57, 59, 60]);
+  assert.equal(floors(one), 'drop2 octaves shells drop3 drop2 octaves shells triads thirds');
+  assert.deepEqual(one.slice(0, 8).map((x) => x.voicing.minFret), [10, 10, 8, 7, 8, 9, 7, 6]);   // the "fr." labels on the page
+  assert.equal(one[3].expected, 'triads');
+  // second example: start a floor higher, and the shell that was due becomes a drop 2 and 4
+  const two = mirrorLine('C', 'min6', { start: 'drop3', top: 75, count: 9, pivotAt: 3 });
+  assert.equal(floors(two), 'drop3 drop2 octaves drop24 drop3 drop2 octaves shells triads');
+  assert.deepEqual(two.slice(0, 6).map((x) => x.voicing.minFret), [11, 9, 8, 5, 5, 7]);
+  assert.equal(two[3].expected, 'shell.low');
+  // without the pivot the two voices meet on one note and the line is over
+  const straight = mirrorLine('C', 'min6', { start: 'drop2', top: 75, count: 9 });
+  assert.equal(floors(straight), 'drop2 octaves shells triads thirds unison');
+  // Barry Harris's pivot in single notes (p. 11): F A C E♭, with everything after the F an octave down
+  const { up, pivoted } = pivotNotes('F', 'dom7', 53);
+  assert.deepEqual(up, [53, 57, 60, 63]);
+  assert.deepEqual(pivoted, [53, 45, 48, 51]);
+});

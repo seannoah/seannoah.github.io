@@ -7,6 +7,12 @@
 //   floor down, top steps down   -> the bass steps up                  (contrary)
 //   top holds, a lower floor steps beneath it                          (oblique)
 // These match the worked examples in The Elevator Sequence, pp. 2 and 7.
+//
+// All of them are one sum, counted in scale steps:
+//   bass move = melody move - 2 x floors climbed
+// which also covers leaps: a melody that leaps to the next note of the chord (two steps)
+// while the bass holds, or a bass that leaps because the floor shrank under a rising
+// melody ("the bass leaps up, then steps down", The Elevator Sequence, p. 2).
 
 import { OPEN, MAX_FRET, degOfMidi, stepMidi, stepsBetween, isOn } from './theory.js';
 import { SHAPES, ELEVATOR, voicings, voicingAt, setWithTop, siblings, floorOf } from './floors.js';
@@ -67,14 +73,19 @@ export function movePair(keyId, it) {
   }
 
   const i = ELEVATOR.indexOf(it.floor);
-  const toShape = it.move === 'par' ? it.floor : ELEVATOR[i + it.dir];
+  return underMelody(keyId, s, it.floor, it.move === 'par' ? it.floor : ELEVATOR[i + it.dir], it.deg, it.dir);
+}
+
+// Two chords with the melody on one string: a shape beneath degree `deg`, then `toShape`
+// beneath the note `melody` scale steps away.
+function underMelody(keyId, s, fromShape, toShape, deg, melody) {
   if (!toShape) return null;
-  const fromSet = setWithTop(it.floor, TOP_STRING);
+  const fromSet = setWithTop(fromShape, TOP_STRING);
   const toSet = setWithTop(toShape, TOP_STRING);
   if (!fromSet || !toSet) return null;
-  const starts = voicings(keyId, s, it.floor, fromSet).filter((v) => v.topDeg === it.deg).sort((x, y) => prefer(x) - prefer(y));
+  const starts = voicings(keyId, s, fromShape, fromSet).filter((v) => v.topDeg === deg).sort((x, y) => prefer(x) - prefer(y));
   for (const from of starts) {
-    const target = stepMidi(keyId, s, top(from).midi, it.dir);
+    const target = stepMidi(keyId, s, top(from).midi, melody);
     const to = voicingAt(keyId, s, toShape, toSet, 'top', target);
     if (!to) continue;
     // any shape of the target floor with the same outer voices is a right answer
@@ -82,11 +93,76 @@ export function movePair(keyId, it) {
       .map((id) => voicingAt(keyId, s, id, setWithTop(id, TOP_STRING), 'top', target))
       .filter((v) => v && v.notes[0].midi === to.notes[0].midi)
       .map((v) => v.notes);
-    const a = named(from, it.floor, keyId, s);
+    const a = named(from, fromShape, keyId, s);
     const b = named(to, toShape, keyId, s);
     return { from: a, to: b, given: [top(to)], accept: accept.length ? accept : [to.notes], ...describeMove(keyId, s, a, b) };
   }
   return null;
+}
+
+// ---- leaps ----
+// How far the bass moves, in scale steps, when the melody moves `melody` steps and the
+// chord changes by `floors` floors.
+export const bassMove = (melody, floors) => melody - 2 * floors;
+
+// The chord of a floor (any of its shapes, on any strings) beneath this melody pitch that
+// sits closest to `from`: it keeps the most notes under the fingers, then keeps the melody
+// on its string, then stays near. With `hold`, only chords that keep that one note where
+// it is (same string, same fret) are considered.
+export function nearestUnder(keyId, s, shapeId, topMidi, from, hold = null) {
+  let best = null;
+  for (const id of siblings(shapeId)) {
+    for (const set of SHAPES[id].sets) {
+      const v = voicingAt(keyId, s, id, set, 'top', topMidi);
+      if (!v || (hold && !v.notes.some((n) => same(n, hold)))) continue;
+      const kept = v.notes.filter((n) => from.notes.some((m) => same(m, n))).length;
+      const score = -4 * kept + (top(v).string === top(from).string ? 0 : 2.5) + Math.abs(v.minFret - from.minFret) * 0.5 + prefer(v) * 0.3 + (id === shapeId ? 0 : 0.6);
+      if (!best || score < best.score) best = { score, v: named(v, id) };
+    }
+  }
+  return best ? best.v : null;
+}
+const same = (a, b) => a.string === b.string && a.fret === b.fret;
+
+// A move in which an outer voice leaps, or holds while the other leaps.
+// it: { scale, floor: shape id, t: melody steps, df: floors climbed, deg }
+// The first chord has its melody note on string 2. When the bass holds, it stays under the
+// same finger and the melody leaps to the next string, so it is the bass that is given.
+export function leapPair(keyId, it) {
+  const s = it.scale;
+  const toShape = ELEVATOR[ELEVATOR.indexOf(it.floor) + it.df];
+  const fromSet = setWithTop(it.floor, TOP_STRING);
+  if (!toShape || !fromSet) return null;
+  const held = bassMove(it.t, it.df) === 0;
+  let best = null;
+  for (const start of voicings(keyId, s, it.floor, fromSet)) {
+    if (start.topDeg !== it.deg) continue;
+    const from = named(start, it.floor);
+    const to = nearestUnder(keyId, s, toShape, stepMidi(keyId, s, top(from).midi, it.t), from, held ? from.notes[0] : null);
+    if (!to || (held && !same(to.notes[0], from.notes[0]))) continue;
+    const score = prefer(from) + prefer(to);
+    if (!best || score < best.score) best = { score, from, to };
+  }
+  if (!best) return null;
+  const { from, to } = best;
+  const given = held ? to.notes[0] : top(to);
+  // any shape of the target floor on the same strings with the same outer voices is a right answer
+  const accept = siblings(toShape)
+    .map((id) => voicingAt(keyId, s, id, to.set, 'top', top(to).midi))
+    .filter((v) => v && v.notes[0].midi === to.notes[0].midi)
+    .map((v) => v.notes);
+  return { from, to, given: [given], accept: accept.length ? accept : [to.notes], held, ...describeMove(keyId, s, from, to) };
+}
+
+// What a voice did, as a word and a size: bassWords(3) is "leaps up three steps".
+const COUNT = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
+export function voiceWords(n) {
+  if (n === 0) return 'holds';
+  const way = n > 0 ? 'up' : 'down';
+  const size = Math.abs(n);
+  if (size === 1) return `steps ${way}`;
+  if (size === 2) return `leaps ${way} to the next note of the chord`;
+  return `leaps ${way} ${COUNT[size] || size} steps`;
 }
 
 // In words: what each outer voice did.

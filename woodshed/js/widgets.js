@@ -3,9 +3,10 @@
 import { h, icon } from './dom.js';
 import { neck, windowFor } from './neck.js';
 import * as audio from './audio.js';
-import { SCALES, SCALE_ORDER, scaleNotes, chordName, stepSize, walkPath, stepMidi, mod } from './theory.js';
-import { SHAPES, ELEVATOR, voicings, voicingAt, voicingFor, setWithTop, setLabel, floorOf } from './floors.js';
-import { describeMove, moveWords, TOP_STRING } from './motion.js';
+import { SCALES, SCALE_ORDER, OPEN, scaleNotes, chordName, stepSize, walkPath, stepMidi, degOfMidi, mod } from './theory.js';
+import { SHAPES, ELEVATOR, voicings, voicingAt, voicingFor, setWithTop, setLabel, stopName, insideOf, partWhere } from './floors.js';
+import { mirrorLine, pivotNotes } from './mirror.js';
+import { describeMove, moveWords, nearestUnder, bassMove, TOP_STRING } from './motion.js';
 import { borrowIn, borrowWords, voiceName } from './borrow.js';
 import { ROLES, chord as sixth, chordLabel, applyFormula, formulaText, formulaWords, roleAfter, tallRoles, sixthVoicing, follow, movesText, chainById, chainIn } from './transform.js';
 import { pickRow } from './dom.js';
@@ -121,25 +122,34 @@ export function shapeBrowser(init) {
 // Ride the elevator: keep a melody note on string 2 and change what the melody and the
 // floor do, one step at a time. The caption says what the outer voices did.
 export function elevatorRide(init = {}) {
-  const cfg = { key: 'C', scale: 'maj6', floor: 'triads', deg: 4, max: 'drop24', ...init };
-  const column = ELEVATOR.slice(0, ELEVATOR.indexOf(cfg.max) + 1);
+  const cfg = { key: 'C', scale: 'maj6', floor: 'triads', deg: 4, max: 'drop24', rows: 'steps', ...init };
+  // the stops: the floors up to `max`, or any other column (the elevator of intervals)
+  const column = cfg.column || ELEVATOR.slice(0, ELEVATOR.indexOf(cfg.max) + 1);
   const at = (shapeId, topMidi) => voicingAt(cfg.key, cfg.scale, shapeId, setWithTop(shapeId, TOP_STRING), 'top', topMidi);
   let floor = cfg.floor;
   let cur = voicingFor(cfg.key, cfg.scale, floor, setWithTop(floor, TOP_STRING), 'top', cfg.deg);
   let prev = null;
-  let note = 'Use the buttons to move the melody, change floor, or do both at once.';
+  let note = cfg.rows === 'leaps' ? 'Each button moves the melody and changes floor at once. Watch what the bass does.' : 'Use the buttons to move the melody, change floor, or do both at once.';
   const root = h('figure', { class: 'fig browser ride' });
   const topOf = (v) => v.notes[v.notes.length - 1];
+  // floors are named in the plural ("Triads"); the stops of another column by their own names ("Fifth")
+  const nameOf = (id) => (cfg.column ? SHAPES[id].name : stopName(id));
 
   function go(floorStep, melodyStep) {
     const nextFloor = column[column.indexOf(floor) + floorStep];
-    const next = nextFloor ? at(nextFloor, stepMidi(cfg.key, cfg.scale, topOf(cur).midi, melodyStep)) : null;
+    const target = stepMidi(cfg.key, cfg.scale, topOf(cur).midi, melodyStep);
+    // With leaps the hand is followed: a bass that holds stays under its finger, and the
+    // melody may cross to the next string. Otherwise the melody stays on string 2.
+    const held = bassMove(melodyStep, floorStep) === 0 ? cur.notes[0] : null;
+    const next = !nextFloor ? null
+      : cfg.rows === 'leaps' ? (held && nearestUnder(cfg.key, cfg.scale, nextFloor, target, cur, held)) || nearestUnder(cfg.key, cfg.scale, nextFloor, target, cur)
+      : at(nextFloor, target);
     if (!next) {
-      note = floorStep && !nextFloor ? (floorStep > 0 ? 'That is the top floor here.' : 'That is the ground floor.') : 'That runs off the neck. Try the other direction.';
+      note = floorStep && !nextFloor ? (floorStep > 0 ? 'That is as far out as this goes.' : 'That is as far in as this goes.') : 'That runs off the neck. Try the other direction.';
       return render();
     }
     prev = cur; cur = next;
-    const from = floorOf(floor).name; const to = floorOf(nextFloor).name;
+    const from = nameOf(floor); const to = nameOf(nextFloor);
     floor = nextFloor;
     const d = describeMove(cfg.key, cfg.scale, prev, cur);
     note = `${from === to ? `${from}, same floor` : `${from} to ${to.toLowerCase()}`}. ${moveWords(d)}`;
@@ -166,9 +176,14 @@ export function elevatorRide(init = {}) {
       h('div', { class: 'browser-title' },
         h('span', { class: `tag ${cur.on ? 'on' : 'off'}` }, cur.on ? 'on' : 'off'),
         h('strong', null, chordName(cfg.key, cfg.scale, cur.on)),
-        h('span', { class: 'muted' }, floor === 'unison' ? ` the ${SCALES[cfg.scale].say[topOf(cur).deg]} alone` : ` ${floorOf(floor).name.toLowerCase()} beneath the ${SCALES[cfg.scale].say[topOf(cur).deg]}`)),
+        h('span', { class: 'muted' }, floor === 'unison' ? ` the ${SCALES[cfg.scale].say[topOf(cur).deg]} alone` : ` ${(cfg.column ? SHAPES[floor].a : stopName(floor).toLowerCase())} beneath the ${SCALES[cfg.scale].say[topOf(cur).deg]}`)),
       board.el,
-      h('div', { class: 'ride-grid' },
+      cfg.rows === 'leaps' ? h('div', { class: 'ride-grid' },
+        h('span', { class: 'ride-label' }, 'Bass holds'), btn('Melody leaps down', -1, -2), btn('Melody leaps up', 1, 2),
+        h('span', { class: 'ride-label' }, 'Bass leaps'), btn('Melody steps down', 1, -1), btn('Melody steps up', -1, 1),
+        h('span', { class: 'ride-label' }, 'Both leap'), btn('Together, in', -2, -2), btn('Apart, out', 2, 2),
+        h('span', { class: 'ride-label' }, 'Same floor'), btn('Leap down', 0, -2), btn('Leap up', 0, 2))
+      : h('div', { class: 'ride-grid' },
         h('span', { class: 'ride-label' }, 'Same floor'), btn('Melody down', 0, -1), btn('Melody up', 0, 1),
         h('span', { class: 'ride-label' }, 'Contrary'), btn('In: floor down', -1, -1), btn('Out: floor up', 1, 1),
         h('span', { class: 'ride-label' }, 'Melody holds'), btn('Floor down', -1, 0), btn('Floor up', 1, 0)),
@@ -346,6 +361,171 @@ export function chainPlayer(init = {}) {
         h('button', { class: 'round', 'aria-label': 'Next chord', onclick: () => jump(mod(i + 1, steps.length)) }, icon('next', 20))),
       h('figcaption', null, caption),
     ].filter(Boolean));
+  }
+  render();
+  return root;
+}
+
+// ---- floors within floors ----
+// One chord, and every smaller floor that can be found inside it. Tap a part to see and hear it.
+export function insideFigure(init = {}) {
+  const cfg = { key: 'C', scale: 'maj6', shape: 'drop2', shapes: ['drop2', 'oct.low', 'shell.low', 'shell.high', 'triads', 'drop3', 'drop24'], ...init };
+  let shapeId = cfg.shape;
+  let at = 0;
+  let sel = null;
+  const root = h('figure', { class: 'fig browser ride' });
+  const short = { 'oct.low': 'Octave', 'shell.low': 'Low shell', 'shell.high': 'High shell' };
+  const nameOf = (id) => short[id] || SHAPES[id].name;
+
+  function render() {
+    const shape = SHAPES[shapeId];
+    const list = voicings(cfg.key, cfg.scale, shapeId, shape.primary).filter((v) => v.on && v.lowFret > 0 && v.maxFret <= 13);
+    at = mod(at, list.length);
+    const v = list[at];
+    const parts = insideOf(shapeId);
+    const part = sel != null ? parts[sel] : null;
+    const win = sixthWindow([v]);
+    const board = neck({
+      lo: win.lo, hi: win.hi, focus: v.set,
+      marks: v.notes.map((n, i) => ({ string: n.string, fret: n.fret, label: labelOf(cfg.scale, n.deg), kind: !part ? kindOf(n.deg) : part.idx.includes(i) ? `${kindOf(n.deg)} anchor` : 'from' })),
+      onTap: (s, f) => { const n = v.notes.find((x) => x.string === s && x.fret === f); if (n) audio.note(n.midi); },
+    });
+    const whole = () => { audio.stopAll(); audio.chord(v.notes.map((n) => n.midi), 0, 0.04, 0.55); };
+    const pick = (k) => {
+      sel = k; render();
+      audio.stopAll();
+      audio.chord(v.notes.map((n) => n.midi), 0, 0.03, 0.45);
+      audio.chord(parts[k].idx.map((i) => v.notes[i].midi), 1.0, 0.03, 0.6);
+    };
+    const said = part ? part.idx.map((i) => SCALES[cfg.scale].say[v.notes[i].deg]).join(', ') : '';
+    root.replaceChildren(
+      pickRow('Look inside', cfg.shapes.map((id) => [id, nameOf(id)]), shapeId, (id) => { shapeId = id; sel = null; at = 0; render(); }),
+      h('div', { class: 'browser-title' },
+        h('strong', null, chordName(cfg.key, cfg.scale, true)),
+        h('span', { class: 'muted' }, ` ${shape.name.toLowerCase()} · ${setLabel(v.set)}`)),
+      board.el,
+      h('div', { class: 'parts-row' }, parts.map((x, k) => h('button', { class: 'part-chip' + (k === sel ? ' sel' : ''), onclick: () => pick(k) },
+        SHAPES[x.part].name, h('small', null, partWhere(v.notes.length, x.idx, true))))),
+      h('div', { class: 'browser-controls' },
+        h('button', { class: 'round', 'aria-label': 'Previous position', onclick: () => { at -= 1; render(); } }, icon('back', 20)),
+        h('button', { class: 'pill', onclick: () => { sel = null; render(); whole(); } }, icon('play', 16), 'Whole chord'),
+        h('button', { class: 'round', 'aria-label': 'Next position', onclick: () => { at += 1; render(); } }, icon('next', 20))),
+      h('figcaption', null, part
+        ? `${partWhere(v.notes.length, part.idx).replace(/^t/, 'T')} make ${SHAPES[part.part].a}: ${said}.`
+        : `${parts.length} smaller shapes live inside this one. Tap each to hear the whole chord, then the part.`),
+    );
+  }
+  render();
+  return root;
+}
+
+// ---- pivoting ----
+// Where a pitch sits inside one hand position (frets lo to lo + 4).
+function inPosition(midi, lo = 4) {
+  for (const string of [6, 5, 4, 3, 2, 1]) {
+    const fret = midi - OPEN[string];
+    if (fret >= lo && fret <= lo + 4) return { string, fret, midi };
+  }
+  return null;
+}
+
+// Barry Harris's pivot in single notes: a chord, or the scale, straight and then pivoted.
+export function pivotFigure(init = {}) {
+  const cfg = { key: 'C', scale: 'maj6', from: 60, ...init };
+  const chord = pivotNotes(cfg.key, cfg.scale, cfg.from);
+  const up = [0, 1, 2, 3, 4, 5, 6, 7, 8].map((n) => stepMidi(cfg.key, cfg.scale, cfg.from, n));
+  const LINES = {
+    chord: { straight: chord.up, pivoted: chord.pivoted },
+    scale: { straight: up, pivoted: [...up.slice(0, 3), ...up.slice(3).map((m) => m - 12)] },
+  };
+  const SAYS = {
+    chord: { straight: 'Up a chord: root, third, fifth, sixth.', pivoted: 'The same four notes, with everything after the first an octave lower. The line falls a sixth, then climbs.' },
+    scale: { straight: 'Up the scale, root to root.', pivoted: 'Three notes up, then the rest of the scale from an octave below. One long climb becomes a drop and a climb.' },
+  };
+  let line = 'chord';
+  let how = 'straight';
+  let timers = [];
+  const root = h('figure', { class: 'fig browser ride' });
+
+  function render(play) {
+    timers.forEach(clearTimeout); timers = [];
+    const notes = LINES[line][how].map((m) => inPosition(m)).filter(Boolean);
+    const marks = notes.map((n) => { const deg = degOfMidi(cfg.key, cfg.scale, n.midi); return { string: n.string, fret: n.fret, kind: kindOf(deg), label: labelOf(cfg.scale, deg) }; });
+    const board = neck({ lo: 3, hi: 9, marks: play ? [] : marks, onTap: (s, f) => { const n = notes.find((x) => x.string === s && x.fret === f); if (n) audio.note(n.midi); } });
+    const btn = (id, text) => h('button', { class: 'pill' + (how === id ? ' sel' : ''), onclick: () => { how = id; render(true); } }, icon('play', 16), text);
+    root.replaceChildren(
+      pickRow('Line', [['chord', 'A chord'], ['scale', 'The scale']], line, (v) => { line = v; how = 'straight'; render(true); }),
+      board.el,
+      h('div', { class: 'pills center' }, btn('straight', 'Straight'), btn('pivoted', 'Pivoted')),
+      h('figcaption', null, SAYS[line][how]),
+    );
+    if (play) {
+      const gap = line === 'chord' ? 0.42 : 0.34;
+      audio.stopAll();
+      audio.line(notes.map((n) => n.midi), gap);
+      // the notes appear as they sound
+      notes.forEach((n, k) => timers.push(setTimeout(() => board.draw(marks.slice(0, k + 1)), k * gap * 1000)));
+    }
+  }
+  render(false);
+  return root;
+}
+
+const STOP_SHORT = { unison: 'one note', thirds: 'third', triads: 'triad', shells: 'shell', octaves: 'octave', drop2: 'drop 2', drop3: 'drop 3', drop24: 'drop 2 & 4', dbl: 'double' };
+const STOP_ONE = { unison: 'a single note', thirds: 'a third', triads: 'a triad', shells: 'a shell', octaves: 'an octave chord', drop2: 'a drop 2', drop3: 'a drop 3', drop24: 'a drop 2 and 4', dbl: 'a double octave' };
+
+// A line of chords with the melody walking down and the floors closing in, straight or
+// through the mirror (The Elevator Sequence, p. 12).
+export function mirrorRide(init = {}) {
+  const cfg = { key: 'C', scale: 'maj6', start: 'drop2', ...init };
+  let scale = cfg.scale;
+  let start = cfg.start;
+  let pivot = true;
+  let i = 0;
+  const root = h('figure', { class: 'fig browser ride' });
+  const sound = (v, t = 0) => audio.chord(v.notes.map((n) => n.midi), t, 0.03, 0.55);
+  const floorId = (st) => SHAPES[st.voicing.shape].floor;
+
+  function render() {
+    const steps = mirrorLine(cfg.key, scale, { start, top: 72 + SCALES[scale].semis[2], count: 9, pivotAt: pivot ? 3 : undefined });
+    i = Math.min(i, steps.length - 1);
+    const st = steps[i];
+    const v = st.voicing;
+    const prev = i > 0 ? steps[i - 1].voicing : null;
+    const win = sixthWindow(prev ? [v, prev] : [v]);
+    const moved = (n) => !v.notes.some((x) => x.string === n.string && x.fret === n.fret);
+    const board = neck({
+      lo: win.lo, hi: win.hi, focus: [...new Set([...v.notes, ...(prev ? prev.notes : [])].map((n) => n.string))],
+      marks: [
+        ...(prev ? prev.notes.filter(moved).map((n) => ({ string: n.string, fret: n.fret, kind: 'from', label: labelOf(scale, n.deg) })) : []),
+        ...v.notes.map((n) => ({ string: n.string, fret: n.fret, kind: kindOf(n.deg), label: labelOf(scale, n.deg) })),
+      ],
+      onTap: (s, f) => { const n = v.notes.find((x) => x.string === s && x.fret === f); if (n) audio.note(n.midi); },
+    });
+    const jump = (k) => { i = k; render(); audio.stopAll(); sound(steps[k].voicing); };
+    const row = h('div', { class: 'chain' }, steps.map((x, k) =>
+      h('button', { class: 'chain-step' + (k === i ? ' sel' : '') + (x.pivot ? ' pivot' : ''), onclick: () => jump(k) },
+        h('small', null, chordName(cfg.key, scale, x.voicing.on)), STOP_SHORT[floorId(x)])));
+    const say = SCALES[scale].say;
+    const topNote = v.notes[v.notes.length - 1];
+    const last = i === steps.length - 1;
+    const caption = st.pivot
+      ? `${STOP_ONE[SHAPES[st.expected].floor].replace(/^a/, 'A')} was due here. This is its reflection, ${STOP_ONE[floorId(st)]}. The melody steps down to the ${say[topNote.deg]} as planned, and the bass lands an octave lower than it was heading.`
+      : i === 0 ? `The melody starts on the ${say[topNote.deg]} and walks down one step per chord. Each chord is one floor smaller, so the bass climbs to meet it.`
+      : last && floorId(st) === 'unison' ? 'The two voices have met on one note. Without a pivot the line ends here.'
+      : `${STOP_ONE[floorId(st)].replace(/^a/, 'A')} beneath the ${say[topNote.deg]}: the melody down a step, the bass up a step.`;
+    root.replaceChildren(
+      pickRow('Scale', [['maj6', `${cfg.key} major 6`], ['min6', `${cfg.key} minor 6`]], scale, (x) => { scale = x; i = 0; render(); }),
+      pickRow('Start on', [['drop2', 'Drop 2'], ['drop3', 'Drop 3']], start, (x) => { start = x; i = 0; render(); }),
+      pickRow('Line', [[true, 'Through the mirror'], [false, 'Straight on']], pivot, (x) => { pivot = x; i = 0; render(); }),
+      row, board.el,
+      h('div', { class: 'browser-controls' },
+        h('button', { class: 'round', 'aria-label': 'Previous chord', onclick: () => jump(mod(i - 1, steps.length)) }, icon('back', 20)),
+        h('button', { class: 'pill', onclick: () => { audio.stopAll(); steps.forEach((x, k) => sound(x.voicing, k * 0.95)); } }, icon('play', 16), 'Play it through'),
+        h('button', { class: 'round', 'aria-label': 'Next chord', onclick: () => jump(mod(i + 1, steps.length)) }, icon('next', 20))),
+      h('div', { class: 'pills center' }, pill('Bass line alone', () => { audio.stopAll(); audio.line(steps.map((x) => x.voicing.notes[0].midi), 0.4); })),
+      h('figcaption', null, caption),
+    );
   }
   render();
   return root;

@@ -6,10 +6,11 @@ import { h, cap, icon } from './dom.js';
 import { neck, windowFor } from './neck.js';
 import * as audio from './audio.js';
 import { SCALES, OPEN, keyOf, scaleNotes, chordName, scaleTitle, stepSize, walkPath, walkStart, stringPath, mod } from './theory.js';
-import { SHAPES, FLOORS, ELEVATOR, voicingFor, voicingAt, voicings, anchorNote, setLabel, floorOf } from './floors.js';
+import { SHAPES, FLOORS, ELEVATOR, voicingFor, voicingAt, voicings, anchorNote, setLabel, floorOf, partsInside, partWhere } from './floors.js';
 import { parseChord, scaleOptions, scaleKey } from './harmony.js';
 import { borrowPair, underBorrowed, borrowIn, borrowWords, voiceName } from './borrow.js';
-import { movePair, moveWords, floorAfter, shapeName } from './motion.js';
+import { movePair, moveWords, floorAfter, shapeName, leapPair, bassMove, voiceWords } from './motion.js';
+import { pivotPair, reflectFloor } from './mirror.js';
 import { ROLES, chord as sixth, chordLabel, formulaText, formulaWords, tallRoles, sixthVoicing, transformPair, movesText, moveIn, chainIn } from './transform.js';
 import { parse, unitById, isActive } from './curriculum.js';
 import { isNew } from './store.js';
@@ -553,12 +554,15 @@ function earFloor(it, ctx) {
 // ---- moving between floors ----
 const same = (a, b) => a.string === b.string && a.fret === b.fret;
 const MOVE_KICKER = { par: 'Parallel motion', con: 'Contrary motion', obl: 'Oblique motion' };
+const kickerOf = (it) => (it.kind === 'lp' ? 'Leaps' : it.kind === 'pv' ? 'Through the mirror' : MOVE_KICKER[it.move]);
+// The two chords of an item: a step between floors, a leap, or a pivot.
+const pairOf = (key, it) => (it.kind === 'lp' ? leapPair(key, it) : it.kind === 'pv' ? pivotPair(key, it) : movePair(key, it));
 const movingThing = { unison: 'note', thirds: 'third', 'shell.low': 'shell' };
 
 // The two chords of a move, falling back to C if this key has no room for it.
 function moveInfo(it, ctx) {
-  const key = movePair(ctx.key, it) ? ctx.key : 'C';
-  const m = movePair(key, it);
+  const key = pairOf(ctx.key, it) ? ctx.key : 'C';
+  const m = pairOf(key, it);
   const frets = [...m.from.notes, ...m.to.notes].map((n) => n.fret);
   const fretted = frets.filter((f) => f > 0);
   const low = fretted.length ? Math.min(...fretted) : 1;
@@ -569,10 +573,14 @@ function moveInfo(it, ctx) {
   const strings = [...new Set([...m.from.notes, ...m.to.notes].map((n) => n.string))];
   return { ...m, key, lo, hi, fromTop, toTop, strings };
 }
-const chordWord = (c) => (c.shape ? shapeName(c.shape) : c.mixed ? 'mixed chord' : 'chord');
+// One chord of a floor, in a word or two. An octave chord is not named for what is inside it here.
+const oneOf = (shapeId) => (SHAPES[shapeId].floor === 'octaves' && !SHAPES[shapeId].frame ? 'octave chord' : shapeName(shapeId));
+const chordWord = (c) => (c.shape ? oneOf(c.shape) : c.mixed ? 'mixed chord' : 'chord');
 const article = (word) => (/^[aeiou]/.test(word) ? 'an' : 'a');
 
 function movePrompt(it, m, guitar) {
+  if (it.kind === 'lp') return leapPrompt(it, m, guitar);
+  if (it.kind === 'pv') return pivotPrompt(it, m, guitar);
   const from = say(it.scale, m.fromTop.deg);
   const to = say(it.scale, m.toTop.deg);
   if (it.move === 'obl') {
@@ -590,6 +598,8 @@ function movePrompt(it, m, guitar) {
 }
 
 function moveAnswerText(it, m) {
+  if (it.kind === 'lp') return `${cap(chordWord(m.from))} to ${chordWord(m.to)}. ${moveWords(m)} ${sumText(it.t, it.df)}`;
+  if (it.kind === 'pv') return pivotText(m);
   if (it.move === 'obl') {
     const where = m.to.mixed ? `Now ${article(m.to.under.on ? 'on' : 'off')} ${m.to.under.on ? 'on' : 'off'} ${movingThing[it.floor]} sits under ${article(m.to.on ? 'on' : 'off')} ${m.to.on ? 'on' : 'off'} note.` : 'Everything lines up in one chord again.';
     return `${moveWords(m)} ${where}`;
@@ -647,7 +657,7 @@ function moveTap(it, ctx) {
   };
   ctx.foot(h('button', { class: 'primary wide', onclick: check }, 'Check'));
   return frame({
-    kicker: `${MOVE_KICKER[it.move]} · ${scaleTitle(m.key, it.scale)}`,
+    kicker: `${kickerOf(it)} · ${scaleTitle(m.key, it.scale)}`,
     prompt: text.prompt, hint: `${text.hint} The faded notes are where you are now.`,
     body: [board.el, h('div', { class: 'pills center' }, pill('Hear the first chord', () => { audio.stopAll(); audio.chord(m.from.notes.map((n) => n.midi), 0, 0.03, 0.55); }, 'play'))],
     fb: fb.el,
@@ -665,7 +675,7 @@ function moveGuitar(it, ctx) {
     return moveAnswerText(it, m);
   }, fb);
   return frame({
-    kicker: `${MOVE_KICKER[it.move]} · ${scaleTitle(m.key, it.scale)}`,
+    kicker: `${kickerOf(it)} · ${scaleTitle(m.key, it.scale)}`,
     prompt: text.prompt, hint: `${text.hint} Play the chord shown first, and say the degree of the top note.`,
     body: board.el, fb: fb.el,
   });
@@ -1190,6 +1200,303 @@ function earResolution(it, ctx) {
   });
 }
 
+// ---- leaps ----
+// The sum behind every move with the melody on top, spelled out for one case.
+const signed = (n) => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : '0');
+const floorsWords = (df) => (df === 0 ? 'the same floor' : `${Math.abs(df) === 1 ? 'one floor' : 'two floors'} ${df > 0 ? 'up' : 'down'}`);
+function sumText(t, df) {
+  const b = bassMove(t, df);
+  if (df === 0) return `In scale steps: melody ${signed(t)} on the same floor, so the bass moves ${signed(b)} with it.`;
+  return `In scale steps: melody ${signed(t)}, and ${floorsWords(df)} moves the bass ${signed(-2 * df)}. Together the bass ${b === 0 ? 'stays where it is' : `moves ${signed(b)}`}.`;
+}
+
+function leapPrompt(it, m, guitar) {
+  const from = say(it.scale, m.fromTop.deg);
+  const to = say(it.scale, m.toTop.deg);
+  const way = it.t > 0 ? 'up' : 'down';
+  const lead = guitar ? `From this ${chordWord(m.from)}: the melody` : 'The melody';
+  const target = chordWord(m.to);
+  const still = guitar ? '' : ' A voice that does not move still needs a tap.';
+  const rest = guitar ? '' : ' The bass is marked. Tap every other note of the new chord, the melody included.';
+  if (Math.abs(it.t) === 1) return {
+    prompt: `${lead} steps ${way} from the ${from} to the ${to}. Go ${it.df > 0 ? 'up' : 'down'} a floor, to ${article(target)} ${target}.`,
+    hint: `A ${it.df > 0 ? 'bigger' : 'smaller'} floor under a ${it.t > 0 ? 'higher' : 'lower'} note, so the bass has to leap. Say which way before you move.`,
+  };
+  if (m.bass === 0) return {
+    prompt: `${lead} leaps ${way} from the ${from} to the ${to}, the next note of the chord. Keep the bass where it is.`,
+    hint: `Which floor reaches from the same bass note to the new melody note?${rest}`,
+  };
+  if (it.df === 0) return {
+    prompt: `${lead} leaps ${way} from the ${from} to the ${to}, the next note of the chord. Take the bass with it.`,
+    hint: 'Same floor, next position: every voice leaps to its next note of the chord.',
+  };
+  return {
+    prompt: `${lead} leaps ${way} from the ${from} to the ${to}. Send the bass the other way by the same leap.`,
+    hint: `Both voices leap, so skip a floor: ${it.df > 0 ? 'up' : 'down'} two.${still}`,
+  };
+}
+
+// What does the bass do?
+const BASS_OPTIONS = [
+  { value: 'stepdown', label: 'Steps down' }, { value: 'stepup', label: 'Steps up' },
+  { value: 'leapdown', label: 'Leaps down' }, { value: 'leapup', label: 'Leaps up' },
+  { value: 'hold', label: 'Holds' },
+];
+const bassAnswer = (b) => (b === 0 ? 'hold' : `${Math.abs(b) === 1 ? 'step' : 'leap'}${b > 0 ? 'up' : 'down'}`);
+
+function leapQuiz(it, ctx) {
+  const toShape = ELEVATOR[ELEVATOR.indexOf(it.floor) + it.df];
+  const b = bassMove(it.t, it.df);
+  const answer = bassAnswer(b);
+  const from = oneOf(it.floor);
+  const to = oneOf(toShape);
+  // one example to see and hear once the answer is in
+  const example = [0, 4, 2, 6].map((deg) => ({ scale: 'maj6', floor: it.floor, t: it.t, df: it.df, deg })).sort(() => Math.random() - 0.5)
+    .map((pick) => (leapPair(ctx.key, pick) ? moveInfo({ ...pick, kind: 'lp' }, ctx) : null)).find(Boolean)
+    || moveInfo({ kind: 'lp', scale: 'maj6', floor: it.floor, t: it.t, df: it.df, deg: [0, 4, 2, 6].find((deg) => leapPair('C', { scale: 'maj6', floor: it.floor, t: it.t, df: it.df, deg })) }, { key: 'C' });
+  const fb = feedback();
+  const slot = h('div');
+  const ch = choices(BASS_OPTIONS, (val) => {
+    const ok = val === answer;
+    ch.resolve(answer, val);
+    slot.replaceChildren(neck({ lo: example.lo, hi: example.hi, focus: example.strings, marks: [...fromMarks({ scale: 'maj6' }, example, example.to.notes), ...example.to.notes.map((n) => mark(n, 'maj6'))] }).el);
+    playMove(example);
+    fb.show(ok, `The bass ${voiceWords(b)}. ${sumText(it.t, it.df)}`);
+    ctx.finish(ok ? 'right' : 'wrong', ok ? 'auto' : 'tap');
+  }, 'pairs');
+  return frame({
+    kicker: 'Leaps · what does the bass do?',
+    prompt: `The melody ${voiceWords(it.t)}. ${it.df === 0 ? `You stay on ${floorOf(it.floor).name.toLowerCase()}.` : `You go from ${article(from)} ${from} ${it.df > 0 ? 'up' : 'down'} to ${article(to)} ${to}.`}`,
+    hint: 'What does the bass do? Each floor up puts it one note of the chord lower, which is two steps of the scale.',
+    body: [ch.el, slot], fb: fb.el,
+  });
+}
+
+// Ear: did the bass step, hold or leap?
+function earBass(it, ctx) {
+  const target = rand(['step', 'hold', 'leap']);
+  const leaps = {
+    hold: [['thirds', 2, 1], ['triads', 2, 1], ['triads', -2, -1], ['shell.low', -2, -1]],
+    leap: [['triads', 1, -1], ['shell.low', 1, -1], ['thirds', -1, 1], ['triads', -1, 1], ['thirds', 2, 2], ['shell.low', -2, -2], ['triads', 2, 0], ['triads', -2, 0]],
+  };
+  let m = null;
+  for (let tries = 0; tries < 40 && !m; tries++) {
+    const deg = rand([0, 1, 2, 3, 4, 5, 6, 7]);
+    let pick;
+    if (target === 'step') pick = { scale: it.scale, move: rand(['par', 'con']), floor: rand(['thirds', 'triads', 'shell.low']), dir: rand([1, -1]), deg };
+    else { const [floor, t, df] = rand(leaps[target]); pick = { kind: 'lp', scale: it.scale, floor, t, df, deg }; }
+    if (pairOf(ctx.key, pick)) m = { ...moveInfo(pick, ctx), pick };
+  }
+  if (!m) { const pick = { kind: 'lp', scale: it.scale, floor: 'triads', t: 1, df: -1, deg: 0 }; m = { ...moveInfo(pick, { key: 'C' }), pick }; }
+  const answer = m.bass === 0 ? 'hold' : Math.abs(m.bass) === 1 ? 'step' : 'leap';
+  const outer = (c) => [c.notes[0].midi, c.notes[c.notes.length - 1].midi];
+  const play = () => playMove(m);
+  const playBass = () => { audio.stopAll(); audio.note(m.from.notes[0].midi, 0, 0.8); audio.note(m.to.notes[0].midi, 1.0, 0.8); };
+  const playOuter = () => { audio.stopAll(); audio.chord(outer(m.from), 0, 0.02, 0.6); audio.chord(outer(m.to), 1.15, 0.02, 0.6); };
+  play();
+  const fb = feedback();
+  const slot = h('div');
+  const ch = choices([{ value: 'step', label: 'Stepped', sub: 'to the next note' }, { value: 'hold', label: 'Held', sub: 'the same note' }, { value: 'leap', label: 'Leapt', sub: 'skipped a note' }], (val) => {
+    const ok = val === answer;
+    ch.resolve(answer, val);
+    slot.replaceChildren(neck({ lo: m.lo, hi: m.hi, focus: m.strings, marks: [...fromMarks(m.pick, m, m.to.notes), ...m.to.notes.map((n) => mark(n, it.scale))] }).el);
+    playBass();
+    fb.show(ok, `${cap(chordWord(m.from))} to ${chordWord(m.to)}. ${moveWords(m)}`);
+    ctx.finish(ok ? 'right' : 'wrong', ok ? 'auto' : 'tap');
+  }, 'three');
+  return frame({
+    kicker: `Ear · ${scaleTitle(m.key, it.scale)}`,
+    prompt: 'What did the bass do?',
+    hint: 'Two chords. Follow the bottom note only: does it move to its neighbor, stay, or jump?',
+    body: [h('div', { class: 'pills center' }, pill('Hear it again', play, 'ear'), pill('Outer voices only', playOuter)), ch.el, slot],
+    fb: fb.el,
+  });
+}
+
+// ---- through the mirror ----
+function pivotPrompt(it, m, guitar) {
+  const due = oneOfFloor(m.expected);
+  const tail = `${cap(article(due))} ${due} is due. Play its reflection instead.`;
+  if (it.how === 'in') return {
+    prompt: `${guitar ? `From this ${chordWord(m.from)}: the melody` : 'The melody'} steps down from the ${say(it.scale, m.fromTop.deg)} to the ${say(it.scale, m.toTop.deg)}. ${tail}`,
+    hint: 'Through the mirror: the same outside distance, one octave wider. The bass lands an octave below where it was heading.',
+  };
+  return {
+    prompt: `${guitar ? `From this ${chordWord(m.from)}: the bass` : 'The bass'} steps down from the ${say(it.scale, m.from.notes[0].deg)} to the ${say(it.scale, m.to.notes[0].deg)}. ${tail}`,
+    hint: 'Through the mirror: the same outside distance, one octave wider. The melody lands an octave above where it was heading.',
+  };
+}
+// A floor as one chord of it, whichever shape: "shell", not "low shell".
+const ONE = { unison: 'single note', thirds: 'third', triads: 'triad', shells: 'shell', octaves: 'octave chord', drop2: 'drop 2', drop3: 'drop 3', drop24: 'drop 2 and 4', dbl: 'double octave' };
+const oneOfFloor = (shapeId) => ONE[SHAPES[shapeId].floor];
+function pivotText(m) {
+  const due = oneOfFloor(m.expected);
+  const got = oneOfFloor(m.mirror);
+  const voices = m.how === 'in'
+    ? 'The melody stepped down as planned. The bass, due to step up, dropped a seventh.'
+    : 'The bass stepped down as planned. The melody, due to step up, leapt a ninth.';
+  return `${cap(article(due))} ${due} was due, and this is its reflection, ${article(got)} ${got}: ${floorOf(m.expected).span} between the outside notes becomes ${floorOf(m.mirror).span}. ${voices}`;
+}
+
+// Which floor is the reflection?
+function mirrorQuiz(it, ctx) {
+  const answer = reflectFloor(it.floor, it.wider);
+  const options = (it.wider ? ['octaves', 'drop2', 'drop3', 'drop24', 'dbl'] : ['thirds', 'triads', 'shells', 'octaves', 'unison']).map((id) => FLOORS.find((f) => f.id === id));
+  const here = FLOORS.find((f) => f.id === it.floor);
+  const there = FLOORS.find((f) => f.id === answer);
+  const [small, wide] = it.wider ? [here, there] : [there, here];
+  // the two floors under one melody note, to see and hear
+  const i = ELEVATOR.findIndex((id) => SHAPES[id].floor === small.id);
+  const demo = [0, 4, 2, 6].sort(() => Math.random() - 0.5).map((deg) => pivotPair(ctx.key, { scale: 'maj6', floor: ELEVATOR[i + 1], how: 'in', deg })).find((p) => p && p.straight)
+    || [0, 4, 2, 6].map((deg) => pivotPair('C', { scale: 'maj6', floor: ELEVATOR[i + 1], how: 'in', deg })).find((p) => p && p.straight);
+  const fb = feedback();
+  const slot = h('div');
+  const ch = choices(options.map((f) => ({ value: f.id, label: f.name })), (val) => {
+    const ok = val === answer;
+    ch.resolve(answer, val);
+    if (demo) {
+      const win = gripFrame([...demo.straight.notes, ...demo.to.notes]);
+      const shared = (n) => demo.to.notes.some((x) => x.string === n.string && x.fret === n.fret);
+      slot.replaceChildren(neck({ lo: win.lo, hi: win.hi, focus: demo.to.set, marks: [...demo.straight.notes.filter((n) => !shared(n)).map((n) => ({ ...mark(n, 'maj6'), kind: 'from' })), ...demo.to.notes.map((n) => mark(n, 'maj6'))] }).el);
+      audio.stopAll();
+      audio.chord(demo.straight.notes.map((n) => n.midi), 0, 0.03, 0.55);
+      audio.chord(demo.to.notes.map((n) => n.midi), 1.15, 0.03, 0.55);
+    }
+    fb.show(ok, `${small.name}: ${small.span} between the outside notes. ${wide.name}: ${wide.span}. Under one melody note${demo ? ', as shown,' : ''} the bass of the wide one is an octave lower.`);
+    ctx.finish(ok ? 'right' : 'wrong', ok ? 'auto' : 'tap');
+  }, 'pairs');
+  return frame({
+    kicker: 'The mirror',
+    prompt: `Which floor is the reflection of ${here.name.toLowerCase()}?`,
+    hint: `The same outside distance, one octave ${it.wider ? 'wider' : 'narrower'}.`,
+    body: [ch.el, slot], fb: fb.el,
+  });
+}
+
+// Ear: did the line carry straight on, or go through the mirror?
+function earPivot(it, ctx) {
+  let p = null;
+  let key = ctx.key;
+  for (let tries = 0; tries < 40 && !p; tries++) {
+    const got = pivotPair(key, { scale: it.scale, floor: rand(['shell.low', 'triads', 'oct.low']), how: 'in', deg: rand([0, 1, 2, 3, 4, 5, 6, 7]) });
+    if (got && got.straight) p = got;
+    else if (tries === 20) key = 'C';
+  }
+  const answer = rand(['straight', 'mirror']);
+  const second = answer === 'straight' ? p.straight : p.to;
+  const play = () => {
+    audio.stopAll();
+    audio.chord(p.from.notes.map((n) => n.midi), 0, 0.03, 0.55);
+    audio.chord(second.notes.map((n) => n.midi), 1.15, 0.03, 0.55);
+  };
+  play();
+  const fb = feedback();
+  const slot = h('div');
+  const ch = choices([
+    { value: 'straight', label: 'Straight on', sub: 'the voices keep closing' },
+    { value: 'mirror', label: 'Through the mirror', sub: 'the bass drops away' },
+  ], (val) => {
+    const ok = val === answer;
+    ch.resolve(answer, val);
+    const win = gripFrame([...p.from.notes, ...second.notes]);
+    const strings = [...new Set([...p.from.notes, ...second.notes].map((n) => n.string))];
+    const moved = (n) => !second.notes.some((x) => x.string === n.string && x.fret === n.fret);
+    slot.replaceChildren(neck({ lo: win.lo, hi: win.hi, focus: strings, marks: [...p.from.notes.filter(moved).map((n) => ({ ...mark(n, it.scale), kind: 'from' })), ...second.notes.map((n) => mark(n, it.scale))] }).el);
+    fb.show(ok, answer === 'straight'
+      ? `Straight on: ${chordWord(p.from)} to ${oneOfFloor(p.expected)}. The melody stepped down and the bass stepped up to meet it.`
+      : `Through the mirror: ${chordWord(p.from)} to ${oneOfFloor(p.mirror)}, the reflection of the ${oneOfFloor(p.expected)} that was due. The bass dropped a seventh.`);
+    ctx.finish(ok ? 'right' : 'wrong', ok ? 'auto' : 'tap');
+  }, 'two');
+  return frame({
+    kicker: `Ear · ${scaleTitle(key, it.scale)}`,
+    prompt: 'Straight on, or through the mirror?',
+    hint: 'Two chords. The melody steps down both times. Listen to the bass: does it step up toward the melody, or fall away beneath it?',
+    body: [again(play), ch.el, slot], fb: fb.el,
+  });
+}
+
+// ---- floors within floors ----
+const PART_IS = {
+  thirds: 'two notes that are neighbors in the chord',
+  fifth: 'the outside of a triad',
+  sixth: 'the outside of a shell',
+  triads: 'three neighbors in the chord',
+  'shell.low': 'three notes with the gap at the top',
+  'shell.high': 'three notes with the gap at the bottom',
+};
+function insideInfo(it, ctx) {
+  const shape = SHAPES[it.shape];
+  const all = voicings(ctx.key, it.scale, it.shape, shape.primary);
+  const pool = all.filter((v) => v.lowFret > 0 && v.maxFret <= 13);
+  const v = rand(pool.length ? pool : all);
+  const answers = partsInside(it.shape, it.part);
+  const part = SHAPES[it.part];
+  const text = (idx) => `${cap(partWhere(v.notes.length, idx))} make ${part.a}: ${idx.map((i) => say(it.scale, v.notes[i].deg)).join(', ')}.`;
+  const sound = (idx) => {
+    audio.stopAll();
+    audio.chord(v.notes.map((n) => n.midi), 0, 0.03, 0.5);
+    audio.chord(idx.map((i) => v.notes[i].midi), 1.15, 0.03, 0.6);
+  };
+  // the part stands out, the rest of the chord fades
+  const shown = (idx) => v.notes.map((n, i) => (idx.includes(i) ? { ...mark(n, it.scale), kind: `${kc(n.deg)} anchor` } : { ...mark(n, it.scale), kind: 'from' }));
+  return { v, shape, part, answers, text, sound, shown, win: gripFrame(v.notes), whole: oneOf(it.shape), name: part.name.toLowerCase() };
+}
+
+function insideTap(it, ctx) {
+  const m = insideInfo(it, ctx);
+  const { v, part } = m;
+  const picked = new Set();
+  let done = false;
+  const fb = feedback();
+  const draw = () => board.draw(v.notes.map((n, i) => (picked.has(i) ? { string: n.string, fret: n.fret, kind: 'pick', label: lab(it.scale, n.deg) } : mark(n, it.scale))));
+  const board = neck({
+    lo: m.win.lo, hi: m.win.hi, focus: v.set, marks: v.notes.map((n) => mark(n, it.scale)),
+    onTap: (string, fret) => {
+      if (done) return;
+      const i = v.notes.findIndex((n) => n.string === string && n.fret === fret);
+      if (i < 0) return;
+      if (picked.has(i)) picked.delete(i); else picked.add(i);
+      audio.note(v.notes[i].midi, 0, 0.5, 1.2);
+      draw();
+    },
+  });
+  setTimeout(() => { audio.stopAll(); audio.chord(v.notes.map((n) => n.midi), 0, 0.03, 0.55); }, 250);
+  const check = () => {
+    const want = part.steps.length;
+    if (picked.size !== want) { fb.show(null, `${cap(part.a)} is ${want === 2 ? 'two' : 'three'} notes. Tap ${want === 2 ? 'two' : 'three'} notes of the chord.`); return; }
+    done = true;
+    const mine = [...picked].sort((a, b) => a - b);
+    const hit = m.answers.find((idx) => idx.join() === mine.join());
+    const idx = hit || m.answers[0];
+    board.draw(m.shown(idx));
+    m.sound(idx);
+    const more = m.answers.length > 1 ? ` So do ${m.answers.filter((a) => a !== idx).map((a) => partWhere(v.notes.length, a)).join(', and ')}.` : '';
+    fb.show(!!hit, `${m.text(idx)}${more}`);
+    ctx.finish(hit ? 'right' : 'wrong', hit ? 'auto' : 'tap');
+  };
+  ctx.foot(h('button', { class: 'primary wide', onclick: check }, 'Check'));
+  return frame({
+    kicker: `Floors within floors · ${scaleTitle(ctx.key, it.scale)}`,
+    prompt: `Find ${part.a} inside this ${m.whole}.`,
+    hint: `Tap the notes that make it. ${cap(part.a)} is ${PART_IS[it.part]}.`,
+    body: board.el, fb: fb.el,
+  });
+}
+
+function insideGuitar(it, ctx) {
+  const m = insideInfo(it, ctx);
+  const { v } = m;
+  const board = neck({ lo: m.win.lo, hi: m.win.hi, focus: v.set, marks: v.notes.map((n) => mark(n, it.scale)) });
+  const fb = feedback();
+  revealThenRate(ctx, () => { board.draw(m.shown(m.answers[0])); m.sound(m.answers[0]); return m.text(m.answers[0]); }, fb);
+  return frame({
+    kicker: `Floors within floors · ${scaleTitle(ctx.key, it.scale)}`,
+    prompt: `Play this ${m.whole}. Then play only the ${m.name} inside it.`,
+    hint: `Keep the whole chord under your fingers and sound just those notes. ${cap(m.part.a)} is ${PART_IS[it.part]}.`,
+    body: board.el, fb: fb.el,
+  });
+}
+
 export function mountDrill(entry, ctx) {
   audio.stopAll();
   const it = parse(entry.id);
@@ -1218,6 +1525,13 @@ export function mountDrill(entry, ctx) {
     case 'tf': return formulaQuiz(it, ctx);
     case 'tx': return g ? transformGuitar(it, ctx) : transformTap(it, ctx);
     case 'et': return earResolution(it, ctx);
+    case 'fw': return g ? insideGuitar(it, ctx) : insideTap(it, ctx);
+    case 'lq': return leapQuiz(it, ctx);
+    case 'lp': return g ? moveGuitar(it, ctx) : moveTap(it, ctx);
+    case 'ej': return earBass(it, ctx);
+    case 'pm': return mirrorQuiz(it, ctx);
+    case 'pv': return g ? moveGuitar(it, ctx) : moveTap(it, ctx);
+    case 'ep': return earPivot(it, ctx);
     default: return h('div', null, 'Unknown exercise');
   }
 }

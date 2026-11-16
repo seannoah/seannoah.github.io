@@ -24,10 +24,18 @@
 //   tf|move                 which formula makes this move? (see MOVES in transform.js)
 //   tx|move|role            play the transformation, starting with this role in the bass
 //   et|scale|v              ear: which V chord was that, inside or outside?
+//   fw|scale|shape|part     find a small floor (or frame) inside a bigger one
+//   lq|floor|t|df           the melody moves t steps and the chord changes df floors: what does the bass do?
+//   lp|scale|floor|t|df|deg play that move (see leapPair in motion.js)
+//   ej|scale|b              ear: did the bass step, hold or leap?
+//   pm|floor|w/n            the mirror: which floor is this one's reflection, wider or narrower?
+//   pv|scale|floor|in/out|deg   play a pivot: the reflection of the floor that was due (see mirror.js)
+//   ep|scale|x              ear: straight on, or through the mirror?
 
 import { SCALES, KEY_ORDER } from './theory.js';
 import { SHAPES, setKey } from './floors.js';
-import { movePair } from './motion.js';
+import { movePair, leapPair } from './motion.js';
+import { pivotPair } from './mirror.js';
 import { borrowPair, underBorrowed } from './borrow.js';
 import { ROLES, roleIndex } from './transform.js';
 import { state, isNew, isDue, box, everRight, rec, unitFlag } from './store.js';
@@ -64,6 +72,16 @@ const tb = (s) => ROLE_IDS.map((r) => `tb|${s}|${r}`);
 const tw = (s) => ['f', 'b', 'a'].flatMap((d) => ROLE_IDS.map((r) => `tw|${s}|${r}|${d}`));
 const tf = (moves) => moves.map((m) => `tf|${m}`);
 const tx = (moves) => moves.flatMap((m) => ROLE_IDS.map((r) => `tx|${m}|${r}`));
+const fw = (pairs) => pairs.map(([shape, part]) => `fw|maj6|${shape}|${part}`);
+const lq = (rows) => rows.map(([floor, t, df]) => `lq|${floor}|${t}|${df}`);
+const lp = (s, floors, t, df, degs = ON) => floors
+  .flatMap((f) => degs.map((d) => `lp|${s}|${f}|${t}|${df}|${d}`))
+  .filter((id) => leapPair('C', parse(id)));
+const pm = (floors, way) => floors.map((f) => `pm|${f}|${way}`);
+const pv = (s, floors, how, degs = ON) => floors
+  .flatMap((f) => degs.map((d) => `pv|${s}|${f}|${how}|${d}`))
+  .filter((id) => pivotPair('C', parse(id)));
+const OFF = [7, 1, 3, 5];
 const mq = (floors, hows = ['out', 'par', 'in']) => floors.flatMap((f) => hows.map((how) => `mq|maj6|${f}|${how}`));
 
 const floorUnit = (id, title, blurb, shapes, floorId, group) => ({
@@ -166,12 +184,47 @@ export const UNITS = [
       ...mv('maj6', 'con', ['drop2', 'drop3'], ['u']), ...mv('maj6', 'con', ['drop24', 'drop3'], ['d']),
     ],
   },
+  {
+    id: 'lm.intervals', title: 'The elevator of intervals', blurb: 'Each floor by its outside notes, and small floors inside big ones', group: 'Leaps and the mirror',
+    core: [
+      ...primary('maj6', 'fifth', ON), ...primary('maj6', 'sixth', ON),
+      ...fw([['drop2', 'thirds'], ['drop2', 'shell.low'], ['drop2', 'shell.high'], ['triads', 'fifth'], ['shell.low', 'fifth'], ['shell.high', 'thirds'], ['shell.low', 'sixth'], ['oct.low', 'shell.low'], ['oct.low', 'shell.high']]),
+    ],
+    extra: [
+      ...primary('maj6', 'fifth', OFF), ...primary('maj6', 'sixth', OFF), ...primary('maj6', 'oct2', [0, 4]),
+      ...fw([['drop2', 'fifth'], ['drop2', 'sixth'], ['oct.triad', 'triads'], ['oct.triad', 'shell.low'], ['oct.high', 'triads'], ['oct.high', 'shell.high'], ['drop3', 'shell.high'], ['drop3', 'sixth'], ['drop24', 'sixth'], ['drop24', 'fifth']]),
+    ],
+  },
+  {
+    id: 'lm.leaps', title: 'Leaps', blurb: 'When the melody or the bass skips a note', group: 'Leaps and the mirror',
+    core: [
+      ...lq([['triads', 1, -1], ['thirds', -1, 1], ['thirds', 2, 1], ['triads', -2, -1], ['triads', 2, 0], ['thirds', 2, 2], ['shell.low', -2, -2], ['triads', -2, 0]]),
+      ...lp('maj6', ['thirds', 'triads'], 2, 1), ...lp('maj6', ['triads'], -2, -1),
+      ...lp('maj6', ['triads'], 1, -1), ...lp('maj6', ['thirds'], -1, 1),
+    ],
+    extra: [
+      'ej|maj6|b',
+      ...lp('maj6', ['shell.low'], -2, -1), ...lp('maj6', ['shell.low'], 1, -1), ...lp('maj6', ['triads'], -1, 1),
+      ...lp('maj6', ['thirds'], 2, 2), ...lp('maj6', ['shell.low'], -2, -2), ...lp('maj6', ['thirds', 'triads'], 2, 0, [0, 4]),
+      ...lp('maj6', ['triads'], 1, -1, OFF), ...lp('maj6', ['thirds'], -1, 1, OFF),
+    ],
+  },
+  {
+    id: 'lm.mirror', title: 'Through the mirror', blurb: 'Pivoting: trade a floor for its reflection', group: 'Leaps and the mirror',
+    core: [
+      ...pm(['thirds', 'triads', 'shells', 'octaves'], 'w'), ...pm(['drop2', 'drop3', 'drop24', 'dbl'], 'n'),
+      ...pv('maj6', ['shell.low', 'triads'], 'in'), ...pv('maj6', ['thirds'], 'out'),
+    ],
+    extra: [
+      'ep|maj6|x', ...pm(['unison'], 'w'), ...pm(['octaves'], 'n'),
+      ...pv('maj6', ['oct.low', 'thirds'], 'in'), ...pv('maj6', ['triads'], 'out'),
+      ...pv('maj6', ['shell.low', 'triads'], 'in', OFF), ...pv('min6', ['shell.low'], 'in'),
+    ],
+  },
 ];
 
 // What comes after the units above. Listed in the app so the road ahead is visible.
 export const PLANNED = [
-  { title: 'Leaps, and floors within floors', blurb: 'Patterns that skip floors, and small floors inside big ones' },
-  { title: 'Pivoting', blurb: 'Through the mirror: trading a floor for its reflection' },
   { title: 'Substitution', blurb: 'Minor 6 on the 5, the tritone’s minor, and friends' },
   { title: 'The chromatic scale', blurb: 'Filling the whole steps, leaping the half steps' },
 ];
@@ -194,15 +247,20 @@ export function parse(id) {
   if (kind === 'tb') return { ...base, role: roleIndex(p[2]) };
   if (kind === 'tw') return { ...base, role: roleIndex(p[2]), dir: { f: 'forward', b: 'backward', a: 'across' }[p[3]] };
   if (kind === 'tf') return { id, kind, move: p[1] };
+  if (kind === 'fw') return { ...base, shape: p[2], part: p[3] };
+  if (kind === 'lq') return { id, kind, floor: p[1], t: +p[2], df: +p[3] };
+  if (kind === 'lp') return { ...base, floor: p[2], t: +p[3], df: +p[4], deg: +p[5] };
+  if (kind === 'pm') return { id, kind, floor: p[1], wider: p[2] === 'w' };
+  if (kind === 'pv') return { ...base, floor: p[2], how: p[3], deg: +p[4] };
   if (kind === 'tx') return { id, kind, move: p[1], role: roleIndex(p[2]) };
   if (kind === 'sh') return { ...base, shape: p[2], set: p[3].split('').map(Number), anchor: p[4] === 't' ? 'top' : 'bottom', deg: +p[5] };
   return { ...base, deg: +p[2] };
 }
 
-export const SECTION = { oo: 'path', st: 'path', nm: 'path', wk: 'path', sh: 'floors', bw: 'borrow', bm: 'borrow', mq: 'motion', mv: 'motion', tb: 'transform', tw: 'transform', tf: 'transform', tx: 'transform', sc: 'tunes', et: 'ear', eb: 'ear', eo: 'ear', ed: 'ear', ef: 'ear', ei: 'ear', el: 'ear', em: 'ear' };
-export const SECTION_NAME = { path: 'The path', floors: 'Floors', borrow: 'Borrowing', motion: 'Motion', transform: 'Transformation', tunes: 'Tunes', ear: 'Ear' };
+export const SECTION = { oo: 'path', st: 'path', nm: 'path', wk: 'path', sh: 'floors', bw: 'borrow', bm: 'borrow', mq: 'motion', mv: 'motion', tb: 'transform', tw: 'transform', tf: 'transform', tx: 'transform', fw: 'leaps', lq: 'leaps', lp: 'leaps', pm: 'leaps', pv: 'leaps', sc: 'tunes', et: 'ear', ej: 'ear', ep: 'ear', eb: 'ear', eo: 'ear', ed: 'ear', ef: 'ear', ei: 'ear', el: 'ear', em: 'ear' };
+export const SECTION_NAME = { path: 'The path', floors: 'Floors', borrow: 'Borrowing', motion: 'Motion', leaps: 'Leaps and pivots', transform: 'Transformation', tunes: 'Tunes', ear: 'Ear' };
 const kindOf = (id) => id.slice(0, 2);
-const AWAY_ONLY = new Set(['oo', 'mq', 'sc', 'tf']);
+const AWAY_ONLY = new Set(['oo', 'mq', 'sc', 'tf', 'lq', 'pm']);
 const supports = (id, mode) => mode === 'away' || !AWAY_ONLY.has(kindOf(id));
 
 // ---- unit progress ----
@@ -292,7 +350,7 @@ export function buildSession(mode, minutes, only = null) {
   take(fresh, room());
   take(seen.slice().sort((a, b) => rec(a).b - rec(b).b || rec(a).t - rec(b).t), room());
 
-  const bySection = { path: [], floors: [], borrow: [], motion: [], transform: [], tunes: [], ear: [] };
+  const bySection = { path: [], floors: [], borrow: [], motion: [], leaps: [], transform: [], tunes: [], ear: [] };
   for (const id of picked) bySection[SECTION[kindOf(id)]].push(id);
   const out = [];
   out.push(...shuffle(bySection.path).map((id) => ({ id })));
@@ -302,6 +360,7 @@ export function buildSession(mode, minutes, only = null) {
   out.push(...shuffle(bySection.floors).map((id) => ({ id })));
   out.push(...shuffle(bySection.borrow).map((id) => ({ id })));
   out.push(...shuffle(bySection.motion).map((id) => ({ id })));
+  out.push(...shuffle(bySection.leaps).map((id) => ({ id })));
   out.push(...shuffle(bySection.transform).map((id) => ({ id })));
   out.push(...shuffle(bySection.tunes).map((id) => ({ id })));
   out.push(...shuffle(bySection.ear).map((id) => ({ id })));
@@ -309,7 +368,7 @@ export function buildSession(mode, minutes, only = null) {
 }
 
 export function summarize(session) {
-  const counts = { path: { n: 0, fresh: 0 }, floors: { n: 0, fresh: 0 }, borrow: { n: 0, fresh: 0 }, motion: { n: 0, fresh: 0 }, transform: { n: 0, fresh: 0 }, tunes: { n: 0, fresh: 0 }, ear: { n: 0, fresh: 0 } };
+  const counts = { path: { n: 0, fresh: 0 }, floors: { n: 0, fresh: 0 }, borrow: { n: 0, fresh: 0 }, motion: { n: 0, fresh: 0 }, leaps: { n: 0, fresh: 0 }, transform: { n: 0, fresh: 0 }, tunes: { n: 0, fresh: 0 }, ear: { n: 0, fresh: 0 } };
   for (const it of session) {
     if (it.study) continue;
     const c = counts[SECTION[kindOf(it.id)]];
@@ -329,6 +388,7 @@ export function floorOfItem(id) {
   if (SECTION[k] === 'ear') return 'ear';
   if (SECTION[k] === 'motion') return 'motion';
   if (SECTION[k] === 'borrow') return 'borrow';
+  if (SECTION[k] === 'leaps') return 'leaps';
   if (SECTION[k] === 'transform') return 'transform';
   if (SECTION[k] === 'tunes') return 'tunes';
   return 'unison';

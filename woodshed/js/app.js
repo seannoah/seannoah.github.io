@@ -16,7 +16,7 @@ import * as sync from './sync.js';
 import { pageSongs, pageSong, pageSongEdit, attachSongs } from './songsui.js';
 import { songById } from './songs.js';
 
-const VERSION = '0.5.0';
+const VERSION = '0.6.0';
 const view = document.getElementById('view');
 const sessionRoot = document.getElementById('session');
 const TABS = [['today', 'Today'], ['learn', 'Learn'], ['songs', 'Songs'], ['explore', 'Explore'], ['progress', 'Progress']];
@@ -30,11 +30,12 @@ const PART_BLURB = {
   floors: 'Summoning shapes around a note',
   borrow: 'One voice stepping to its neighbor',
   motion: 'Two voices moving between floors',
+  leaps: 'Floors inside floors, leaps and the mirror',
   transform: 'One chord into another by formula',
   tunes: 'Reading chord charts',
   ear: 'Hearing on and off, degrees and floors',
 };
-const PART_ICON = { path: 'next', floors: 'progress', borrow: 'repeat', motion: 'motion', transform: 'turn', tunes: 'songs', ear: 'ear' };
+const PART_ICON = { path: 'next', floors: 'progress', borrow: 'repeat', motion: 'motion', leaps: 'leap', transform: 'turn', tunes: 'songs', ear: 'ear' };
 
 function installHint() {
   const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -287,8 +288,12 @@ function pageExplore() {
     h('div', { class: 'page-head' }, h('p', { class: 'eyebrow' }, 'Any key, any floor'), h('h1', null, 'Explore')),
     pickRow('Key', KEYS.slice(0, 12).map((k) => [k.id, k.id]), explore.key, (v) => refresh({ key: v })),
     pickRow('Scale', SCALE_ORDER.map((s) => [s, SCALES[s].short]), explore.scale, (v) => refresh({ scale: v })),
-    pickRow('Floor', FLOORS.filter((f) => f.id !== 'unison').flatMap((f) => f.shapes.map((id) => [id, SHAPES[id].name])), explore.shape, (v) => refresh({ shape: v, set: null })),
-    pickRow('Strings', shape.sets.map((s) => [s.join(), s.join('-')]), set.join(), (v) => refresh({ set: v.split(',').map(Number) })),
+    pickRow('Floor', FLOORS.filter((f) => f.id !== 'unison').flatMap((f) => [
+      ...f.shapes.map((id) => [id, SHAPES[id].name]),
+      // a floor's outside notes on their own, from the elevator of intervals
+      ...(f.frame ? [[f.frame, `${SHAPES[f.frame].name} (two notes)`]] : []),
+    ]), explore.shape, (v) => refresh({ shape: v, set: null })),
+    pickRow('Strings', shape.sets.map((s) => [s.join(), s.join(s.length === 2 ? ' and ' : '-')]), set.join(), (v) => refresh({ set: v.split(',').map(Number) })),
     browser.el,
     h('div', { class: 'pills' },
       h('button', { class: 'pill', onclick: () => browser.playAll() }, icon('play', 16), 'Play up the neck'),
@@ -322,6 +327,7 @@ function elevator() {
     h('div', { class: 'elevator' }, rows),
     side('borrow', 'Borrowing', 'repeat'),
     side('motion', 'Motion', 'motion'),
+    side('leaps', 'Leaps and pivots', 'leap'),
     side('transform', 'Transformation', 'turn'),
     side('tunes', 'Tunes', 'songs'),
     side('ear', 'Ear', 'ear'));

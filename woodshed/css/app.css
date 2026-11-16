@@ -267,6 +267,15 @@ figcaption { font: 13.5px/1.45 var(--sans); color: var(--ink-2); }
 .chain-step.sel small { color: var(--on); }
 .chain-arrow { display: inline-flex; flex-direction: column; align-items: center; font-size: 11px; color: var(--ink-3); gap: 1px; }
 .chain-arrow .formula { font-size: 11.5px; }
+.chain-step.pivot { border-color: var(--gold); background: var(--gold-soft); }
+.chain-step.pivot.sel { border-color: var(--on); box-shadow: 0 0 0 2px var(--gold-soft); }
+.parts-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.part-chip { display: inline-flex; flex-direction: column; align-items: flex-start; padding: 6px 11px; border: 1.5px solid var(--line-2); border-radius: 11px; background: var(--card); font: 600 14.5px/1.2 var(--sans); }
+.part-chip small { font-size: 11.5px; font-weight: 500; color: var(--ink-3); }
+.part-chip.sel { border-color: var(--ink); background: var(--ink); color: var(--card); }
+.part-chip.sel small { color: inherit; opacity: 0.75; }
+.pills .pill.sel { background: var(--ink); border-color: var(--ink); color: var(--card); }
+.lesson .sum { font: 600 16px/1.35 var(--sans); text-align: center; background: var(--gold-soft); color: #6b4c0d; border-radius: 10px; padding: 11px 12px; }
 .detail-formulas { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13.5px; color: var(--ink-2); }
 .detail-formulas .formula { font-size: 12.5px; }
 
@@ -353,6 +362,9 @@ textarea { font: 14px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; color:
 .choices.two { grid-template-columns: 1fr 1fr; }
 .choices.grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .choices.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.choices.pairs { grid-template-columns: 1fr 1fr; }
+.choices.pairs .choice { min-height: 58px; }
+.choices.pairs .choice:last-child:nth-child(odd) { grid-column: 1 / -1; }
 .choices.stack .choice { min-height: 54px; }
 .choices.stack .choice-main { font: 600 17.5px/1.2 var(--sans); letter-spacing: 0.01em; }
 .choice { background: var(--card); border: 1.5px solid var(--line-2); border-radius: 13px; padding: 12px 6px; min-height: 62px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; transition: transform 0.08s ease; }
