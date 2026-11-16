@@ -11,6 +11,7 @@ import { parseChord, scaleOptions, scaleKey } from './harmony.js';
 import { borrowPair, underBorrowed, borrowIn, borrowWords, voiceName } from './borrow.js';
 import { movePair, moveWords, floorAfter, shapeName, leapPair, bassMove, voiceWords } from './motion.js';
 import { pivotPair, reflectFloor } from './mirror.js';
+import { POSTS, hubPair, jobById, chordOf, nameOf, postPhrase, postStory } from './subs.js';
 import { ROLES, chord as sixth, chordLabel, formulaText, formulaWords, tallRoles, sixthVoicing, transformPair, movesText, moveIn, chainIn } from './transform.js';
 import { parse, unitById, isActive } from './curriculum.js';
 import { isNew } from './store.js';
@@ -943,6 +944,31 @@ function scaleChoice(it, ctx) {
   return frame({ kicker: 'Reading a chart', prompt: ['The chart says ', h('span', { class: 'sym' }, chord.text), '.'], hint: ask, body: ch.el, fb: fb.el });
 }
 
+// The same question with the guitar: play the chord you would use, then check.
+function scaleGuitar(it, ctx) {
+  const chord = parseChord(ctx.symbol || `${ctx.key}${SC_SUFFIX[it.fam]}`);
+  const options = scaleOptions(chord, true);
+  const answer = options.find((o) => o.how === SC_HOW[it.how](it.fam)) || options[0];
+  const all = voicings(answer.key, answer.scale, 'drop2', SET52).filter((v) => v.on && v.lowFret > 0 && v.maxFret <= 14);
+  const v = all.find((x) => x.bottomDeg === 0) || all[0];
+  const win = gripFrame(v.notes);
+  const board = neck({ lo: win.lo, hi: win.hi, focus: SET52, marks: [] });
+  const fb = feedback();
+  const ask = typeof SC_ASK[it.how] === 'function' ? SC_ASK[it.how](it.fam) : SC_ASK[it.how];
+  revealThenRate(ctx, () => {
+    board.draw(roleMarks(v, answer.scale));
+    audio.stopAll();
+    strum(v);
+    return `${answer.label}: ${cap(answer.why)}. Its on chord is ${answer.on}, shown here with the root in the bass.`;
+  }, fb);
+  return frame({
+    kicker: 'Reading a chart',
+    prompt: ['The chart says ', h('span', { class: 'sym' }, chord.text), '. Play the chord you would use.'],
+    hint: `${ask} Say its name, then play it as a drop 2 on strings 5 to 2, any shape.`,
+    body: board.el, fb: fb.el,
+  });
+}
+
 // ---- transformation ----
 const SET52 = [5, 4, 3, 2];
 // A window of at most eight frets, so the whole move shows on a phone without scrolling.
@@ -1497,6 +1523,207 @@ function insideGuitar(it, ctx) {
   });
 }
 
+// ---- substitution: the diminished is the center ----
+const OFF_LABEL = { 11: '7', 2: '2', 5: '4', 8: '♯5' };
+const centerMarks = (hb, faded = []) => hb.center.notes.map((n, i) => ({ string: n.string, fret: n.fret, kind: faded.includes(i) ? 'from' : 'off', label: lab('maj6', n.deg) }));
+const postMarks = (hb, kind = 'on') => hb.to.notes.map((n, i) => ({ string: n.string, fret: n.fret, kind: hb.moved.includes(i) && kind === 'on' ? 'on anchor' : kind, label: lab(hb.to.chord.scale, n.deg) }));
+const hubFrame = (hb) => gripFrame([...hb.center.notes, ...hb.to.notes, ...(hb.home ? hb.home.notes : [])]);
+// The off chord, the chord it turns into, then home.
+function playHub(hb) {
+  audio.stopAll();
+  strum(hb.center);
+  audio.chord(hb.to.notes.map((n) => n.midi), 1.1, 0.03, 0.55);
+  if (hb.home) strum(hb.home, 2.3);
+}
+const hubText = (hb) => postStory(hb.post);
+
+// Which note of the off chord moves?
+function hubQuiz(it, ctx) {
+  const tonic = keyOf(ctx.key).pc;
+  const hb = hubPair(tonic, it.post, rand([0, 1, 2, 3]));
+  const { post } = hb;
+  const answer = POSTS[it.post].moves[0][0];
+  const up = POSTS[it.post].moves[0][1] > 0;
+  const fb = feedback();
+  const slot = h('div');
+  const ch = choices([11, 2, 5, 8].map((semis) => ({ value: semis, label: OFF_LABEL[semis], sub: say('maj6', { 11: 7, 2: 1, 5: 3, 8: 5 }[semis]) })), (val) => {
+    const ok = val === answer;
+    ch.resolve(answer, val);
+    const win = hubFrame(hb);
+    slot.replaceChildren(neck({ lo: win.lo, hi: win.hi, focus: SET52, marks: [...centerMarks(hb).filter((_, i) => hb.moved.includes(i)).map((m) => ({ ...m, kind: 'from' })), ...postMarks(hb)] }).el);
+    playHub(hb);
+    fb.show(ok, hubText(hb));
+    ctx.finish(ok ? 'right' : 'wrong', ok ? 'auto' : 'tap');
+  }, 'grid');
+  return frame({
+    kicker: `Substitution · going to ${ctx.key}`,
+    prompt: ['The off chord is ', sym(post.center), `. Which note ${up ? 'rises' : 'falls'} a fret to make ${postPhrase(post)}?`],
+    hint: 'A raised note gives a minor 6 chord. A lowered note gives a dominant 7.',
+    body: [ch.el, slot], fb: fb.el,
+  });
+}
+
+// Make the move on the neck.
+function hubInfo(it, ctx) {
+  const tonic = keyOf(ctx.key).pc;
+  const hb = hubPair(tonic, it.post, it.pos);
+  const count = hb.moved.length;
+  return { hb, post: hb.post, count, win: hubFrame(hb), ask: ['Make ', postPhrase(hb.post), count > 1 ? `, ${hb.post.label}` : '', '.'] };
+}
+
+function hubTap(it, ctx) {
+  const { hb, post, count, win, ask } = hubInfo(it, ctx);
+  const picks = [];
+  let done = false;
+  const fb = feedback();
+  const board = neck({
+    lo: win.lo, hi: win.hi, focus: SET52, marks: centerMarks(hb),
+    onTap: (string, fret) => {
+      if (done) return;
+      const i = hb.center.notes.findIndex((n) => n.string === string);
+      if (i < 0 || hb.center.notes[i].fret === fret || picks.some((p) => p.string === string)) return;
+      picks.push({ string, fret, i });
+      audio.note(OPEN[string] + fret, 0, 0.5, 1.2);
+      if (picks.length < count) {
+        board.draw([...centerMarks(hb, picks.map((p) => p.i)), ...picks.map((p) => ({ string: p.string, fret: p.fret, kind: 'pick', label: '' }))]);
+        return;
+      }
+      done = true;
+      const ok = picks.every((p) => hb.moved.includes(p.i) && hb.to.notes[p.i].fret === p.fret);
+      const marks = [...centerMarks(hb).filter((_, k) => hb.moved.includes(k)).map((m) => ({ ...m, kind: 'from' })), ...postMarks(hb).map((m, k) => (!ok && hb.moved.includes(k) ? { ...m, kind: 'ghost' } : m))];
+      if (!ok) for (const p of picks) if (!(hb.moved.includes(p.i) && hb.to.notes[p.i].fret === p.fret)) marks.push({ string: p.string, fret: p.fret, kind: 'wrong', label: '' });
+      board.draw(marks);
+      playHub(hb);
+      fb.show(ok, hubText(hb));
+      ctx.finish(ok ? 'right' : 'wrong', ok ? 'auto' : 'tap');
+    },
+  });
+  setTimeout(() => { audio.stopAll(); strum(hb.center); }, 250);
+  return frame({
+    kicker: `Substitution · going to ${hb.key}`,
+    prompt: ask,
+    hint: [`${ctx.note ? `${ctx.note} ` : ''}This is `, sym(post.center), `, the off chord of ${hb.key}. ${count === 1 ? 'One note moves one fret. Tap where it goes.' : 'Two notes move one fret each. Tap where they go.'}`],
+    body: [board.el, h('div', { class: 'pills center' }, pill('Hear the off chord', () => { audio.stopAll(); strum(hb.center); }, 'play'))],
+    fb: fb.el,
+  });
+}
+
+function hubGuitar(it, ctx) {
+  const { hb, post, count, win, ask } = hubInfo(it, ctx);
+  const board = neck({ lo: win.lo, hi: win.hi, focus: SET52, marks: centerMarks(hb) });
+  const fb = feedback();
+  revealThenRate(ctx, () => {
+    board.draw([...centerMarks(hb).filter((_, k) => hb.moved.includes(k)).map((m) => ({ ...m, kind: 'from' })), ...postMarks(hb)]);
+    playHub(hb);
+    return hubText(hb);
+  }, fb);
+  return frame({
+    kicker: `Substitution · going to ${hb.key}`,
+    prompt: ['Play ', sym(post.center), '. ', ...ask],
+    hint: `${ctx.note ? `${ctx.note} ` : ''}It is the off chord of ${hb.key}. Move ${count === 1 ? 'one finger' : 'two fingers'} one fret, say which note of the off chord you moved, then resolve to ${hb.key}6.`,
+    body: board.el, fb: fb.el,
+  });
+}
+
+// One chord, many jobs.
+const JOB_WHY = {
+  'maj6|m7': (x, y, n) => `${x} and ${y} are the same four notes: ${n}.`,
+  'maj6|on5': (x, y) => `${x} is built on the fifth of ${y}. Over that chord it gives a major 9 sound.`,
+  'min6|hdim': (x, y, n) => `${x} and ${y} are the same four notes: ${n}.`,
+  'min6|on5': (x, y) => `${x} is built on the fifth of ${y}. Over that dominant it is a 9 chord without its root.`,
+  'min6|tm': (x, y) => `${x} sits a half step above the root of ${y}. It is the minor 6 on the 5 of that chord’s tritone substitute.`,
+  'min6|iv': (x, y, n, c) => `${x} is built on the fourth of ${scaleKey(c.root + 7)}. Going to ${y}, it is the minor iv on its way home.`,
+  'dom7|tt': (x, y) => `${x} and ${y} are a tritone apart, and they share the same third and seventh.`,
+  'dom7|bd': (x, y, n, c) => `${x} resolving up a whole step to ${y} stands for the minor iv. Play it as ${nameOf(chordOf(c.root + 7, 'min6'))}, its minor 6 on the 5.`,
+};
+function jobInfo(it, ctx) {
+  const c = chordOf(keyOf(ctx.key).pc, it.scale);
+  const job = jobById(it.scale, it.job);
+  const label = (root) => `${scaleKey(root)}${job.symbol === 'maj7' ? '' : job.symbol}`;
+  const answer = mod(c.root + job.to, 12);
+  const all = voicings(scaleKey(c.root), c.scale, 'drop2', SET52).filter((v) => v.on && v.lowFret > 0 && v.maxFret <= 14);
+  const v = all.find((x) => x.bottomDeg === 0) || all[0];
+  const notes = scaleNotes(scaleKey(c.root), c.scale).filter((n) => n.on).map((n) => n.name).join(', ');
+  // where it goes next, when the job is to lead somewhere
+  const home = { on5: c.root + 10, tm: c.root + 4, iv: c.root + 7, bd: c.root + 2, tt: c.root + 11 }[it.scale === 'maj6' ? '' : it.job];
+  const target = home == null ? null : voicings(scaleKey(home), 'maj6', 'drop2', SET52).filter((x) => x.on && x.lowFret > 0)
+    .sort((a, b) => Math.abs(a.notes[0].fret - v.notes[0].fret) - Math.abs(b.notes[0].fret - v.notes[0].fret))[0];
+  const sound = () => { audio.stopAll(); strum(v); if (target) strum(target, 1.2); };
+  const why = `${JOB_WHY[`${it.scale}|${it.job}`](nameOf(c), label(answer), notes, c)}${target ? ` You hear it go on to ${scaleKey(home)}6.` : ''}`;
+  return { c, job, label, answer, v, win: gripFrame(v.notes), sound, why, name: nameOf(c) };
+}
+
+function jobsQuiz(it, ctx) {
+  const m = jobInfo(it, ctx);
+  // wrong answers: the roots the other jobs would give, then other likely ones
+  const others = [9, 5, 11, 7, 6, 2, 3, 10, 1, 8, 4].filter((x) => x !== m.job.to).map((x) => mod(m.c.root + x, 12));
+  const options = [m.answer, ...others.slice(0, 3)].sort(() => Math.random() - 0.5);
+  const fb = feedback();
+  const slot = h('div');
+  const ch = choices(options.map((root) => ({ value: root, label: m.label(root) })), (val) => {
+    const ok = val === m.answer;
+    ch.resolve(m.answer, val);
+    slot.replaceChildren(neck({ lo: m.win.lo, hi: m.win.hi, focus: SET52, marks: roleMarks(m.v, it.scale) }).el);
+    m.sound();
+    fb.show(ok, m.why);
+    ctx.finish(ok ? 'right' : 'wrong', ok ? 'auto' : 'tap');
+  }, 'two');
+  return frame({
+    kicker: 'One chord, many jobs',
+    prompt: [sym(m.name), ` ${m.job.ask}`],
+    hint: 'One shape, several uses. Which chord is it serving here?',
+    body: [ch.el, slot], fb: fb.el,
+  });
+}
+
+function jobsGuitar(it, ctx) {
+  const m = jobInfo(it, ctx);
+  const board = neck({ lo: m.win.lo, hi: m.win.hi, focus: SET52, marks: roleMarks(m.v, it.scale) });
+  const fb = feedback();
+  revealThenRate(ctx, () => { m.sound(); return `${m.label(m.answer)}. ${m.why}`; }, fb);
+  return frame({
+    kicker: 'One chord, many jobs',
+    prompt: ['Play ', sym(m.name), `. It ${m.job.ask}`],
+    hint: 'Say your answer aloud before you check. If the chord leads somewhere, play where it goes.',
+    body: board.el, fb: fb.el,
+  });
+}
+
+// Ear: three ways home from the same starting chord.
+function earRoad(it, ctx) {
+  const tonic = keyOf(ctx.key).pc;
+  const answer = rand(['major-on5', 'minor-iv', 'major-tm']);
+  const steps = chainIn(answer, tonic, rand([0, 1, 2, 3]));
+  const play = () => { audio.stopAll(); steps.forEach((st, k) => strum(st.voicing, k * 1.25)); };
+  play();
+  const fb = feedback();
+  const slot = h('div');
+  const ch = choices([
+    { value: 'major-on5', label: 'Minor 6 on the 5', sub: 'inside the key' },
+    { value: 'minor-iv', label: 'Minor iv', sub: 'the first chord turns minor' },
+    { value: 'major-tm', label: 'Tritone’s minor', sub: 'outside the key' },
+  ], (val) => {
+    const ok = val === answer;
+    ch.resolve(answer, val);
+    const mid = steps[1];
+    const win = gripFrame(steps.flatMap((st) => st.voicing.notes));
+    slot.replaceChildren(neck({ lo: win.lo, hi: win.hi, focus: SET52, marks: roleMarks(mid.voicing, mid.chord.scale) }).el);
+    const names = steps.map((st) => chordLabel(st.chord)).join(', ');
+    fb.show(ok, {
+      'major-on5': `Minor 6 on the 5: ${names}. Every note of the middle chord belongs to the key.`,
+      'minor-iv': `Minor iv: ${names}. The first chord keeps its root and its third drops a fret.`,
+      'major-tm': `Tritone’s minor: ${names}. The middle chord has two notes from outside the key.`,
+    }[answer]);
+    ctx.finish(ok ? 'right' : 'wrong', ok ? 'auto' : 'tap');
+  }, 'stack');
+  return frame({
+    kicker: `Ear · going home to ${ctx.key}`,
+    prompt: 'Which road home was that?',
+    hint: 'Three chords. The first and last are always the same. Listen to the one in the middle.',
+    body: [again(play), ch.el, slot], fb: fb.el,
+  });
+}
+
 export function mountDrill(entry, ctx) {
   audio.stopAll();
   const it = parse(entry.id);
@@ -1516,7 +1743,7 @@ export function mountDrill(entry, ctx) {
     case 'mq': return motionQuiz(it, ctx);
     case 'mv': return g ? moveGuitar(it, ctx) : moveTap(it, ctx);
     case 'em': return earMotion(it, ctx);
-    case 'sc': return scaleChoice(it, ctx);
+    case 'sc': return g ? scaleGuitar(it, ctx) : scaleChoice(it, ctx);
     case 'bw': return g ? borrowGuitar(it, ctx) : borrowTap(it, ctx);
     case 'bm': return g ? underGuitar(it, ctx) : underTap(it, ctx);
     case 'eb': return earBorrow(it, ctx);
@@ -1532,6 +1759,10 @@ export function mountDrill(entry, ctx) {
     case 'pm': return mirrorQuiz(it, ctx);
     case 'pv': return g ? moveGuitar(it, ctx) : moveTap(it, ctx);
     case 'ep': return earPivot(it, ctx);
+    case 'hq': return hubQuiz(it, ctx);
+    case 'hp': return g ? hubGuitar(it, ctx) : hubTap(it, ctx);
+    case 'su': return g ? jobsGuitar(it, ctx) : jobsQuiz(it, ctx);
+    case 'eh': return earRoad(it, ctx);
     default: return h('div', null, 'Unknown exercise');
   }
 }

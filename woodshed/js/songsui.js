@@ -7,7 +7,7 @@ import * as audio from './audio.js';
 import { SCALES, chordName } from './theory.js';
 import { SHAPES, FLOORS, setKey, setLabel } from './floors.js';
 import { parseChart, keyName } from './harmony.js';
-import { allSongs, songById, readSong, prefsOf, setPrefs, saveOwnSong, deleteOwnSong, playThrough, formulasAt, songMoves } from './songs.js';
+import { allSongs, songById, readSong, prefsOf, setPrefs, saveOwnSong, deleteOwnSong, playThrough, formulasAt, songMoves, centerOf, songCenters } from './songs.js';
 import { WANTED } from './tunes.js';
 import { state, setSetting } from './store.js';
 import { unitById, isActive } from './curriculum.js';
@@ -87,7 +87,16 @@ function chordDetail(read, chord, redraw) {
     h('div', { class: 'opts' }, chord.options.map((o, i) => h('button', { class: 'opt' + (i === chord.pick ? ' sel' : ''), onclick: () => pick(i) },
       h('strong', null, `${o.label}${SCALES[o.scale].whole ? ' scale' : ' diminished'}`), h('span', null, o.how)))),
     h('p', { class: 'muted small' }, `${cap(chord.use.why)}. On chord ${chord.use.on}, off chord ${chordName(chord.use.key, chord.use.scale, false)}.`),
-    formulaLine(read, chord));
+    formulaLine(read, chord),
+    centerLine(chord));
+}
+
+// For a dominant: which note of the off chord was moved to make the chord chosen here.
+function centerLine(chord) {
+  const c = centerOf(chord);
+  if (!c) return null;
+  const moved = c.post.moves.map((m) => `its ${m.say} ${m.by > 0 ? 'raised' : 'lowered'}`).join(' and ');
+  return h('p', { class: 'muted small' }, `From the center: ${c.post.center}, the off chord of ${keyName(c.tonic)}, with ${moved}.`);
 }
 
 function stepper(read, steps, redraw) {
@@ -137,7 +146,8 @@ function songSession(read, steps, mode) {
   const { song } = read;
   const tag = (bar) => `${song.title} · bar ${bar + 1}`;
   const out = [];
-  if (mode === 'away') {
+  // which scale of chords for each chart chord: answered on screen when away, played with the guitar
+  {
     const seen = new Set();
     for (const c of read.chords) {
       const how = { 'same four notes': 'same', 'minor 6 on the 5': 'on5', 'major 6 on the 5': 'on5', "tritone's minor": 'tm', 'tritone substitute': 'tt' }[c.use.how];
@@ -151,6 +161,10 @@ function songSession(read, steps, mode) {
   // the tune's own transformations, once that stage of the ladder has been started
   for (const m of isActive(unitById('tr.major')) ? songMoves(read) : []) {
     out.push({ id: `tx|${m.move}|${m.role}`, key: keyName(m.tonic), note: `On the chart this is ${m.from.text} to ${m.to.text}.`, tag: tag(m.from.bar) });
+  }
+  // its dominants as moves from the off chord, once that step of the ladder has been started
+  for (const m of isActive(unitById('sub.center')) ? songCenters(read) : []) {
+    out.push({ id: `hp|${m.id}|${m.pos}`, key: keyName(m.tonic), note: `On the chart this is ${m.from.text} going to ${m.to.text}.`, tag: tag(m.from.bar) });
   }
   const usable = steps.filter((s) => s.voicing && s.voicing.notes.length > 1);
   const want = 10;

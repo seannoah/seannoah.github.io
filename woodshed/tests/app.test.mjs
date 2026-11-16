@@ -48,6 +48,7 @@ const { MOVES } = await import('../js/transform.js');
 const { leapPair, bassMove } = await import('../js/motion.js');
 const { pivotPair, reflectFloor } = await import('../js/mirror.js');
 const { partsInside, SHAPES: ALL_SHAPES, FLOORS: ALL_FLOORS } = await import('../js/floors.js');
+const { POSTS, hubPair, jobById } = await import('../js/subs.js');
 
 test('every item in the catalogue is well formed and playable in C', () => {
   const ids = cur.catalogue();
@@ -69,6 +70,9 @@ test('every item in the catalogue is well formed and playable in C', () => {
     if (it.kind === 'tb' || it.kind === 'tw' || it.kind === 'tx') assert.ok(it.role >= 0 && it.role < 4, id);
     if (it.kind === 'tw') assert.ok(['forward', 'backward', 'across'].includes(it.dir), id);
     if (it.kind === 'tf' || it.kind === 'tx') assert.ok(MOVES[it.move], id);
+    if (it.kind === 'hq') assert.equal(POSTS[it.post].moves.length, 1, `${id}: one note moves`);
+    if (it.kind === 'hp') assert.ok(hubPair(0, it.post, it.pos), id);
+    if (it.kind === 'su') assert.ok(jobById(it.scale, it.job).ask, id);
     if (it.kind === 'fw') assert.ok(partsInside(it.shape, it.part).length, `${id}: the part is in there`);
     if (it.kind === 'lq') assert.ok(ALL_SHAPES[it.floor] && Number.isInteger(bassMove(it.t, it.df)), id);
     if (it.kind === 'lp') {
@@ -362,7 +366,7 @@ test('Stella by Starlight is read the way Standards Series Unit 4 reads it', () 
 test('transformation comes after reading a chart, and its formula quiz is for away mode', () => {
   const ids = cur.UNITS.map((u) => u.id);
   const at = ids.indexOf('chart');
-  assert.deepEqual(ids.slice(at, at + 5), ['chart', 'tr.family', 'tr.major', 'tr.minor', 'wide']);
+  assert.deepEqual(ids.slice(at, at + 4), ['chart', 'tr.family', 'tr.major', 'tr.minor']);
   assert.ok(!cur.PLANNED.some((x) => x.title === 'Transformation'));
   store.resetAll();
   const family = cur.unitById('tr.family');
@@ -414,6 +418,42 @@ test('leaps and the mirror come last, and the two rule quizzes are for away mode
     assert.ok(away.some((id) => /^(lq|pm)\|/.test(id)));
   }
   assert.equal(cur.SECTION_NAME[cur.SECTION.pv], 'Leaps and pivots');
-  assert.equal(cur.PLANNED.length, 2);
+  assert.equal(cur.PLANNED.length, 1);
   assert.equal(cur.floorOfItem('pv|maj6|triads|in|0'), 'leaps');
+});
+
+test('substitution follows transformation, and every step can be practiced with the guitar', () => {
+  const ids = cur.UNITS.map((u) => u.id);
+  const at = (id) => ids.indexOf(id);
+  assert.deepEqual(ids.slice(at('tr.minor') + 1, at('wide')), ['sub.center', 'sub.family', 'sub.jobs']);
+  for (const unit of ['sub.center', 'sub.family', 'sub.jobs', 'chart']) {
+    const u = cur.unitById(unit);
+    const guitar = cur.buildSession('guitar', 10, u).map((x) => x.id);
+    assert.ok(guitar.length, `${unit} has something to play`);
+    assert.ok(guitar.every((id) => !id.startsWith('hq|')), 'naming the note that moves is for away mode');
+  }
+  // the center step asks for the four one-note ways of playing a V chord, from every position
+  const center = cur.unitById('sub.center');
+  assert.equal(center.core.filter((id) => id.startsWith('hp|')).length, 16);
+  assert.ok(cur.buildSession('away', 10, center).some((x) => x.id.startsWith('hq|')));
+  assert.equal(cur.SECTION_NAME[cur.SECTION.hp], 'Substitution');
+  assert.equal(cur.floorOfItem('su|min6|tm'), 'subs');
+  assert.equal(cur.SECTION.eh, 'ear');
+});
+
+test('a tune\'s dominants are read from their center', () => {
+  const { TUNES } = songs;
+  const train = songs.readSong(TUNES.find((t) => t.id === 'a-train'));
+  // D7 does not resolve down a fifth: the minor 6 on the 5, A minor 6, which is one note from F♯°7
+  const d7 = songs.centerOf(train.chords.find((c) => c.text === 'D7'));
+  assert.deepEqual([d7.id, d7.post.label, d7.post.center, d7.post.moves[0].say], ['on5', 'Am6', 'F♯°7', 'sharp five']);
+  // G7 resolves to C: the tritone's minor, A♭ minor 6, which is B°7 with its second raised
+  const g7 = songs.centerOf(train.chords.find((c) => c.text === 'G7' && c.resolves));
+  assert.deepEqual([g7.id, g7.post.label, g7.post.center, g7.post.moves[0].say], ['tm', 'A♭m6', 'B°7', 'second']);
+  assert.equal(songs.centerOf(train.chords.find((c) => c.text === 'Dm7')), null);
+  // practice items: only the dominants that go home to a major chord
+  const items = songs.songCenters(train);
+  assert.deepEqual(items.map((m) => [m.id, m.tonic, m.from.text, m.to.text]), [['tm', 0, 'G7', 'C6']]);
+  const you = songs.songCenters(songs.readSong(TUNES.find((t) => t.id === 'another-you')));
+  assert.ok(you.length >= 1 && you.every((m) => m.to.family === 'maj' && hubPair(m.tonic, m.id, m.pos)));
 });

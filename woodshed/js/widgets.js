@@ -6,6 +6,8 @@ import * as audio from './audio.js';
 import { SCALES, SCALE_ORDER, OPEN, scaleNotes, chordName, stepSize, walkPath, stepMidi, degOfMidi, mod } from './theory.js';
 import { SHAPES, ELEVATOR, voicings, voicingAt, voicingFor, setWithTop, setLabel, stopName, insideOf, partWhere } from './floors.js';
 import { mirrorLine, pivotNotes } from './mirror.js';
+import { POSTS, postIn, hubPair, postPhrase, postStory, chordOf, nameOf, jobsOf, aTrain } from './subs.js';
+import { scaleKey } from './harmony.js';
 import { describeMove, moveWords, nearestUnder, bassMove, TOP_STRING } from './motion.js';
 import { borrowIn, borrowWords, voiceName } from './borrow.js';
 import { ROLES, chord as sixth, chordLabel, applyFormula, formulaText, formulaWords, roleAfter, tallRoles, sixthVoicing, follow, movesText, chainById, chainIn } from './transform.js';
@@ -524,6 +526,165 @@ export function mirrorRide(init = {}) {
         h('button', { class: 'pill', onclick: () => { audio.stopAll(); steps.forEach((x, k) => sound(x.voicing, k * 0.95)); } }, icon('play', 16), 'Play it through'),
         h('button', { class: 'round', 'aria-label': 'Next chord', onclick: () => jump(mod(i + 1, steps.length)) }, icon('next', 20))),
       h('div', { class: 'pills center' }, pill('Bass line alone', () => { audio.stopAll(); audio.line(steps.map((x) => x.voicing.notes[0].midi), 0.4); })),
+      h('figcaption', null, caption),
+    );
+  }
+  render();
+  return root;
+}
+
+// ---- substitution ----
+// The off chord of a key in the middle, and the chords one fret away from it. Each button
+// moves one note of the off chord up or down.
+export function subHub(init = {}) {
+  const cfg = { tonic: 10, all: false, pos: 2, ...init };
+  const key = scaleKey(cfg.tonic);
+  let pos = cfg.pos;
+  let cur = null;                 // the post showing, or null for the off chord itself
+  let around = 6;
+  let note = 'This is the off chord. Each button moves one of its notes one fret.';
+  const root = h('figure', { class: 'fig browser ride' });
+  const strum = (notes, at = 0) => audio.chord(notes.map((n) => n.midi), at, 0.03, 0.55);
+
+  function show(id) {
+    const hb = hubPair(cfg.tonic, id, pos, SET52, around);
+    const was = cur;
+    cur = id;
+    note = `${postStory(hb.post)}${POSTS[id].away ? ` This one leads to ${scaleKey(cfg.tonic + 9)} minor, not home to ${key}.` : ''}`;
+    audio.stopAll();
+    if (!was) { strum(hb.center.notes); strum(hb.to.notes, 1.0); } else strum(hb.to.notes);
+    render();
+  }
+
+  function render() {
+    const hb = hubPair(cfg.tonic, cur || 'on5', pos, SET52, around);
+    around = hb.center.minFret;
+    const post = cur ? hb.post : null;
+    const lo = Math.max(1, hb.center.minFret - 2);
+    const board = neck({
+      lo, hi: Math.max(hb.center.maxFret + 2, lo + 6), focus: SET52,
+      marks: post
+        ? [...hb.center.notes.filter((_, i) => hb.moved.includes(i)).map((n) => ({ string: n.string, fret: n.fret, kind: 'from', label: labelOf('maj6', n.deg) })),
+          ...hb.to.notes.map((n, i) => ({ string: n.string, fret: n.fret, kind: hb.moved.includes(i) ? 'on anchor' : 'on', label: labelOf(hb.to.chord.scale, n.deg) }))]
+        : hb.center.notes.map((n) => ({ string: n.string, fret: n.fret, kind: 'off', label: labelOf('maj6', n.deg) })),
+      onTap: (s, f) => { const n = (post ? hb.to.notes : hb.center.notes).find((x) => x.string === s && x.fret === f); if (n) audio.note(n.midi); },
+    });
+    const btn = (id, text) => h('button', { class: 'pill' + (cur === id ? ' sel' : ''), onclick: () => show(id) }, text);
+    const rows = [
+      h('span', { class: 'ride-label' }, 'Sharp five'), btn('on5', 'Up: minor 6 on the 5'), btn('td', 'Down: true dominant'),
+      h('span', { class: 'ride-label' }, 'Second'), btn('tm', 'Up: tritone’s minor'), btn('tt', 'Down: tritone sub'),
+      ...(cfg.all ? [
+        h('span', { class: 'ride-label' }, 'Major seven'), btn('iv', 'Up: minor iv'), btn('bd', 'Down: its dominant'),
+        h('span', { class: 'ride-label' }, 'Fourth'), btn('rm', `Up: ${postIn('rm', cfg.tonic).label}`), btn('rd', `Down: ${postIn('rd', cfg.tonic).label}`),
+      ] : []),
+    ];
+    root.replaceChildren(
+      h('div', { class: 'browser-title' },
+        h('span', { class: `tag ${post ? 'on' : 'off'}` }, !post ? 'off' : hb.moved.length > 1 ? 'two notes away' : 'one note away'),
+        h('strong', null, post ? post.label : hb.post.center),
+        h('span', { class: 'muted' }, post ? ` ${postPhrase(post)}` : ` the off chord of ${key}`)),
+      board.el,
+      h('div', { class: 'ride-grid' }, rows),
+      h('div', { class: 'pills center' },
+        btn('b5', 'Both down: dominant 7♭5'),
+        pill('Back to the off chord', () => { cur = null; note = `${hb.post.center}: the major seven, second, fourth and sharp five of ${key}.`; audio.stopAll(); strum(hb.center.notes); render(); }),
+        pill(`Resolve to ${key}6`, () => { audio.stopAll(); strum(post ? hb.to.notes : hb.center.notes); if (hb.home) strum(hb.home.notes, 1.1); }, 'play'),
+        pill('Another position', () => { pos = mod(pos + 1, 4); around = 6; render(); })),
+      h('figcaption', null, note),
+    );
+  }
+  render();
+  return root;
+}
+
+// One chord and every job it can do. Each job plays the same grip over a different bass note.
+export function jobsFigure(init = {}) {
+  const cfg = { root: 0, scale: 'min6', ...init };
+  let scale = cfg.scale;
+  let sel = -1;
+  const root = h('figure', { class: 'fig browser ride' });
+  const LEADS = { on5: 10, tm: 4, iv: 7, bd: 2, tt: 11 };   // where the chord goes next in that job, above its own root
+
+  function render() {
+    const c = chordOf(cfg.root, scale);
+    const jobs = jobsOf(c);
+    const all = voicings(scaleKey(c.root), scale, 'drop2', SET52).filter((v) => v.on && v.lowFret > 0 && v.maxFret <= 14);
+    const v = all.find((x) => x.bottomDeg === 0) || all[0];
+    const win = sixthWindow([v]);
+    const board = neck({
+      lo: win.lo, hi: win.hi, focus: SET52,
+      marks: v.notes.map((n) => ({ string: n.string, fret: n.fret, kind: 'on', label: labelOf(scale, n.deg) })),
+      onTap: (s, f) => { const n = v.notes.find((x) => x.string === s && x.fret === f); if (n) audio.note(n.midi); },
+    });
+    const play = (k) => {
+      const job = jobs[k];
+      sel = k; render();
+      audio.stopAll();
+      // the bass note of the chord being served, below the grip
+      audio.note(40 + mod((job.leads ? c.root : job.root) - 40, 12), 0, 0.75, 2.2);
+      audio.chord(v.notes.map((n) => n.midi), 0.12, 0.03, 0.5);
+      const lead = scale === 'maj6' || job.id === 'self' ? null : LEADS[job.id];
+      if (lead != null) {
+        const home = voicings(scaleKey(c.root + lead), 'maj6', 'drop2', SET52).filter((x) => x.on && x.lowFret > 0)
+          .sort((a, b) => Math.abs(a.notes[0].fret - v.notes[0].fret) - Math.abs(b.notes[0].fret - v.notes[0].fret))[0];
+        audio.note(40 + mod(c.root + lead - 40, 12), 1.5, 0.75, 2.2);
+        audio.chord(home.notes.map((n) => n.midi), 1.62, 0.03, 0.5);
+      }
+    };
+    const job = jobs[sel];
+    const caption = !job ? 'Tap a job to hear the same grip over a different bass note.'
+      : job.leads ? `${nameOf(c)}, then ${scaleKey(job.root)}6: ${job.line}.`
+      : `${nameOf(c)} over ${scaleKey(job.root)} in the bass: ${job.line}.`;
+    root.replaceChildren(
+      pickRow('Chord', [['maj6', `${scaleKey(cfg.root)} major 6`], ['min6', `${scaleKey(cfg.root)} minor 6`], ['dom7', `${scaleKey(cfg.root)} dominant 7`]], scale, (x) => { scale = x; sel = -1; render(); }),
+      board.el,
+      h('div', { class: 'jobs' }, jobs.map((j, k) => h('button', { class: 'job' + (k === sel ? ' sel' : ''), onclick: () => play(k) },
+        h('strong', null, j.label), h('span', null, j.line)))),
+      h('figcaption', null, caption),
+    );
+  }
+  render();
+  return root;
+}
+
+// The first eight bars of Take the "A" Train as a chain of grips, each chart chord with
+// the chord that is played for it.
+export function aTrainFigure(init = {}) {
+  const cfg = { tonic: 0, bass: 1, ...init };
+  let bass = cfg.bass;
+  let i = 0;
+  const root = h('figure', { class: 'fig browser ride' });
+  const sound = (v, at = 0) => audio.chord(v.notes.map((n) => n.midi), at, 0.03, 0.55);
+  const names = (c) => scaleNotes(scaleKey(c.root), c.scale);
+
+  function render() {
+    const steps = aTrain(cfg.tonic, bass);
+    i = Math.min(i, steps.length - 1);
+    const st = steps[i];
+    const prev = i > 0 ? steps[i - 1].voicing : null;
+    const win = sixthWindow(steps.map((x) => x.voicing));
+    const board = neck({
+      lo: win.lo, hi: win.hi, focus: SET52,
+      marks: [
+        ...(prev ? prev.notes.filter((n, k) => n.fret !== st.voicing.notes[k].fret).map((n) => ({ string: n.string, fret: n.fret, kind: 'from', label: '' })) : []),
+        ...st.voicing.notes.map((n) => ({ string: n.string, fret: n.fret, kind: st.chord.scale === 'dim' ? 'off' : 'on', label: names(st.chord)[n.deg].name })),
+      ],
+      onTap: (s, f) => { const n = st.voicing.notes.find((x) => x.string === s && x.fret === f); if (n) audio.note(n.midi); },
+    });
+    const jump = (k) => { i = k; render(); audio.stopAll(); sound(steps[k].voicing); };
+    const row = h('div', { class: 'chain' }, steps.map((x, k) =>
+      h('button', { class: 'chain-step' + (k === i ? ' sel' : ''), onclick: () => jump(k) }, h('small', null, x.chartLabel || 'passing'), x.label)));
+    const moved = st.moves ? ` Frets moved, low string to high: ${movesText(st.moves)}.` : '';
+    const caption = st.chartLabel
+      ? `${st.bars}: the chart says ${st.chartLabel}. Play ${st.label}, ${st.how}.${moved}`
+      : `${st.bars}: ${st.label}, ${st.how}, on the way to the next bar.${moved}`;
+    root.replaceChildren(
+      pickRow('Start with', ROLES.map((r, k) => [k, `${r.name} in the bass`]), bass, (x) => { bass = x; i = 0; render(); audio.stopAll(); sound(aTrain(cfg.tonic, bass)[0].voicing); }),
+      row, board.el,
+      h('div', { class: 'browser-controls' },
+        h('button', { class: 'round', 'aria-label': 'Previous chord', onclick: () => jump(mod(i - 1, steps.length)) }, icon('back', 20)),
+        h('button', { class: 'pill', onclick: () => { audio.stopAll(); steps.forEach((x, k) => sound(x.voicing, k * 1.15)); } }, icon('play', 16), 'Play it through'),
+        h('button', { class: 'round', 'aria-label': 'Next chord', onclick: () => jump(mod(i + 1, steps.length)) }, icon('next', 20))),
       h('figcaption', null, caption),
     );
   }

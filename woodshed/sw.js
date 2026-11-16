@@ -3,11 +3,11 @@
 // and fall back to the saved copy when there is no connection.
 // Bump VERSION whenever the list of files changes.
 
-const VERSION = 'woodshed-0.6.0';
+const VERSION = 'woodshed-0.7.0';
 const FILES = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css',
   'js/app.js', 'js/audio.js', 'js/borrow.js', 'js/curriculum.js', 'js/dom.js', 'js/drills.js', 'js/floors.js', 'js/harmony.js',
-  'js/lessons.js', 'js/mirror.js', 'js/motion.js', 'js/neck.js', 'js/songs.js', 'js/songsui.js', 'js/store.js', 'js/sync.js', 'js/theory.js', 'js/transform.js', 'js/tunes.js', 'js/widgets.js',
+  'js/lessons.js', 'js/mirror.js', 'js/motion.js', 'js/neck.js', 'js/songs.js', 'js/songsui.js', 'js/store.js', 'js/subs.js', 'js/sync.js', 'js/theory.js', 'js/transform.js', 'js/tunes.js', 'js/widgets.js',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
 ];
 

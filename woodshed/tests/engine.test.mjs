@@ -643,3 +643,105 @@ test('a pivoted line (The Elevator Sequence pp. 11-12)', () => {
   assert.deepEqual(up, [53, 57, 60, 63]);
   assert.deepEqual(pivoted, [53, 45, 48, 51]);
 });
+
+// ---- substitution: the diminished is the center ----
+import { POSTS, POST_IDS, PAIRS, V_POSTS, postIn, postFor, hubPair, jobsOf, chordOf, nameOf, gripChain, aTrain } from '../js/subs.js';
+import { degOfMidi, mod as modulo } from '../js/theory.js';
+
+const pcs = (c) => SCALES[c.scale].semis.filter((_, i) => i % 2 === 0).map((st) => modulo(c.root + st, 12)).sort((a, b) => a - b);
+
+test('every way of playing a dominant is the off chord with a note moved (Foundations IV pp. 33-34, 76)', () => {
+  // the diagram on p. 33, for F7 going to B♭: the center is A°7
+  const say = (id) => { const p = postIn(id, 10); return `${p.center} ${p.label} for ${p.stands}: ${p.moves.map((m) => `${m.say} ${m.from} to ${m.to}`).join(', ')}`; };
+  assert.equal(say('on5'), 'A°7 Cm6 for F7: sharp five F♯ to G');          // 1a: C minor 6, "lower the 5th" to reach A°7
+  assert.equal(say('td'), 'A°7 F7 for F7: sharp five F♯ to F');             // 3a: "lower it again"
+  assert.equal(say('tm'), 'A°7 G♭m6 for F7: second C to D♭');               // 1b
+  assert.equal(say('tt'), 'A°7 B7 for F7: second C to B');                  // 3b
+  assert.equal(say('b5'), 'A°7 F7♭5 for F7: sharp five F♯ to F, second C to C♭');   // 4a/b: "lower both notes"
+  assert.equal(say('iv'), 'A°7 E♭m6 for A♭7: major seven A to B♭');         // p. 76: Minor 4
+  assert.equal(say('bd'), 'A°7 A♭7 for A♭7: major seven A to A♭');
+  // in every key, each post is the off chord's four notes with only the moving ones changed
+  for (let tonic = 0; tonic < 12; tonic++) {
+    const off = [11, 2, 5, 8].map((x) => modulo(tonic + x, 12));
+    for (const id of POST_IDS) {
+      const p = postIn(id, tonic);
+      const want = off.map((pc) => { const mv = POSTS[id].moves.find(([semis]) => modulo(tonic + semis, 12) === pc); return modulo(pc + (mv ? mv[1] : 0), 12); }).sort((a, b) => a - b);
+      assert.deepEqual(pcs(p.chord), want, `${tonic} ${id}`);
+      // a raised note is the fifth of a minor 6; a lowered note is the root of a dominant (or its flat five)
+      for (const m of p.moves) assert.ok(m.by > 0 ? m.becomes === 'fifth' && p.chord.scale === 'min6' : ['root', 'flat five'].includes(m.becomes), `${tonic} ${id}`);
+    }
+  }
+  // the same note up or down gives a minor 6 and the dominant it is "on the 5" of
+  for (const [up, down] of PAIRS) {
+    assert.equal(POSTS[up].moves[0][0], POSTS[down].moves[0][0]);
+    assert.equal(modulo(POSTS[up].chord[0] - POSTS[down].chord[0], 12), 7);
+    assert.equal(postFor(POSTS[up].moves[0][0], 1), up);
+  }
+  // the tritone of the dominant (its third and seventh) is in all five ways of playing it (Foundations I p. 46)
+  for (const id of V_POSTS) { const c = pcs(postIn(id, 0).chord); assert.ok(c.includes(11) && c.includes(5), id); }
+  // the three minor 6 chords that lead home are brothers and sisters, a minor third apart
+  assert.deepEqual(['on5', 'iv', 'tm'].map((id) => POSTS[id].chord[0]), [2, 5, 8]);
+});
+
+test('the moves on the neck: one finger, one fret (Foundations IV p. 33)', () => {
+  // p. 33 shows them on strings 4-1: C minor 6 at fr. 7, A°7 at fr. 7, F7 at fr. 6, G♭ minor 6 and B7 at fr. 7
+  const set = [4, 3, 2, 1];
+  const at = (id) => hubPair(10, id, 0, set, 7);
+  assert.deepEqual(frets(at('on5').center), [7, 8, 7, 8]);                 // A, E♭, F♯, C
+  assert.deepEqual(at('on5').to.notes.map((n) => n.fret), [7, 8, 8, 8]);   // the F♯ on string 2 rises to G
+  assert.deepEqual(at('td').to.notes.map((n) => n.fret), [7, 8, 6, 8]);    // and falls to F: "fr. 6"
+  assert.deepEqual(at('tm').to.notes.map((n) => n.fret), [7, 8, 7, 9]);    // the C on string 1 rises to D♭
+  assert.deepEqual(at('tt').to.notes.map((n) => n.fret), [7, 8, 7, 7]);
+  assert.deepEqual(at('b5').to.notes.map((n) => n.fret), [7, 8, 6, 7]);
+  assert.deepEqual(at('b5').moved, [2, 3]);
+  // in every key and from every position, the result is a real chord of the new scale and the hand never leaves the frets
+  for (let tonic = 0; tonic < 12; tonic++) for (const id of POST_IDS) for (let pos = 0; pos < 4; pos++) {
+    const h = hubPair(tonic, id, pos);
+    assert.ok(h, `${tonic} ${id} ${pos}`);
+    assert.equal(h.moved.length, POSTS[id].moves.length);
+    assert.ok(h.to.notes.every((n) => n.deg >= 0 && n.deg % 2 === 0 && n.fret >= 1 && n.fret <= 16), `${tonic} ${id} ${pos}`);
+    assert.ok(h.center.notes.every((n, i) => Math.abs(n.fret - h.to.notes[i].fret) === (h.moved.includes(i) ? 1 : 0)));
+    assert.ok(h.home && h.home.on, 'there is a tonic chord a step away to resolve to');
+  }
+});
+
+test('one chord, many jobs (Foundations I fig. 14)', () => {
+  const jobs = (root, scale) => Object.fromEntries(jobsOf(chordOf(root, scale)).map((j) => [j.id, j.label]));
+  assert.deepEqual(jobs(0, 'maj6'), { self: 'C6', m7: 'Am7', on5: 'Fmaj7' });
+  assert.deepEqual(jobs(0, 'min6'), { self: 'Cm6', hdim: 'Am7♭5', on5: 'F7', tm: 'B7', iv: 'G6' });
+  assert.deepEqual(jobs(1, 'dom7'), { self: 'D♭7', tt: 'G7', bd: 'E♭6' });
+  // each job agrees with how the chart reader assigns scales
+  const first = (sym, how) => scaleOptions(parseChord(sym), true).find((o) => o.how === how).label;
+  assert.equal(first('Am7', 'same four notes'), 'C major 6');
+  assert.equal(first('Fmaj7', 'major 6 on the 5'), 'C major 6');
+  assert.equal(first('Am7b5', 'same four notes'), 'C minor 6');
+  assert.equal(first('F7', 'minor 6 on the 5'), 'C minor 6');
+  assert.equal(first('B7', "tritone's minor"), 'C minor 6');
+  assert.equal(first('G7', 'tritone substitute'), 'D♭ dominant 7');
+  assert.equal(nameOf(chordOf(0, 'dim')), 'C°7');
+});
+
+test('Take the "A" Train by substitution (Foundations I pp. 45-47, Substitution Ex. 3 to 6)', () => {
+  const row = (bass) => aTrain(0, bass).map((x) => `${x.label} ${x.voicing.minFret}`).join(', ');
+  // the "fr." labels printed over each row
+  assert.equal(row(1), 'C6 5, Am6 5, C°7 5, F6 5, A♭m6 4, C6 5');
+  assert.equal(row(2), 'C6 9, Am6 9, C°7 8, F6 7, A♭m6 8, C6 9');
+  assert.equal(row(3), 'C6 12, Am6 11, C°7 11, F6 10, A♭m6 10, C6 12');
+  // "observe the semitone motions": one note moves into A minor 6, one more into the passing
+  // diminished, and two fall a fret each into F6
+  const steps = aTrain(0, 1);
+  assert.deepEqual(steps[1].moves, [0, 0, 0, -1]);
+  assert.deepEqual(steps[2].moves, [-1, 0, 0, 0]);
+  assert.deepEqual(steps[3].moves, [-1, 0, 0, -1]);
+  assert.deepEqual(steps.map((x) => x.chartLabel), ['C6', 'D7', null, 'Dm7', 'G7', 'C6']);
+  assert.deepEqual(steps.map((x) => x.chord.scale), ['maj6', 'min6', 'dim', 'maj6', 'min6', 'maj6']);
+  assert.ok(steps.every((x) => x.how && x.bars));
+  // every chain stays in one place
+  for (let tonic = 0; tonic < 12; tonic++) for (let bass = 0; bass < 4; bass++) {
+    const chain = aTrain(tonic, bass);
+    if (!chain) continue;
+    const all = chain.flatMap((x) => x.voicing.notes.map((n) => n.fret));
+    assert.ok(Math.max(...all) - Math.min(...all) <= 5, `${tonic} ${bass}`);
+  }
+  assert.equal(gripChain([chordOf(0, 'maj6'), chordOf(5, 'maj6')], 0).length, 2);
+});

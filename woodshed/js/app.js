@@ -16,7 +16,7 @@ import * as sync from './sync.js';
 import { pageSongs, pageSong, pageSongEdit, attachSongs } from './songsui.js';
 import { songById } from './songs.js';
 
-const VERSION = '0.6.0';
+const VERSION = '0.7.0';
 const view = document.getElementById('view');
 const sessionRoot = document.getElementById('session');
 const TABS = [['today', 'Today'], ['learn', 'Learn'], ['songs', 'Songs'], ['explore', 'Explore'], ['progress', 'Progress']];
@@ -32,10 +32,11 @@ const PART_BLURB = {
   motion: 'Two voices moving between floors',
   leaps: 'Floors inside floors, leaps and the mirror',
   transform: 'One chord into another by formula',
+  subs: 'Ways to play a chord, and the off chord at their center',
   tunes: 'Reading chord charts',
   ear: 'Hearing on and off, degrees and floors',
 };
-const PART_ICON = { path: 'next', floors: 'progress', borrow: 'repeat', motion: 'motion', leaps: 'leap', transform: 'turn', tunes: 'songs', ear: 'ear' };
+const PART_ICON = { path: 'next', floors: 'progress', borrow: 'repeat', motion: 'motion', leaps: 'leap', transform: 'turn', subs: 'hub', tunes: 'songs', ear: 'ear' };
 
 function installHint() {
   const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -329,6 +330,7 @@ function elevator() {
     side('motion', 'Motion', 'motion'),
     side('leaps', 'Leaps and pivots', 'leap'),
     side('transform', 'Transformation', 'turn'),
+    side('subs', 'Substitution', 'hub'),
     side('tunes', 'Tunes', 'songs'),
     side('ear', 'Ear', 'ear'));
 }

@@ -3,17 +3,21 @@
 // to where Thomas Echols teaches it in his course materials.
 
 import { h } from './dom.js';
-import { scaleStrip, pathChips, pathCompare, shapeBrowser, elevatorRide, borrowDemo, transformLab, chainPlayer, insideFigure, pivotFigure, mirrorRide } from './widgets.js';
+import { scaleStrip, pathChips, pathCompare, shapeBrowser, elevatorRide, borrowDemo, transformLab, chainPlayer, insideFigure, pivotFigure, mirrorRide, subHub, jobsFigure, aTrainFigure } from './widgets.js';
 import { SCALES } from './theory.js';
 import { SHAPES, INTERVALS, setLabel } from './floors.js';
 
-const p = (...kids) => h('p', null, ...kids);
-const b = (text) => h('strong', null, text);
+// Chord symbols, and note names with a flat or sharp, are set in the sans font: the serif
+// has no good glyphs for the accidentals.
+const tidy = (kids) => kids.flat(Infinity).flatMap((kid) => (typeof kid !== 'string' ? [kid]
+  : kid.split(/([A-G][♭♯]?(?:m7♭5|maj7|m6|m7|°7|7♭5|6|7)(?![A-Za-z0-9])|[A-Za-z0-9]*[♭♯°][A-Za-z0-9♭♯°]*)/).map((part, i) => (i % 2 ? h('span', { class: 'sym' }, part) : part))));
+const p = (...kids) => h('p', null, ...tidy(kids));
+const b = (text) => h('strong', null, ...tidy([text]));
 const em = (text) => h('em', null, text);
 const head = (text) => h('h3', null, text);
 const read = (text) => h('p', { class: 'read' }, h('span', null, 'Read'), text);
 const say = (text) => h('p', { class: 'aloud' }, h('span', null, 'Say aloud'), text);
-const list = (...items) => h('ul', null, items.map((x) => h('li', null, x)));
+const list = (...items) => h('ul', null, items.map((x) => h('li', null, ...tidy([x]))));
 const browser = (cfg) => shapeBrowser({ key: 'C', scale: 'maj6', ...cfg }).el;
 const on = (t) => h('span', { class: 'ink-on' }, t);
 const off = (t) => h('span', { class: 'ink-off' }, t);
@@ -421,11 +425,102 @@ Object.assign(LESSONS, {
   ],
 });
 
+Object.assign(LESSONS, {
+  'sub.center': () => [
+    p('Reading a chart gave you five ways to play a dominant chord. Learned as a list they are five separate facts. They are really one chord with one note moved, and once you see that they are easy to find and easy to move between.'),
+    head('Start from the off chord'),
+    p('Take the key you are going to. Its off chord is a diminished 7: the major seven, second, fourth and sharp five. In B♭ that is A°7, and it already pulls toward B♭6. That is why it is the off chord.'),
+    p('Now move one of its notes by one fret.'),
+    list(
+      [b('Raise a note'), ' and you have a minor 6 chord. The raised note is its fifth. You met this in Brothers and sisters.'],
+      [b('Lower a note'), ' and you have a dominant 7 chord. The lowered note is its root.'],
+    ),
+    p('The same note, raised or lowered, gives a matched pair.'),
+    list(
+      ['The ', b('sharp five'), ': up for the ', b('minor 6 on the 5'), ', down for the ', b('true dominant'), '. In B♭ these are Cm6 and F7.'],
+      ['The ', b('second'), ': up for the ', b('tritone’s minor'), ', down for the ', b('tritone substitute'), '. In B♭, G♭m6 and B7.'],
+      ['Both of them down at once: the ', b('dominant 7♭5'), '.'],
+    ),
+    subHub({ tonic: 10 }),
+    head('Why they all work'),
+    p('Two notes of the off chord never moved: the major seven and the fourth of the key. In B♭ those are A and E♭, the third and the seventh of F7. That pair is what makes a dominant sound like a dominant, and it is what resolves when you go home: A rises to B♭ and E♭ falls to D. All five chords contain it.'),
+    head('Inside and outside'),
+    p('Move the sharp five and the new note belongs to the key: G or F, in B♭. Those two chords sound inside. Move the second and the new note is D♭ or B, from outside the key. Those two sound darker and more colorful. That is the whole difference between the minor 6 on the 5 and the tritone’s minor.'),
+    head('How to practice it'),
+    list(
+      'Play the minor 6 on the 5. Lower its fifth to reach the off chord. Lower the same note again to reach the dominant. Then walk back up.',
+      'Do the same from the tritone’s minor down to the tritone substitute.',
+      'From the off chord, lower both notes for the dominant 7♭5.',
+      'Resolve each one home, and say what you moved: "sharp five, up".',
+    ),
+    read('Foundations IV, pages 32 to 34, and Foundations I, pages 12 to 20 and 45 to 46.'),
+  ],
+
+  'sub.family': () => [
+    p('The off chord has four notes, and the last step moved two of them. The other two finish the picture.'),
+    head('The major seven: the minor iv'),
+    p('Raise the major seven of the key and the off chord becomes the ', b('minor iv'), ': in B♭, E♭ minor 6. You know it already as the IV chord that turns minor before going home.'),
+    p('Lower the same note and you have A♭7. When a chart shows a dominant that resolves ', em('up a whole step'), ', this is what is happening, and you can play it as the minor iv. Many players call that chord the back-door dominant. E♭m6 and A♭7 are a matched pair in the same way that Cm6 and F7 are.'),
+    subHub({ tonic: 10, all: true }),
+    head('Three roads home'),
+    p('Look at the three minor 6 chords that lead to B♭: C minor 6, E♭ minor 6 and G♭ minor 6. They are a minor third apart. They are brothers and sisters, one family under one hand, and you already know how to move between them: forward, backward and across.'),
+    list(
+      [b('Minor 6 on the 5'), ': every note inside the key.'],
+      [b('Minor iv'), ': one note from outside. The wistful one.'],
+      [b('Tritone’s minor'), ': two notes from outside. The darkest.'],
+    ),
+    p('The ear drill for this step plays all three from the same starting chord. When you can tell them apart, you can choose between them by sound.'),
+    head('The fourth note'),
+    p('Moving the fourth of the key gives the last pair: in B♭, A minor 6 and D7. They do not lead to B♭. D7 is the dominant of G minor, the relative minor, so this pair is the road ', em('away'), ' from home. It is in the figure so you can hear the difference.'),
+    h('p', { class: 'note' }, 'The course’s diagrams name one more use of a minor 6 chord over a dominant, the "ugliest duckling". It is not explained in the materials this app was built from, so it is left out for now.'),
+    head('How to practice it'),
+    list(
+      'From the off chord: raise the major seven, come back, lower it, come back.',
+      'Play IV, minor iv, I in a few keys. Then play the dominant where the minor iv was, and hear that it does the same job.',
+      'Go round the three siblings and resolve each one home.',
+    ),
+    read('Foundations IV, pages 75 to 77, and Foundations II, pages 10 to 13.'),
+  ],
+
+  'sub.jobs': () => [
+    p('So far the question has been "what do I play over this chord?" Turn it around: "where can I use the chord in my hand?" Every chord you know has several jobs, which is why a small number of shapes covers so much music.'),
+    head('A major 6 chord'),
+    list(
+      'Itself: a I chord, or a IV chord.',
+      'A minor 7 chord: E♭6 is Cm7. That makes it a ii chord, a iii chord or a vi chord, depending on the key.',
+      'The major 6 on the 5: F6 over B♭, for a major 9 sound.',
+    ),
+    head('A minor 6 chord'),
+    list(
+      'Itself: a minor i chord, or a minor iv.',
+      'A half-diminished chord: Cm6 is Am7♭5, the ii of a minor ii–V.',
+      'The minor 6 on the 5 of a dominant: Cm6 over F7.',
+      'The tritone’s minor of a dominant: Cm6 over B7.',
+      'The minor iv on the way home: Cm6 going to G.',
+    ),
+    p('In the figure, each job plays the same four notes over a different bass note. The grip does not change. What it means does.'),
+    jobsFigure({ root: 0, scale: 'min6' }),
+    head('Sameness'),
+    p('The course calls this ', b('sameness'), ': seeing one thing in places that look different. It is worth more than a list of rules, because it lets you practice one shape and use it five ways. When you learn a new move with C minor 6, ask which other chords just learned it too.'),
+    head('A whole phrase by substitution'),
+    p('Here are the first eight bars of Take the "A" Train played with nothing but 6th chords and one passing diminished. Every change is a note or two moving by a fret.'),
+    aTrainFigure(),
+    list(
+      ['D7 is played as ', b('A minor 6'), ', its minor 6 on the 5. From C6, one note moves.'],
+      ['A ', b('passing diminished'), ' chord joins it to the next bar. Two notes of C6 walk down by half steps until they are notes of F6.'],
+      ['Dm7 is ', b('F major 6'), ': the same four notes.'],
+      ['G7 is ', b('A♭ minor 6'), ', the tritone’s minor, and it falls home to C6.'],
+    ),
+    p('Play it from each of the four starting shapes. The frets change and the moves do not. The tune is in the Songs tab when you want to go further with it.'),
+    read('Foundations I, pages 42 to 47, and Foundations IV, pages 75 to 76.'),
+  ],
+});
+
 const SCALE_INTRO = {
   min6: {
     what: 'Lower the third of the major 6 chord by a half step and you have a minor 6 chord. In C: C, E♭, G, A.',
     path: 'Only one note has moved, so only two steps of the path change: second to third is now a half step, and third to fourth is now a whole step.',
-    use: 'Minor 6 is home in a minor key. It also stands in for a dominant chord: D minor 6 over G7 is called the minor 6 on the 5. That comes later, under Substitution.',
+    use: 'Minor 6 is home in a minor key. It also stands in for a dominant chord: D minor 6 over G7 is called the minor 6 on the 5. That comes later, under Reading a chart and Substitution.',
     read: 'Foundations I, pages 12 to 17.',
   },
   dom7: {

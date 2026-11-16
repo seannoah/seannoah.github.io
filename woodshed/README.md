@@ -14,6 +14,7 @@ Plain HTML, CSS and JavaScript modules. There is no build step: what is in this 
 | `js/motion.js` | Two chords in a row: parallel, contrary and oblique motion between floors, and leaps |
 | `js/mirror.js` | Pivoting: which floor reflects which, the two chords of a pivot, and a whole pivoted line |
 | `js/transform.js` | Transformation: the family circle, formulas between 6th chords, and the named moves of ii–V–I and friends |
+| `js/subs.js` | Substitution: the chords one fret from a key's off chord, the jobs each chord can do, and chains of nearest grips |
 | `js/harmony.js` | Reading a chord chart: chord symbol to scale of chords, movements, transposition |
 | `js/tunes.js`, `js/songs.js`, `js/songsui.js` | The built-in tunes, what is worked out about each, and the Songs pages |
 | `js/curriculum.js` | The ladder of units, the practice items in each, and the session builder |

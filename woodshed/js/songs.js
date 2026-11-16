@@ -12,6 +12,7 @@ import { state, save } from './store.js';
 import { TUNES } from './tunes.js';
 import { underBorrowed } from './borrow.js';
 import { ROLES, chord as sixth, isSixth, formulaBetween, formulaText, namedMove } from './transform.js';
+import { postIn, postOfHow } from './subs.js';
 
 export { TUNES };
 
@@ -206,6 +207,30 @@ export function songMoves(read, max = 4) {
     if (!named || seen.has(named.id)) continue;
     seen.add(named.id);
     out.push({ move: named.id, tonic: named.tonic, role: ROLES[out.length % 4].id, from: c, to: next });
+    if (out.length >= max) break;
+  }
+  return out;
+}
+
+// ---- substitution in a tune ----
+// A dominant chord seen from its center: the off chord of the key it points to, and the
+// note of it that was moved to make the chord chosen here. Null for anything else.
+export function centerOf(chord) {
+  const id = (chord.family === 'dom' || chord.family === 'dom7b5') ? postOfHow(chord.use.how) : null;
+  return id ? { id, tonic: mod(chord.root + 5, 12), post: postIn(id, chord.root + 5) } : null;
+}
+
+// Practice items for the tune's dominants that resolve to a major chord: each kind of
+// choice once per key, each from a different position.
+export function songCenters(read, max = 3) {
+  const out = [];
+  const seen = new Set();
+  for (const c of read.chords) {
+    const next = neighbor(read, c, 1);
+    const center = c.resolves && next && next.family === 'maj' && mod(next.root - c.root, 12) === 5 ? centerOf(c) : null;
+    if (!center || seen.has(`${center.id}${center.tonic}`)) continue;
+    seen.add(`${center.id}${center.tonic}`);
+    out.push({ ...center, pos: (out.length + 1) % 4, from: c, to: next });
     if (out.length >= max) break;
   }
   return out;
